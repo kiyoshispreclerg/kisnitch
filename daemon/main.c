@@ -2,8 +2,9 @@
  *
  * kisnitchd entry point. Port of upstream daemon/main.go.
  *
- * Phase 0: parses the command line, sets up logging and loads the
- * configuration, then exits. Interception arrives in phase 3.
+ * So far: parses the command line, sets up logging, loads the configuration,
+ * the network aliases and the rules, then exits. Interception arrives in
+ * phase 3.
  *
  * Copyright (C) 2018 Simone Margaritelli, 2019-2025 Gustavo Iñiguez Goia
  *               and the OpenSnitch contributors.
@@ -16,22 +17,26 @@
 
 #include "common/log.h"
 #include "daemon/config.h"
+#include "daemon/evloop.h"
+#include "daemon/rules/aliases.h"
+#include "daemon/rules/loader.h"
 
 #define KS_NAME "kisnitchd"
-/* rule.DefaultPath upstream. */
-#define KS_RULES_DEFAULT_PATH "/etc/opensnitchd/rules"
 
 /* Command line options. Names and defaults as upstream main.go; the ones not
  * listed here are added together with the feature they control. */
 static struct {
     bool show_version;
     const char *config_file;
+    const char *rules_path;
+    bool no_live_reload;
     const char *log_file;
     bool log_utc;
     bool log_micro;
     bool debug, warning, important, errorlog;
 } opt = {
     .config_file = KS_CONFIG_DEFAULT_FILE,
+    .rules_path = "",
     .log_file = "",
     .log_utc = true,
 };
@@ -46,6 +51,8 @@ static const struct flag {
 } flags[] = {
     {"version", FLAG_BOOL, &opt.show_version, "Show daemon version of this executable and exit."},
     {"config-file", FLAG_STRING, &opt.config_file, "Path to the daemon configuration file."},
+    {"rules-path", FLAG_STRING, &opt.rules_path, "Path to load JSON rules from."},
+    {"no-live-reload", FLAG_BOOL, &opt.no_live_reload, "Disable rules live reloading."},
     {"log-file", FLAG_STRING, &opt.log_file, "Write logs to this file instead of the standard output."},
     {"log-utc", FLAG_BOOL, &opt.log_utc, "Write logs output with UTC timezone (enabled by default)."},
     {"log-micro", FLAG_BOOL, &opt.log_micro, "Write logs output with microsecond timestamp (disabled by default)."},
@@ -183,11 +190,16 @@ int main(int argc, char **argv)
     setup_logging();
     ks_important("Starting %s v%s", KS_NAME, KS_VERSION);
 
+    char err[1024];
+    struct ks_aliases aliases = {0};
+    if (ks_aliases_load(&aliases, KS_ALIASES_DEFAULT_FILE, err, sizeof(err)) < 0)
+        ks_warning("Error loading network aliases: %s", err);
+    ks_info("Loading network aliases from %s ...", KS_ALIASES_DEFAULT_FILE);
+
     if (opt.config_file[0] == '\0')
         ks_fatal("Configuration file cannot be empty");
 
     struct ks_config cfg;
-    char err[1024];
     if (ks_config_load(opt.config_file, &cfg, err, sizeof(err)) < 0)
         ks_fatal("%s", err);
     ks_info("Loading configuration file %s ...", opt.config_file);
@@ -199,17 +211,45 @@ int main(int argc, char **argv)
             ks_fatal("out of memory");
     }
 
+    struct ks_evloop *loop = ks_evloop_new();
+    struct ks_loader *rules =
+        loop ? ks_loader_new(loop, &aliases, !opt.no_live_reload) : NULL;
+    if (rules == NULL) {
+        ks_log(KS_LOG_FATAL, "Error creating the event loop or the rules loader");
+        return 1;
+    }
+
     apply_log_config(&cfg);
+    ks_info("Loading rules from %s ...", cfg.rules.path);
+    ks_loader_enable_checksums(rules, cfg.rules.enable_checksums);
+    if (ks_loader_reload(rules, cfg.rules.path, err, sizeof(err)) < 0)
+        ks_warning("%s", err);
+
     /* Command line options take precedence over the configuration file. */
     if (overwrite_logging())
         setup_logging();
+    if (opt.rules_path[0] != '\0') {
+        ks_info("Reloading rules from %s ...", opt.rules_path);
+        if (ks_loader_reload(rules, opt.rules_path, err, sizeof(err)) < 0)
+            ks_fatal("Error loading rules path %s", opt.rules_path);
+    }
 
     ks_debug("Configuration: DefaultAction=%s DefaultDuration=%s "
-             "ProcMonitorMethod=%s Firewall=%s Rules.Path=%s Server.Address=%s",
+             "ProcMonitorMethod=%s Firewall=%s Server.Address=%s",
              cfg.default_action, cfg.default_duration, cfg.proc_monitor_method,
-             cfg.firewall, cfg.rules.path, cfg.server.address);
-    ks_warning("Interception is not implemented yet (phase 0); exiting.");
+             cfg.firewall, cfg.server.address);
+    size_t n = ks_loader_num_rules(rules);
+    ks_info("%zu rules loaded from %s", n, ks_loader_path(rules));
+    for (size_t i = 0; i < n; i++) {
+        char desc[1024];
+        ks_rule_describe(ks_loader_rule_at(rules, i), desc, sizeof(desc));
+        ks_debug("  %s", desc);
+    }
+    ks_warning("Interception is not implemented yet (phase 1); exiting.");
 
+    ks_loader_free(rules);
+    ks_evloop_free(loop);
+    ks_aliases_free(&aliases);
     ks_config_free(&cfg);
     ks_log_close();
     return 0;

@@ -180,10 +180,10 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - Recarga por `inotify`, regras temporárias expirando via timer.
 
 **Aceite:**
-- [ ] Todas as regras de exemplo/teste do upstream carregam.
-- [ ] Teste de tabela: para cada operador, casos que casam e que não casam, incluindo regex inválida, lista vazia, rede IPv6, e operandos ausentes na conexão.
+- [x] Todas as regras de exemplo/teste do upstream carregam.
+- [x] Teste de tabela: para cada operador, casos que casam e que não casam, incluindo regex inválida, lista vazia, rede IPv6, e operandos ausentes na conexão.
 - [ ] **Teste diferencial** (opcional, só na máquina de desenvolvimento): corpus de pares (regra, conexão simulada) avaliado pelo código Go do upstream e pelo nosso, com resultados idênticos. O harness Go fica em `tests/diff/` e não entra no build normal.
-- [ ] Regra com duração `30s` some após 30s.
+- [x] Regra com duração `30s` some após 30s.
 
 ### Fase 2 — Netstat e monitor de processos (método proc)
 

@@ -167,7 +167,7 @@ KS_PRINTF(2, 0)
 static void vlog(int level, const char *fmt, va_list ap)
 {
     char stackbuf[1024];
-    char *msg = stackbuf;
+    char *heap = NULL; /* used when the message doesn't fit in stackbuf */
     va_list ap2;
 
     va_copy(ap2, ap);
@@ -177,13 +177,13 @@ static void vlog(int level, const char *fmt, va_list ap)
         return;
     }
     if ((size_t)n >= sizeof(stackbuf)) {
-        msg = malloc((size_t)n + 1);
-        if (msg != NULL)
-            vsnprintf(msg, (size_t)n + 1, fmt, ap2);
-        else
-            msg = stackbuf; /* truncated is better than nothing */
+        heap = malloc((size_t)n + 1);
+        if (heap != NULL)
+            vsnprintf(heap, (size_t)n + 1, fmt, ap2);
     }
     va_end(ap2);
+    /* Truncated is better than nothing if malloc failed. */
+    const char *msg = heap != NULL ? heap : stackbuf;
 
     size_t len = strlen(msg);
     const char *nl = (len > 0 && msg[len - 1] == '\n') ? "" : "\n";
@@ -204,8 +204,10 @@ static void vlog(int level, const char *fmt, va_list ap)
     }
     pthread_mutex_unlock(&lock);
 
-    if (msg != stackbuf)
-        free(msg);
+    free(heap);
+    /* cppcheck 2.7 reports `heap` as leaked here although it was just freed
+     * (a false positive; ASan and valgrind agree). */
+    // cppcheck-suppress memleak
 }
 
 void ks_log(int level, const char *fmt, ...)

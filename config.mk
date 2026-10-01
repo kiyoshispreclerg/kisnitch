@@ -33,6 +33,12 @@ OPTFLAGS ?= -O2 -g
 CPPFLAGS += -I. -Icommon/vendor/cjson -DKS_VERSION='"$(FULL_VERSION)"'
 LDLIBS   += -pthread
 
+# Required libraries.
+PCRE2_CFLAGS := $(shell $(PKG_CONFIG) --cflags libpcre2-8)
+PCRE2_LIBS   := $(shell $(PKG_CONFIG) --libs libpcre2-8)
+CPPFLAGS += $(PCRE2_CFLAGS)
+LDLIBS   += $(PCRE2_LIBS)
+
 # `make asan` sets SANITIZE=1.
 SANITIZE ?= 0
 ifeq ($(SANITIZE),1)

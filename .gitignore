@@ -6,3 +6,4 @@ crash-*
 leak-*
 timeout-*
 oom-*
+tests/diff/go/go.sum

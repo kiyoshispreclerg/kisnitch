@@ -6,12 +6,7 @@
  * embeds: procmon/audit.Config, procmon/ebpf.Config, statistics.StatsConfig
  * and log/loggers.LoggerConfig.
  *
- * Decoding follows Go's encoding/json rules for these types:
- *   - Missing keys keep the zero value; unknown keys are ignored.
- *   - Key matching is case-insensitive; with duplicate keys the last wins.
- *   - `null` leaves strings, bools, numbers and objects untouched, and resets
- *     LogLevel (a *int32 upstream) and Server.Loggers (a slice) to nil.
- *   - Wrong JSON types and out-of-range integers are errors.
+ * Decoding follows Go's encoding/json rules (see common/json_schema.h).
  * No semantic validation happens here (e.g. DefaultAction "foo" is accepted),
  * same as upstream's config.Parse().
  *
@@ -30,6 +25,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "common/json_schema.h"
 
 #define KS_CONFIG_DEFAULT_FILE "/etc/opensnitchd/default-config.json"
 /* Configs are tiny; anything bigger than this is certainly not one. */
@@ -65,20 +62,12 @@ struct ks_logger_config {
     uint16_t max_connect_attempts; /* MaxConnectAttempts */
 };
 
-/* A Go slice: distinguishes nil (marshals to null) from empty (marshals to
- * []). Owns `items`. */
-struct ks_logger_list {
-    struct ks_logger_config *items;
-    size_t len;
-    bool non_nil;
-};
-
 /* ServerConfig */
 struct ks_server_config {
     char *address;                 /* Address */
     struct ks_server_auth auth;    /* Authentication */
     char *log_file;                /* LogFile */
-    struct ks_logger_list loggers; /* Loggers */
+    struct ks_array loggers;       /* Loggers: struct ks_logger_config */
 };
 
 /* RulesOptions */
@@ -125,12 +114,6 @@ struct ks_stats_config {
     int64_t max_events; /* MaxEvents */
     int64_t max_stats;  /* MaxStats */
     int64_t workers;    /* Workers */
-};
-
-/* A Go *int32: `set` is false for nil. */
-struct ks_opt_int32 {
-    bool set;
-    int32_t value;
 };
 
 /* Config. Field order matches the Go struct, which is also the key order

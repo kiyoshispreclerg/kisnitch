@@ -16,6 +16,7 @@ jobs:
       # The upstream/ submodule isn't needed: the tests use the copies in
       # tests/fixtures/upstream/.
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev
       - name: build
         run: make CC=${{ matrix.cc }}
       - name: unit tests
@@ -27,19 +28,34 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y valgrind
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev valgrind
       - run: make valgrind
 
   lint:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y cppcheck
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev cppcheck
       - run: make lint
 
   fuzz:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev
       - name: fuzz smoke run (60s per target)
         run: make fuzz-run FUZZ_TIME=60
+
+  # Phase 1 differential test: the same corpus through upstream's Go rules
+  # package and through ours.
+  diff:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev
+      - run: make diff

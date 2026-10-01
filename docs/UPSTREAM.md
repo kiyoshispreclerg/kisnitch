@@ -30,8 +30,19 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/rule/rule.go` (`Once`, `Restart`, `Always`) | `common/duration.h` | portado | |
 | `daemon/rule/loader.go` (`isTemporary`) | `common/duration.c` (`ks_rule_duration_kind`) | portado | |
 | `daemon/main.go` | `daemon/main.c` | parcial | feito: flags `-version`, `-config-file`, `-log-file`, `-log-utc`, `-log-micro`, `-debug`, `-warning`, `-important`, `-error`; `setupLogging`, `overwriteLogging`, `loadDiskConfiguration`, `Rules.Path` padrão. Falta: as demais flags e o loop principal (fases 1–5) |
+| `daemon/rule/rule.go` | `daemon/rules/rule.c` | parcial | `Rule`, `Create`, `String`, JSON; `Serialize`/`Deserialize` (protobuf) na fase 5 |
+| `daemon/rule/operator.go` | `daemon/rules/rule.c` | portado | `Compile` e `Match` ramo a ramo, inclusive as alterações em `Data`/`Operand` |
+| `daemon/rule/operator_lists.go` | `daemon/rules/lists.c` | portado | formatos, filtros, deduplicação, polling de 4 s |
+| `daemon/rule/operator_aliases.go` | `daemon/rules/aliases.c` | parcial | `LoadAliases`, `GetAliasByIP`; `SerializeData` na fase 5 |
+| `daemon/rule/loader.go` | `daemon/rules/loader.c` | parcial | tudo menos a parte de procmon de `EnableChecksums`/`HasChecksums` (fase 2) |
+| `regexp` (Go stdlib, RE2) | `daemon/rules/regex.c` | portado | sintaxe Go traduzida para PCRE2 |
+| `net` (`ParseIP`, `ParseCIDR`, `IP.String`, `IPNet.Contains`) | `common/netaddr.c` | portado | |
+| `strings.ToLower`, `strings.EqualFold`, `unicode/utf8` | `common/unicode.c` | portado | |
+| `encoding/json` (`Marshal`, `MarshalIndent`, decodificação) | `common/json_schema.c`, `common/json_util.c` | portado | escapes de HTML e UTF-8 inválido como o Go |
+| `conman.Connection`, `procmon.Process`, `netstat.Entry` (campos usados pelas regras) | `daemon/conn.h` | estrutura | preenchidos pelas fases 2 e 3 |
+| `daemon/main.go` (regras) | `daemon/main.c` | parcial | `LoadAliases`, flags `-rules-path` e `-no-live-reload`, carga das regras |
 | `proto/ui.proto` | `proto/ui.proto` | copiado | `tools/sync-proto.sh`; código em `common/pb/` gerado na fase 5 |
-| `daemon/data/default-config.json`, `daemon/ui/testdata/*.json` | `tests/fixtures/upstream/` | copiado | `tools/sync-fixtures.sh` |
+| `daemon/data/default-config.json`, `network_aliases.json`, `daemon/ui/testdata/*.json`, `daemon/rule/testdata/` | `tests/fixtures/upstream/` | copiado | `tools/sync-fixtures.sh` |
 
 ## Divergências conhecidas
 
@@ -43,10 +54,41 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 1 | `daemon/config.c` | `encoding/json` rejeita inteiros escritos como `2.0` ou `2e0` | aceita se o valor for inteiro e couber no tipo | o cJSON não guarda o literal do número. Mais permissivo, nunca rejeita config que o Go aceita |
 | 2 | `daemon/config.c` | casamento de chaves sem diferenciar maiúsculas usa folding Unicode (ex.: `K` Kelvin U+212A casa com `k`) | folding só ASCII | chaves não ASCII que colidem com nomes de campo não ocorrem na prática |
 | 3 | `daemon/config.c` | mensagem de erro de tipo é a de `json.UnmarshalTypeError` | `Campo.Sub: expected <tipo>, got <tipo JSON>` | mensagem só vai para o log/alerta; o formato próprio mostra o caminho completo do campo |
-| 4 | `daemon/config.c` | strings com `\u0000` mantêm o NUL; UTF-8 inválido vira U+FFFD | string truncada no NUL; bytes inválidos preservados | strings C; nenhum campo do config aceita esses valores de forma útil |
+| 4 | `common/json_schema.c` | strings JSON com `\u0000` mantêm o NUL | string truncada no NUL | strings C; nenhum campo de config ou regra aceita NUL de forma útil (caminhos e nomes de `/proc` também não têm) |
 | 5 | `daemon/config.c` | inteiros de 64 bits exatos | precisão de `double` acima de 2^53 | cJSON usa `double`; nenhum campo do config usa valores nessa faixa |
 | 6 | `common/json_util.c` | limite de aninhamento JSON de 10000 | 1000 (`CJSON_NESTING_LIMIT`) | nenhum arquivo do upstream passa de 5 níveis |
 | 7 | `common/json_util.c` | erros de sintaxe com offset em bytes | linha e coluna (às vezes um token depois do erro) | posição vem de onde o cJSON parou |
+| 8 | `daemon/rules/rule.c` | pânico (derruba o daemon) quando o tipo do operador não aceita o valor do operando (ex.: `network` em `dest.ip`, `simple` em `dest.network`), em operadores aninhados dois níveis numa lista (não compilados) e em item de lista cuja regex falhou | o operador não casa | daemon rodando como root não pode cair por regra malformada; o teste diferencial conta esses casos à parte |
+| 9 | `daemon/rules/lists.c` | linha `127.0.0.1` sem host numa lista de domínios causa pânico (`line[10:]` fora dos limites) | linha ignorada | idem |
+| 10 | `daemon/rules/regex.c` | motor linear: nenhum padrão demora demais | limite de backtracking do PCRE2 (1 milhão de passos); ao estourar, conta como "não casa" | só padrões patológicos (ex.: `(a+)+$`) chegam perto |
+| 11 | `daemon/rules/regex.c` | aceita `\p{Kawi}` e `\p{Nag_Mundari}` (Unicode 15) | rejeitados se o pcre2 do sistema for anterior ao Unicode 15 (< 10.43) | depende da versão do pcre2; scripts raríssimos em regras |
+| 12 | `daemon/rules/regex.c` | grupo de flags seguido de quantificador aplica o quantificador ao átomo anterior (`a(?i)*`) | rejeitado | construção sem uso prático |
+| 13 | `daemon/rules/regex.c` | tabelas Unicode do Go para `\p{...}`, `(?i)` e `strings.EqualFold` | tabelas do PCRE2 e da libc (locale C.UTF-8) | mesma fonte (Unicode); só muda entre versões do padrão. Sem locale C.UTF-8, só ASCII |
+| 14 | `daemon/rules/loader.c` | nome de regra com `/` vira caminho fora do diretório de regras ao salvar | salvar é recusado com erro | nomes chegam da UI pela rede (fase 5): endurecimento de segurança |
+| 15 | `daemon/rules/aliases.c` | `GetAliasByIP` percorre um mapa (ordem aleatória) | ordem do arquivo | determinístico; só difere se aliases se sobrepõem |
+| 16 | `daemon/rules/lists.c`, `loader.c` | arquivos de qualquer tamanho | limite de 512 MiB por lista e 16 MiB por regra | proteção de memória |
+
+## Bugs do upstream a relatar
+
+Encontrados durante o port (docs/PORTING.md seção 8); o port reproduz o
+comportamento, a não ser onde a tabela acima diz o contrário.
+
+- Pânicos listados nas divergências 8 e 9.
+- `Operator.Compile` com `user.name` troca `Data` pelo UID; ao salvar a regra
+  em disco, o arquivo fica com o UID, e na próxima carga `user.Lookup("1000")`
+  falha e a regra é descartada. O port reproduz.
+- Regex sem diferenciação de maiúsculas é compilada com o padrão em
+  minúsculas: escapes mudam de sentido (`\D` vira `\d`, `\W` vira `\w`,
+  `\PL` vira `\pl`, que é inválido). O port reproduz.
+- Regra `enabled` do tipo `list` no formato antigo (lista em `data` e `list`
+  vazio) não é expandida em `loadRule`, e a lista vazia casa com tudo. O port
+  reproduz.
+- `cleanListsRule` só para o monitor do primeiro operador `lists` de uma
+  regra `list`; os demais continuam rodando (goroutines vazadas). O port
+  libera tudo ao substituir a regra.
+- Timers de regras temporárias nunca são cancelados: após `Reload`, o timer
+  antigo ainda apaga uma regra nova com o mesmo nome e a mesma duração. O
+  port reproduz.
 
 ## Decisões do port
 
@@ -56,4 +98,7 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 - **Binários:** `kisnitchd` (daemon) e `kisnitch-gtk` (UI). Paths de
   configuração continuam os do upstream (`/etc/opensnitchd/`,
   `~/.config/opensnitch/`).
-- **Versão:** `0.0.1+os1.8.0` (`config.mk`).
+- **Regex:** pcre2 (dependência prevista), com a sintaxe Go traduzida em
+  `daemon/rules/regex.c` para manter a semântica do upstream.
+- **Versão:** `0.0.1+os1.8.0` (`config.mk`). Betas usarão til
+  (`1.0.0~beta1+os...`) para o dpkg ordenar antes da versão final.

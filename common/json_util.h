@@ -36,6 +36,13 @@ bool ks_json_equal(const cJSON *a, const cJSON *b);
  * element also compared as a subset. Non-object values must be equal. */
 bool ks_json_is_subset(const cJSON *sub, const cJSON *super);
 
+/* Serializes like Go: json.Marshal when `indent` is false, otherwise
+ * json.MarshalIndent(v, "", "  "). Strings are escaped as Go does by default
+ * (HTML characters <, > and & as \u003c..., U+2028/U+2029, invalid UTF-8 as
+ * \ufffd), so files we write match the ones upstream writes byte for byte.
+ * Returns a malloc'd string owned by the caller, or NULL on OOM. */
+char *ks_json_print_go(const cJSON *v, bool indent);
+
 /* Writes `len` bytes of `data` to `path`, creating it with `mode` or
  * truncating it. Returns 0 or -1 with `err` filled. */
 int ks_write_file(const char *path, const char *data, size_t len, mode_t mode,

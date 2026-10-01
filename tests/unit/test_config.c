@@ -13,6 +13,8 @@
 #include "common/log.h"
 #include "tests/harness.h"
 
+#define LOG0(c) (*KS_ARRAY_ITEM((c).server.loggers, struct ks_logger_config, 0))
+#define LOG1(c) (*KS_ARRAY_ITEM((c).server.loggers, struct ks_logger_config, 1))
 #define FIX(name) KS_FIXTURES_DIR "/upstream/" name
 
 static const char *const upstream_configs[] = {
@@ -204,13 +206,13 @@ TEST(loggers_round_trip)
     CHECK_MSG(parse_str(in, &a, err, sizeof(err)) == 0, "%s", err);
     CHECK(a.server.loggers.non_nil);
     CHECK_INT_EQ(a.server.loggers.len, 2);
-    CHECK_STR_EQ(a.server.loggers.items[0].name, "syslog");
-    CHECK_STR_EQ(a.server.loggers.items[0].server, "127.0.0.1:514");
-    CHECK_STR_EQ(a.server.loggers.items[0].tag, "opensnitchd");
-    CHECK_INT_EQ(a.server.loggers.items[0].workers, 4);
-    CHECK_INT_EQ(a.server.loggers.items[0].max_connect_attempts, 3);
-    CHECK_STR_EQ(a.server.loggers.items[1].name, "remote");
-    CHECK_STR_EQ(a.server.loggers.items[1].format, "");
+    CHECK_STR_EQ(LOG0(a).name, "syslog");
+    CHECK_STR_EQ(LOG0(a).server, "127.0.0.1:514");
+    CHECK_STR_EQ(LOG0(a).tag, "opensnitchd");
+    CHECK_INT_EQ(LOG0(a).workers, 4);
+    CHECK_INT_EQ(LOG0(a).max_connect_attempts, 3);
+    CHECK_STR_EQ(LOG1(a).name, "remote");
+    CHECK_STR_EQ(LOG1(a).format, "");
 
     char *out = ks_config_to_json(&a, false);
     CHECK(out != NULL);
@@ -282,6 +284,12 @@ TEST(go_decoding_semantics)
     CHECK_INT_EQ(c.fw_options.queue_num, 65535);
     CHECK_INT_EQ(c.log_level.value, -1);
     CHECK_INT_EQ(c.internal.gc_percent, -1);
+    ks_config_free(&c);
+
+    /* Invalid UTF-8 becomes U+FFFD, as encoding/json does (found by
+     * fuzzing: without it the config didn't survive a round trip). */
+    CHECK(parse_str("{\"Firewall\":\"a\xff" "b\"}", &c, err, sizeof(err)) == 0);
+    CHECK_STR_EQ(c.firewall, "a\xef\xbf\xbd" "b");
     ks_config_free(&c);
 
     /* Strings keep escapes and UTF-8. */

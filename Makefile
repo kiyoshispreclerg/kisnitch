@@ -4,11 +4,21 @@ BUILD ?= build
 
 COMMON_SRC = common/log.c \
              common/json_util.c \
-             common/duration.c
+             common/json_schema.c \
+             common/unicode.c \
+             common/duration.c \
+             common/netaddr.c \
+             common/strset.c
 VENDOR_SRC = common/vendor/cjson/cJSON.c
 # Everything in the daemon except main.c goes into a static lib so the unit
 # tests can link against it.
-DAEMON_LIB_SRC = daemon/config.c
+DAEMON_LIB_SRC = daemon/config.c \
+                 daemon/evloop.c \
+                 daemon/rules/aliases.c \
+                 daemon/rules/lists.c \
+                 daemon/rules/loader.c \
+                 daemon/rules/regex.c \
+                 daemon/rules/rule.c
 DAEMON_MAIN    = daemon/main.c
 
 UNIT_TESTS = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(wildcard tests/unit/test_*.c))
@@ -20,7 +30,7 @@ ALL_LDFLAGS = $(SANFLAGS) $(LDFLAGS)
 LIBCOMMON = $(BUILD)/libcommon.a
 LIBDAEMON = $(BUILD)/libdaemon.a
 
-.PHONY: all test asan valgrind lint fuzz fuzz-run clean
+.PHONY: all test asan valgrind lint fuzz fuzz-run diff clean
 
 all: $(BUILD)/kisnitchd
 
@@ -68,9 +78,20 @@ valgrind: $(UNIT_TESTS)
 	if [ $$fail -ne 0 ]; then echo "*** valgrind FAILED"; exit 1; fi; \
 	echo "*** valgrind clean"
 
+# ---- differential test against upstream (needs Go; see tests/diff/run.sh) --
+
+$(BUILD)/diff/ks_diff: tests/diff/ks_diff.c $(LIBDAEMON) $(LIBCOMMON)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP $(ALL_LDFLAGS) \
+		-o $@ $< $(LIBDAEMON) $(LIBCOMMON) $(LDLIBS)
+
+diff:
+	tests/diff/run.sh
+
 # ---- static checks --------------------------------------------------------
 
-OWN_SOURCES = common/*.c common/*.h daemon/*.c daemon/*.h tests/harness.h \
+OWN_SOURCES = common/*.c common/*.h daemon/*.c daemon/*.h daemon/*/*.c \
+              daemon/*/*.h tests/harness.h tests/diff/*.c \
               tests/unit/*.c tests/fuzz/*.c
 
 lint:
@@ -81,7 +102,7 @@ lint:
 		--error-exitcode=1 --inline-suppr --quiet \
 		-I. -Icommon -Icommon/vendor/cjson \
 		-D_POSIX_C_SOURCE=200809L -DKS_VERSION='"lint"' -DKS_FIXTURES_DIR='"."' \
-		common/*.c daemon tests/unit
+		$(PCRE2_CFLAGS) common/*.c daemon tests/unit
 
 # ---- fuzzing (clang + libFuzzer) ------------------------------------------
 

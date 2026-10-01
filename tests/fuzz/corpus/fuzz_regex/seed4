@@ -1,0 +1,2 @@
+(?P<n>a)|\Q.*\E
+/usr/bin/curl

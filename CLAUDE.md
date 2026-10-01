@@ -1,6 +1,8 @@
 # Projeto: Kisnitch, port do OpenSnitch para C + GTK2
 
-Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 0.
+Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 1 (concluída, exceto
+rodar o teste diferencial opcional, que roda no job `diff` do CI ou com `make diff`
+numa máquina com Go). Próxima: 2.
 
 ## Regras
 - Trabalhe em uma fase por vez. Não comece a fase seguinte com critério de aceite pendente.
@@ -18,10 +20,13 @@ Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 0.
 - Binários: `kisnitchd` e `kisnitch-gtk`. Paths de config iguais aos do upstream.
 - JSON com cJSON vendorizado (`common/vendor/cjson/`), helpers em `common/json_util.h`.
 - Testes unitários: `tests/unit/test_*.c` (um binário por arquivo, `tests/harness.h`). Fixtures do upstream em `tests/fixtures/upstream/` (atualizar com tools/sync-fixtures.sh).
-- Todo parser de entrada não confiável ganha alvo em `tests/fuzz/fuzz_*.c`.
+- Todo parser de entrada não confiável ganha alvo em `tests/fuzz/fuzz_*.c`; entradas que já quebraram algo ficam em `tests/fuzz/corpus/<alvo>/regress-*`.
+- Comportamento do Go (encoding/json, regexp, net, strings) é reproduzido em common/ e daemon/rules/regex.c: use esses módulos, não equivalentes da libc.
+- Divergências do upstream e bugs dele vão para docs/UPSTREAM.md.
 
 ## Comandos
 - make / make test / make asan / make valgrind / make lint
+- make diff (teste diferencial contra o Go do upstream; ver tests/diff/run.sh)
 - make fuzz-run FUZZ_TIME=60 (nesta máquina: `FUZZ_LDFLAGS=-L/usr/lib/gcc/x86_64-linux-gnu/11`)
 - sudo make test-integration (a partir da fase 3)
 - tools/upstream-diff.sh, tools/sync-proto.sh, tools/sync-fixtures.sh
