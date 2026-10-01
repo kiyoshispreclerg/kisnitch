@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: test (${{ matrix.cc }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      # The upstream/ submodule isn't needed: the tests use the copies in
+      # tests/fixtures/upstream/.
+      - uses: actions/checkout@v4
+      - name: build
+        run: make CC=${{ matrix.cc }}
+      - name: unit tests
+        run: make CC=${{ matrix.cc }} test
+      - name: unit tests (ASan + UBSan)
+        run: make CC=${{ matrix.cc }} asan
+
+  valgrind:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y valgrind
+      - run: make valgrind
+
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cppcheck
+      - run: make lint
+
+  fuzz:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: fuzz smoke run (60s per target)
+        run: make fuzz-run FUZZ_TIME=60
