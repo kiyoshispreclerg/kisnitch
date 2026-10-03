@@ -32,6 +32,20 @@ struct ks_regex;
  * style ("error parsing regexp: ...: `...`") to `err`. */
 struct ks_regex *ks_regex_compile(const char *pattern, char *err, size_t errlen);
 
+/* Flags for ks_regex_compile_flags(). */
+#define KS_REGEX_CAPTURE 1 /* keep capture groups for ks_regex_find_submatch */
+
+struct ks_regex *ks_regex_compile_flags(const char *pattern, int flags, char *err,
+                                        size_t errlen);
+
+/* Go's FindStringSubmatchIndex on subject[0..len), for a regex compiled with
+ * KS_REGEX_CAPTURE: fills offsets[2*i], offsets[2*i+1] (start, end; -1 for
+ * groups that didn't participate) for up to `max_groups` groups, group 0
+ * being the whole match. Returns the number of groups filled, 0 if there's
+ * no match, -1 if the subject isn't valid UTF-8. */
+int ks_regex_find_submatch(struct ks_regex *re, const char *subject, size_t len,
+                           long *offsets, int max_groups);
+
 /* Returns 1 if `subject` matches anywhere, 0 if not. A match that hits the
  * PCRE2 backtracking limit counts as no match (Go's engine has no such
  * limit; see docs/UPSTREAM.md). */

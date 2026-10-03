@@ -26,6 +26,7 @@
 #include "common/json_util.h"
 #include "common/log.h"
 #include "daemon/evloop.h"
+#include "daemon/procmon/cache.h"
 
 #define RULE_FILE_MAX_SIZE (16u * 1024 * 1024)
 
@@ -141,6 +142,8 @@ void ks_loader_enable_checksums(struct ks_loader *l, bool enable)
 {
     ks_debug("[rules loader] EnableChecksums: %d", enable);
     l->checksums = enable;
+    ks_events_set_compute_checksums(enable);
+    ks_events_add_checksum_hash(KS_OP_PROCESS_HASH_MD5);
 }
 
 /* ---- helpers ---------------------------------------------------------- */

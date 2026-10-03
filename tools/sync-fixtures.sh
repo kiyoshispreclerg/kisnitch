@@ -17,6 +17,7 @@ daemon/data/default-config.json            default-config.json
 daemon/ui/testdata/default-config.json     ui-testdata-default-config.json
 daemon/ui/testdata/config-invalid-procmon.json ui-testdata-config-invalid-procmon.json
 daemon/data/network_aliases.json           network_aliases.json
+daemon/procmon/testdata/proc-environ       proc-environ
 LIST
 
 # Whole directories.

@@ -43,6 +43,20 @@ bool ks_ip_to4(const struct ks_ip *ip, uint8_t out[4]);
 /* IP.String: "<nil>", dotted IPv4 (also for v4-mapped) or RFC 5952 IPv6. */
 void ks_ip_string(const struct ks_ip *ip, char *buf, size_t len);
 
+/* net.IPv4(a, b, c, d): the 16-byte (v4-mapped) form. */
+struct ks_ip ks_ip_v4_16(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
+
+/* IP.Equal: an IPv4 address equals its v4-mapped form. */
+bool ks_ip_equal(const struct ks_ip *a, const struct ks_ip *b);
+
+/* IP.IsUnspecified, IsLoopback, IsMulticast, IsLinkLocalUnicast and
+ * IsGlobalUnicast, as in Go. */
+bool ks_ip_is_unspecified(const struct ks_ip *ip);
+bool ks_ip_is_loopback(const struct ks_ip *ip);
+bool ks_ip_is_multicast(const struct ks_ip *ip);
+bool ks_ip_is_link_local_unicast(const struct ks_ip *ip);
+bool ks_ip_is_global_unicast(const struct ks_ip *ip);
+
 /* net.ParseCIDR. On error returns -1 and writes Go's message
  * ("invalid CIDR address: <s>") to `err`. */
 int ks_parse_cidr(const char *s, struct ks_ipnet *out, char *err, size_t errlen);

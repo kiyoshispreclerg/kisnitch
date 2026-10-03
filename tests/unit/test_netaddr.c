@@ -136,8 +136,56 @@ TEST(to4)
     CHECK(!ks_ip_to4(&ip, b));
 }
 
+static struct ks_ip ip(const char *s)
+{
+    struct ks_ip a;
+    if (ks_ip_parse(s, &a) < 0)
+        memset(&a, 0, sizeof(a));
+    return a;
+}
+
+TEST(predicates_match_go)
+{
+    struct ks_ip v4 = ks_ip_v4(1, 2, 3, 4), mapped = ip("1.2.3.4"), other = ip("1.2.3.5");
+    CHECK(ks_ip_equal(&v4, &mapped) && ks_ip_equal(&mapped, &v4));
+    CHECK(!ks_ip_equal(&v4, &other));
+    struct ks_ip a6 = ip("::1"), z6 = ip("::"), z4 = ks_ip_v4(0, 0, 0, 0);
+    CHECK(!ks_ip_equal(&a6, &v4));
+    CHECK(!ks_ip_equal(&z6, &z4)); /* :: and 0.0.0.0 differ */
+    CHECK(ks_ip_is_unspecified(&z6) && ks_ip_is_unspecified(&z4));
+
+    static const struct {
+        const char *ip;
+        bool loop, mcast, ll, global;
+    } cases[] = {
+        {"127.0.0.1", true, false, false, false},
+        {"127.255.0.9", true, false, false, false},
+        {"::1", true, false, false, false},
+        {"::ffff:127.0.0.1", true, false, false, false},
+        {"224.0.0.251", false, true, false, false},
+        {"ff02::1", false, true, false, false},
+        {"169.254.1.1", false, false, true, false},
+        {"fe80::1", false, false, true, false},
+        {"0.0.0.0", false, false, false, false},
+        {"::", false, false, false, false},
+        {"255.255.255.255", false, false, false, false},
+        {"192.168.1.1", false, false, false, true},
+        {"8.8.8.8", false, false, false, true},
+        {"2001:db8::1", false, false, false, true},
+        {"fd00::1", false, false, false, true},
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        struct ks_ip a = ip(cases[i].ip);
+        CHECK_MSG(ks_ip_is_loopback(&a) == cases[i].loop, "%s loopback", cases[i].ip);
+        CHECK_MSG(ks_ip_is_multicast(&a) == cases[i].mcast, "%s multicast", cases[i].ip);
+        CHECK_MSG(ks_ip_is_link_local_unicast(&a) == cases[i].ll, "%s link-local", cases[i].ip);
+        CHECK_MSG(ks_ip_is_global_unicast(&a) == cases[i].global, "%s global", cases[i].ip);
+    }
+}
+
 int main(void)
 {
+    RUN(predicates_match_go);
     RUN(parse_ip_and_string);
     RUN(string_of_short_forms);
     RUN(cidr_parse_and_contains);

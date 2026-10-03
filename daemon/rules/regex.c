@@ -953,6 +953,12 @@ char *ks_regex_translate(const char *pattern, char *err, size_t errlen)
 
 struct ks_regex *ks_regex_compile(const char *pattern, char *err, size_t errlen)
 {
+    return ks_regex_compile_flags(pattern, 0, err, errlen);
+}
+
+struct ks_regex *ks_regex_compile_flags(const char *pattern, int flags, char *err,
+                                        size_t errlen)
+{
     char *pcre = ks_regex_translate(pattern, err, errlen);
     if (pcre == NULL)
         return NULL;
@@ -971,7 +977,7 @@ struct ks_regex *ks_regex_compile(const char *pattern, char *err, size_t errlen)
     re->code = pcre2_compile((PCRE2_SPTR)pcre, PCRE2_ZERO_TERMINATED,
                              PCRE2_UTF | PCRE2_DOLLAR_ENDONLY |
                                  PCRE2_ALT_CIRCUMFLEX | PCRE2_NEVER_BACKSLASH_C |
-                                 PCRE2_NO_AUTO_CAPTURE,
+                                 ((flags & KS_REGEX_CAPTURE) ? 0 : PCRE2_NO_AUTO_CAPTURE),
                              &code, &off, cctx);
     if (re->code == NULL) {
         char msg[160];
@@ -979,7 +985,9 @@ struct ks_regex *ks_regex_compile(const char *pattern, char *err, size_t errlen)
         snprintf(err, errlen, "error parsing regexp: %s: `%s`", msg, pattern);
         goto fail;
     }
-    re->md = pcre2_match_data_create(1, NULL);
+    re->md = (flags & KS_REGEX_CAPTURE)
+                 ? pcre2_match_data_create_from_pattern(re->code, NULL)
+                 : pcre2_match_data_create(1, NULL);
     re->mctx = pcre2_match_context_create(NULL);
     if (re->md == NULL || re->mctx == NULL) {
         snprintf(err, errlen, "out of memory");
@@ -1010,6 +1018,28 @@ int ks_regex_match(struct ks_regex *re, const char *subject)
     int rc = pcre2_match(re->code, (PCRE2_SPTR)s, len, 0, 0, re->md, re->mctx);
     free(clean);
     return rc >= 0 ? 1 : 0;
+}
+
+int ks_regex_find_submatch(struct ks_regex *re, const char *subject, size_t len,
+                           long *offsets, int max_groups)
+{
+    if (!ks_utf8_valid(subject, len))
+        return -1;
+    int rc = pcre2_match(re->code, (PCRE2_SPTR)subject, len, 0, 0, re->md,
+                         re->mctx);
+    if (rc < 0)
+        return 0;
+    /* rc == 0: more groups than the match data holds (can't happen with
+     * match data created from the pattern). */
+    uint32_t pairs = pcre2_get_ovector_count(re->md);
+    PCRE2_SIZE *ov = pcre2_get_ovector_pointer(re->md);
+    int n = (int)pairs < max_groups ? (int)pairs : max_groups;
+    for (int i = 0; i < n; i++) {
+        bool unset = ov[2 * i] == PCRE2_UNSET || i >= (rc ? rc : (int)pairs);
+        offsets[2 * i] = unset ? -1 : (long)ov[2 * i];
+        offsets[2 * i + 1] = unset ? -1 : (long)ov[2 * i + 1];
+    }
+    return n;
 }
 
 void ks_regex_free(struct ks_regex *re)

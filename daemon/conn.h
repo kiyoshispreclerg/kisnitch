@@ -49,7 +49,7 @@ struct ks_conn {
     unsigned dst_port;     /* DstPort */
     int iface_in;          /* Pkt.IfaceInIdx */
     int iface_out;         /* Pkt.IfaceOutIdx */
-    int uid;               /* Entry.UserId */
+    long long uid;         /* Entry.UserId (-1: unknown) */
     const struct ks_process *process;
 };
 

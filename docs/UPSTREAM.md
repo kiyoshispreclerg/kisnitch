@@ -41,6 +41,15 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `encoding/json` (`Marshal`, `MarshalIndent`, decodificação) | `common/json_schema.c`, `common/json_util.c` | portado | escapes de HTML e UTF-8 inválido como o Go |
 | `conman.Connection`, `procmon.Process`, `netstat.Entry` (campos usados pelas regras) | `daemon/conn.h` | estrutura | preenchidos pelas fases 2 e 3 |
 | `daemon/main.go` (regras) | `daemon/main.c` | parcial | `LoadAliases`, flags `-rules-path` e `-no-live-reload`, carga das regras |
+| `daemon/netstat/*.go` | `daemon/netstat.c` | portado | linhas lidas com as próprias regex do upstream (via `daemon/rules/regex.c`) |
+| `daemon/netlink/socket.go`, `socket_linux.go` (consulta) | `daemon/sockdiag.c` | parcial | `GetSocketInfo`, `SocketGet`, `SocketsDump`, `GetSocketInfoByInode`; `KillSocket(s)`/`FlushConnections` na fase 3; netlink cru, sem libmnl |
+| `daemon/procmon/process.go`, `details.go` | `daemon/procmon/process.c` | parcial | tudo que o método proc usa; `GetExtraInfo` (descritores, I/O, status, statm, maps) e `Serialize` na fase 5 |
+| `daemon/procmon/cache.go`, `cache_events.go` | `daemon/procmon/cache.c` | portado | |
+| `daemon/procmon/find.go`, `parse.go` | `daemon/procmon/procmon.c` | parcial | método proc; o caminho do audit na fase 10 |
+| `daemon/procmon/activepids.go`, `netlink/procmon/procmon.go` | `daemon/procmon/procmon.c`, `events.c` | portado | conector de eventos via netlink cru |
+| `daemon/procmon/monitor/init.go` | `daemon/procmon/procmon.c` (`ks_procmon_init`) | parcial | só o método proc; ebpf (fase 9) e audit (fase 10) |
+| `daemon/conman/connection.go` (`newConnectionImpl`, busca do processo) | `daemon/procmon/procmon.c` (`ks_procmon_resolve`) | parcial | método proc; parse de pacote na fase 3 |
+| `crypto/md5`, `crypto/sha1` (Go stdlib) | `common/hash.c` | portado | sem OpenSSL |
 | `proto/ui.proto` | `proto/ui.proto` | copiado | `tools/sync-proto.sh`; código em `common/pb/` gerado na fase 5 |
 | `daemon/data/default-config.json`, `network_aliases.json`, `daemon/ui/testdata/*.json`, `daemon/rule/testdata/` | `tests/fixtures/upstream/` | copiado | `tools/sync-fixtures.sh` |
 
@@ -67,6 +76,11 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 14 | `daemon/rules/loader.c` | nome de regra com `/` vira caminho fora do diretório de regras ao salvar | salvar é recusado com erro | nomes chegam da UI pela rede (fase 5): endurecimento de segurança |
 | 15 | `daemon/rules/aliases.c` | `GetAliasByIP` percorre um mapa (ordem aleatória) | ordem do arquivo | determinístico; só difere se aliases se sobrepõem |
 | 16 | `daemon/rules/lists.c`, `loader.c` | arquivos de qualquer tamanho | limite de 512 MiB por lista e 16 MiB por regra | proteção de memória |
+| 17 | `daemon/netstat.c` | valor fora de `int64` numa linha de `/proc/net` derruba o daemon (`log.Fatal`) | a linha é ignorada | o daemon não deve cair por um parse |
+| 18 | `daemon/procmon/process.c` | se nenhum caminho do executável abre, faz dump da memória do processo e acaba gravando o hash de um buffer vazio (`readMem` nunca preenche o retorno) | o checksum fica ausente | um hash fixo de "vazio" casaria regras por engano |
+| 19 | `daemon/procmon/process.c` | `IsAbsPath("")` entra em pânico | caminho vazio é tratado como relativo | não derrubar o daemon |
+| 20 | `daemon/procmon/events.c`, `procmon.c` | quatro goroutines processam eventos exec/exit em paralelo | tratados no loop principal, um por vez | arquitetura de um loop só (seção 4 do PORTING.md); a ordem dos eventos é preservada |
+| 21 | `daemon/procmon/process.c` | checksums calculados na goroutine que achou o processo | calculados de forma síncrona | o pool de workers da seção 4 entra na fase 3, junto com o caminho dos pacotes |
 
 ## Bugs do upstream a relatar
 
@@ -89,6 +103,22 @@ comportamento, a não ser onde a tabela acima diz o contrário.
 - Timers de regras temporárias nunca são cancelados: após `Reload`, o timer
   antigo ainda apaga uma regra nova com o mesmo nome e a mesma duração. O
   port reproduz.
+- `hexToIP` (netstat) decide entre IPv4 e IPv6 pelos 64 bits finais: um IPv6
+  com a metade baixa zerada (ex.: `2001:db8::`, ou `::`) vira um IPv4 de 4
+  bytes, e a busca em `/proc/net/*6` não casa. O port reproduz.
+- `GetSocketInfo` devolve o UID do último socket com a mesma porta de origem,
+  não o do socket encontrado. Normalmente o UID do netfilter sobrescreve. O
+  port reproduz.
+- O padrão de `/proc/net/packet` aceita só um dígito no índice da interface
+  (interfaces >= 10 não são lidas). O port reproduz.
+- `IsInStoreByPID` atualiza `LastSeen` numa cópia do item, então consultas
+  nunca prolongam a vida de um processo no cache. O port reproduz.
+- No método proc, `FindProcess` não monta a cadeia de pais (`GetParent`):
+  sem eventos de exec (root), o operando `process.parent.path` nunca casa
+  para processos vistos só pela conexão. O port reproduz.
+- Sem eventos de processo (não root, ou kernel sem `CONFIG_PROC_EVENTS`), um
+  PID reaproveitado por outro programa continua com os dados antigos no cache
+  enquanto estiver vivo. O port reproduz.
 
 ## Decisões do port
 

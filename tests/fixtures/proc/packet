@@ -1,0 +1,4 @@
+sk               RefCnt Type Proto  Iface R Rmem   User   Inode
+0000000000000000 2      2    0000   0     0 0      0      44138
+ffff90b72f893800 3      3    0003   3     1 0      1000   257944535
+ffff90b72f893800 3      3    0003   12    1 0      1000   1

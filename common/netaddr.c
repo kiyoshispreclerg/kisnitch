@@ -306,3 +306,70 @@ bool ks_ipnet_contains(const struct ks_ipnet *n, const struct ks_ip *ip)
             return false;
     return true;
 }
+
+struct ks_ip ks_ip_v4_16(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
+{
+    struct ks_ip ip;
+    memset(&ip, 0, sizeof(ip));
+    memcpy(ip.b, v4_prefix, 12);
+    ip.b[12] = a;
+    ip.b[13] = b;
+    ip.b[14] = c;
+    ip.b[15] = d;
+    ip.len = 16;
+    return ip;
+}
+
+bool ks_ip_equal(const struct ks_ip *a, const struct ks_ip *b)
+{
+    if (a->len == b->len)
+        return memcmp(a->b, b->b, a->len) == 0;
+    if (a->len == 4 && b->len == 16)
+        return memcmp(b->b, v4_prefix, 12) == 0 && memcmp(a->b, b->b + 12, 4) == 0;
+    if (a->len == 16 && b->len == 4)
+        return memcmp(a->b, v4_prefix, 12) == 0 && memcmp(a->b + 12, b->b, 4) == 0;
+    return false;
+}
+
+bool ks_ip_is_unspecified(const struct ks_ip *ip)
+{
+    static const uint8_t zero[16];
+    struct ks_ip v4zero = ks_ip_v4_16(0, 0, 0, 0);
+    struct ks_ip v6zero;
+    memcpy(v6zero.b, zero, 16);
+    v6zero.len = 16;
+    return ks_ip_equal(ip, &v4zero) || ks_ip_equal(ip, &v6zero);
+}
+
+bool ks_ip_is_loopback(const struct ks_ip *ip)
+{
+    uint8_t v4[4];
+    if (ks_ip_to4(ip, v4))
+        return v4[0] == 127;
+    static const uint8_t lo6[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+    return ip->len == 16 && memcmp(ip->b, lo6, 16) == 0;
+}
+
+bool ks_ip_is_multicast(const struct ks_ip *ip)
+{
+    uint8_t v4[4];
+    if (ks_ip_to4(ip, v4))
+        return (v4[0] & 0xf0) == 0xe0;
+    return ip->len == 16 && ip->b[0] == 0xff;
+}
+
+bool ks_ip_is_link_local_unicast(const struct ks_ip *ip)
+{
+    uint8_t v4[4];
+    if (ks_ip_to4(ip, v4))
+        return v4[0] == 169 && v4[1] == 254;
+    return ip->len == 16 && ip->b[0] == 0xfe && (ip->b[1] & 0xc0) == 0x80;
+}
+
+bool ks_ip_is_global_unicast(const struct ks_ip *ip)
+{
+    struct ks_ip bcast = ks_ip_v4_16(255, 255, 255, 255);
+    return (ip->len == 4 || ip->len == 16) && !ks_ip_equal(ip, &bcast) &&
+           !ks_ip_is_unspecified(ip) && !ks_ip_is_loopback(ip) &&
+           !ks_ip_is_multicast(ip) && !ks_ip_is_link_local_unicast(ip);
+}

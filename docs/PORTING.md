@@ -192,9 +192,9 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - Cache com invalidação quando o processo morre ou é substituído (exec).
 
 **Aceite:**
-- [ ] Teste abre um socket TCP e UDP no próprio processo e o netstat encontra o PID correto.
-- [ ] Teste com processo filho (`fork` + `exec`) identifica path e pai corretamente.
-- [ ] Cache não cresce indefinidamente (teste com 10 mil processos curtos, RSS estável).
+- [x] Teste abre um socket TCP e UDP no próprio processo e o netstat encontra o PID correto.
+- [x] Teste com processo filho (`fork` + `exec`) identifica path e pai corretamente.
+- [x] Cache não cresce indefinidamente (teste com 10 mil processos curtos, RSS estável).
 
 ### Fase 3 — Interceptação mínima (primeiro binário útil)
 

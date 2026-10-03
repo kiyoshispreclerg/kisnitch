@@ -1,8 +1,8 @@
 # Projeto: Kisnitch, port do OpenSnitch para C + GTK2
 
-Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 1 (concluída, exceto
-rodar o teste diferencial opcional, que roda no job `diff` do CI ou com `make diff`
-numa máquina com Go). Próxima: 2.
+Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 2 concluída. Próxima: 3.
+(O teste diferencial opcional da fase 1 roda no job `diff` do CI ou com `make diff`
+numa máquina com Go.)
 
 ## Regras
 - Trabalhe em uma fase por vez. Não comece a fase seguinte com critério de aceite pendente.
@@ -23,6 +23,9 @@ numa máquina com Go). Próxima: 2.
 - Todo parser de entrada não confiável ganha alvo em `tests/fuzz/fuzz_*.c`; entradas que já quebraram algo ficam em `tests/fuzz/corpus/<alvo>/regress-*`.
 - Comportamento do Go (encoding/json, regexp, net, strings) é reproduzido em common/ e daemon/rules/regex.c: use esses módulos, não equivalentes da libc.
 - Divergências do upstream e bugs dele vão para docs/UPSTREAM.md.
+- Netlink sem libmnl para sock_diag e o conector de processos (daemon/sockdiag.c, daemon/procmon/events.c); libmnl/libnftnl entram com o nftables (fase 3).
+- Estado global de módulo é aceito onde o upstream usa globais (caches do procmon); APIs de teste para resetar (ks_procmon_cache_reset).
+- Testes que inspecionam processos filhos via /proc são pulados sob valgrind (KS_TEST_VALGRIND): o filho de um processo sob valgrind é o próprio valgrind.
 
 ## Comandos
 - make / make test / make asan / make valgrind / make lint

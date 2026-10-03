@@ -7,8 +7,8 @@ O objetivo é ser um substituto direto: mesmos arquivos de configuração e de
 regras, e o mesmo protocolo gRPC entre daemon e interface. Assim o daemon do
 Kisnitch funciona com a UI original e vice-versa.
 
-> **Estado:** em desenvolvimento, fase 1 (motor de regras). Ainda não
-> intercepta conexões. O plano completo está em [docs/PORTING.md](docs/PORTING.md).
+> **Estado:** em desenvolvimento, fase 2 (motor de regras e identificação do
+> processo dono de cada conexão). Ainda não intercepta conexões. O plano completo está em [docs/PORTING.md](docs/PORTING.md).
 
 ## Compilar e testar
 

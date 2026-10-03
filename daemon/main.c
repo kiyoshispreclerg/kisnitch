@@ -3,8 +3,8 @@
  * kisnitchd entry point. Port of upstream daemon/main.go.
  *
  * So far: parses the command line, sets up logging, loads the configuration,
- * the network aliases and the rules, then exits. Interception arrives in
- * phase 3.
+ * the network aliases and the rules, starts the process monitor, then
+ * exits. Interception arrives in phase 3.
  *
  * Copyright (C) 2018 Simone Margaritelli, 2019-2025 Gustavo Iñiguez Goia
  *               and the OpenSnitch contributors.
@@ -18,6 +18,7 @@
 #include "common/log.h"
 #include "daemon/config.h"
 #include "daemon/evloop.h"
+#include "daemon/procmon/procmon.h"
 #include "daemon/rules/aliases.h"
 #include "daemon/rules/loader.h"
 
@@ -29,6 +30,7 @@ static struct {
     bool show_version;
     const char *config_file;
     const char *rules_path;
+    const char *procmon_method;
     bool no_live_reload;
     const char *log_file;
     bool log_utc;
@@ -37,6 +39,7 @@ static struct {
 } opt = {
     .config_file = KS_CONFIG_DEFAULT_FILE,
     .rules_path = "",
+    .procmon_method = "",
     .log_file = "",
     .log_utc = true,
 };
@@ -51,6 +54,7 @@ static const struct flag {
 } flags[] = {
     {"version", FLAG_BOOL, &opt.show_version, "Show daemon version of this executable and exit."},
     {"config-file", FLAG_STRING, &opt.config_file, "Path to the daemon configuration file."},
+    {"process-monitor-method", FLAG_STRING, &opt.procmon_method, "Options: audit, ebpf, proc (default)"},
     {"rules-path", FLAG_STRING, &opt.rules_path, "Path to load JSON rules from."},
     {"no-live-reload", FLAG_BOOL, &opt.no_live_reload, "Disable rules live reloading."},
     {"log-file", FLAG_STRING, &opt.log_file, "Write logs to this file instead of the standard output."},
@@ -234,6 +238,14 @@ int main(int argc, char **argv)
             ks_fatal("Error loading rules path %s", opt.rules_path);
     }
 
+    /* monitor.ReconfigureMonitorMethod: the command line wins. Only "proc"
+     * exists so far; the others fall back to it, as upstream does when they
+     * fail to start. */
+    const char *method = opt.procmon_method[0] ? opt.procmon_method : cfg.proc_monitor_method;
+    if (method[0] != '\0' && strcmp(method, KS_PROCMON_METHOD_PROC) != 0)
+        ks_warning("error starting %s monitor method: not implemented yet", method);
+    ks_procmon_init(loop);
+
     ks_debug("Configuration: DefaultAction=%s DefaultDuration=%s "
              "ProcMonitorMethod=%s Firewall=%s Server.Address=%s",
              cfg.default_action, cfg.default_duration, cfg.proc_monitor_method,
@@ -245,8 +257,9 @@ int main(int argc, char **argv)
         ks_rule_describe(ks_loader_rule_at(rules, i), desc, sizeof(desc));
         ks_debug("  %s", desc);
     }
-    ks_warning("Interception is not implemented yet (phase 1); exiting.");
+    ks_warning("Interception is not implemented yet (phase 2); exiting.");
 
+    ks_procmon_end();
     ks_loader_free(rules);
     ks_evloop_free(loop);
     ks_aliases_free(&aliases);

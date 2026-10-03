@@ -8,12 +8,20 @@ COMMON_SRC = common/log.c \
              common/unicode.c \
              common/duration.c \
              common/netaddr.c \
-             common/strset.c
+             common/strset.c \
+             common/hash.c \
+             common/strmap.c
 VENDOR_SRC = common/vendor/cjson/cJSON.c
 # Everything in the daemon except main.c goes into a static lib so the unit
 # tests can link against it.
 DAEMON_LIB_SRC = daemon/config.c \
                  daemon/evloop.c \
+                 daemon/netstat.c \
+                 daemon/sockdiag.c \
+                 daemon/procmon/cache.c \
+                 daemon/procmon/events.c \
+                 daemon/procmon/process.c \
+                 daemon/procmon/procmon.c \
                  daemon/rules/aliases.c \
                  daemon/rules/lists.c \
                  daemon/rules/loader.c \
@@ -72,7 +80,7 @@ asan:
 
 valgrind: $(UNIT_TESTS)
 	@fail=0; for t in $(UNIT_TESTS); do \
-		valgrind -q --error-exitcode=1 --leak-check=full \
+		KS_TEST_VALGRIND=1 valgrind -q --error-exitcode=1 --leak-check=full \
 			--errors-for-leak-kinds=definite,indirect $$t >/dev/null || fail=1; \
 	done; \
 	if [ $$fail -ne 0 ]; then echo "*** valgrind FAILED"; exit 1; fi; \
