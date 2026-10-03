@@ -189,3 +189,82 @@ enum ks_rule_duration ks_rule_duration_kind(const char *s)
         return KS_RULE_ALWAYS;
     return KS_RULE_TEMPORARY;
 }
+
+/* fmtFrac from Go's time package: the fraction of v/10^prec, without
+ * trailing zeros, written backwards ending at buf[w]. */
+static size_t fmt_frac(char *buf, size_t w, uint64_t *v, int prec)
+{
+    bool print = false;
+    for (int i = 0; i < prec; i++) {
+        unsigned digit = (unsigned)(*v % 10);
+        print = print || digit != 0;
+        if (print)
+            buf[--w] = (char)('0' + digit);
+        *v /= 10;
+    }
+    if (print)
+        buf[--w] = '.';
+    return w;
+}
+
+/* fmtInt */
+static size_t fmt_int(char *buf, size_t w, uint64_t v)
+{
+    if (v == 0)
+        buf[--w] = '0';
+    while (v > 0) {
+        buf[--w] = (char)('0' + v % 10);
+        v /= 10;
+    }
+    return w;
+}
+
+/* Port of Go's Duration.format. */
+void ks_format_duration(int64_t ns, char *out, size_t len)
+{
+    char buf[32];
+    size_t w = sizeof(buf);
+    uint64_t u = (uint64_t)ns;
+    bool neg = ns < 0;
+    if (neg)
+        u = -u;
+
+    if (u < (uint64_t)KS_SECOND) {
+        int prec;
+        buf[--w] = 's';
+        if (u == 0) {
+            buf[--w] = '0';
+            snprintf(out, len, "%.*s", (int)(sizeof(buf) - w), buf + w);
+            return;
+        } else if (u < (uint64_t)KS_MICROSECOND) {
+            prec = 0;
+            buf[--w] = 'n';
+        } else if (u < (uint64_t)KS_MILLISECOND) {
+            prec = 3;
+            buf[--w] = '\xb5'; /* U+00B5 'µ' */
+            buf[--w] = '\xc2';
+        } else {
+            prec = 6;
+            buf[--w] = 'm';
+        }
+        w = fmt_frac(buf, w, &u, prec);
+        w = fmt_int(buf, w, u);
+    } else {
+        buf[--w] = 's';
+        w = fmt_frac(buf, w, &u, 9);
+        w = fmt_int(buf, w, u % 60);
+        u /= 60;
+        if (u > 0) {
+            buf[--w] = 'm';
+            w = fmt_int(buf, w, u % 60);
+            u /= 60;
+            if (u > 0) {
+                buf[--w] = 'h';
+                w = fmt_int(buf, w, u);
+            }
+        }
+    }
+    if (neg)
+        buf[--w] = '-';
+    snprintf(out, len, "%.*s", (int)(sizeof(buf) - w), buf + w);
+}

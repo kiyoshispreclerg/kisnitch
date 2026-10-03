@@ -10,6 +10,8 @@
 
 #include <errno.h>
 #include <linux/inet_diag.h>
+#include <linux/netfilter/nfnetlink.h>
+#include <linux/netfilter/nfnetlink_conntrack.h>
 #include <linux/netlink.h>
 #include <linux/sock_diag.h>
 #include <netinet/in.h>
@@ -277,4 +279,200 @@ int ks_sock_find_by_inode(uint32_t inode, struct ks_sock *out)
         free(socks);
     }
     return -1;
+}
+
+/* Sends one request expecting an ACK (nl.NetlinkRequest.Execute with
+ * NLM_F_ACK). Returns 0, or -1 with `err` filled. */
+static int ack_request(int nl_proto, void *msg, size_t len, char *err, size_t errlen)
+{
+    int fd = socket(AF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC, nl_proto);
+    if (fd < 0) {
+        snprintf(err, errlen, "socket: %s", strerror(errno));
+        return -1;
+    }
+    struct sockaddr_nl sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.nl_family = AF_NETLINK;
+    if (sendto(fd, msg, len, 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+        snprintf(err, errlen, "sendto: %s", strerror(errno));
+        close(fd);
+        return -1;
+    }
+    union {
+        struct nlmsghdr nh;
+        char buf[4096];
+    } u;
+    int ret = -1;
+    snprintf(err, errlen, "no reply from netlink");
+    for (;;) {
+        ssize_t n = recv(fd, u.buf, sizeof(u.buf), 0);
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n < 0) {
+            snprintf(err, errlen, "recv: %s", strerror(errno));
+            break;
+        }
+        if (!NLMSG_OK(&u.nh, (size_t)n))
+            break;
+        if (u.nh.nlmsg_type == NLMSG_ERROR) {
+            const struct nlmsgerr *e = NLMSG_DATA(&u.nh);
+            if (u.nh.nlmsg_len < NLMSG_LENGTH(sizeof(*e)))
+                break;
+            if (e->error == 0)
+                ret = 0;
+            else
+                snprintf(err, errlen, "%s", strerror(-e->error));
+            break;
+        }
+        /* anything else: keep reading until the ACK */
+    }
+    close(fd);
+    return ret;
+}
+
+/* SocketKill: SOCK_DESTROY for the socket `s` (needs
+ * CONFIG_INET_DIAG_DESTROY and CAP_NET_ADMIN). */
+static int sock_kill(uint8_t family, uint8_t proto, const struct ks_sock *s,
+                     char *err, size_t errlen)
+{
+    struct {
+        struct nlmsghdr nh;
+        struct inet_diag_req_v2 r;
+    } req;
+    memset(&req, 0, sizeof(req));
+    req.nh.nlmsg_len = sizeof(req);
+    req.nh.nlmsg_type = SOCK_DESTROY;
+    req.nh.nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+    req.nh.nlmsg_seq = 1;
+    req.r.sdiag_family = family;
+    req.r.sdiag_protocol = proto;
+    req.r.id.idiag_sport = htons(s->sport);
+    req.r.id.idiag_dport = htons(s->dport);
+    /* SocketRequest.Serialize: 4 bytes for IPv4, 16 for IPv6. */
+    if (family == AF_INET6) {
+        memcpy(req.r.id.idiag_src, s->src.b, 16);
+        memcpy(req.r.id.idiag_dst, s->dst.b, 16);
+    } else {
+        ks_ip_to4(&s->src, (uint8_t *)req.r.id.idiag_src);
+        ks_ip_to4(&s->dst, (uint8_t *)req.r.id.idiag_dst);
+    }
+    req.r.id.idiag_if = s->iface;
+    req.r.id.idiag_cookie[0] = s->cookie[0];
+    req.r.id.idiag_cookie[1] = s->cookie[1];
+    return ack_request(NETLINK_SOCK_DIAG, &req, sizeof(req), err, errlen);
+}
+
+/* proto string -> family and IPPROTO_*, as KillSocket parses it. */
+static void proto_family(const char *proto, uint8_t *family, uint8_t *ipproto)
+{
+    size_t plen = strlen(proto);
+    *family = plen > 0 && proto[plen - 1] == '6' ? AF_INET6 : AF_INET;
+    *ipproto = IPPROTO_TCP;
+    if (strncmp(proto, "udp", 3) == 0)
+        *ipproto = strncmp(proto, "udplite", 7) == 0 ? IPPROTO_UDPLITE : IPPROTO_UDP;
+}
+
+void ks_kill_socket(const char *proto, const struct ks_ip *src_ip,
+                    unsigned src_port, const struct ks_ip *dst_ip,
+                    unsigned dst_port)
+{
+    (void)src_ip;
+    (void)dst_ip;
+    uint8_t family, ipproto;
+    proto_family(proto, &family, &ipproto);
+
+    char err[256];
+    struct ks_sock *socks;
+    size_t n;
+    if (ks_sock_get(family, ipproto, (uint16_t)src_port, &socks, &n, err,
+                    sizeof(err)) < 0)
+        return;
+    /* Every socket with this source port, as upstream. */
+    for (size_t i = 0; i < n; i++)
+        if (sock_kill(family, ipproto, &socks[i], err, sizeof(err)) < 0)
+            ks_debug("Unable to kill socket: %u, %u, %s", src_port, dst_port, err);
+    free(socks);
+}
+
+/* netlink/ifaces.go isPrivate */
+static bool is_private(const struct ks_ip *ip)
+{
+    uint8_t b[4];
+    if (ks_ip_to4(ip, b))
+        return b[0] == 10 || (b[0] == 172 && (b[1] & 0xf0) == 16) ||
+               (b[0] == 192 && b[1] == 168);
+    return ip->len == 16 && (ip->b[0] & 0xfe) == 0xfc;
+}
+
+int ks_kill_sockets(uint8_t family, uint8_t proto, bool exclude_local,
+                    char *err, size_t errlen)
+{
+    struct ks_sock *socks;
+    size_t n;
+    if (ks_sock_dump(family, proto, &socks, &n, err, errlen) < 0) {
+        char e[256];
+        snprintf(e, sizeof(e), "%s", err);
+        snprintf(err, errlen, "eBPF could not dump TCP (%u/%u) sockets via netlink: %s",
+                 family, proto, e);
+        return -1;
+    }
+    for (size_t i = 0; i < n; i++) {
+        const struct ks_sock *s = &socks[i];
+        char kerr[256];
+        if (exclude_local && (is_private(&s->dst) || ks_ip_is_unspecified(&s->src) ||
+                              ks_ip_is_unspecified(&s->dst))) {
+            ks_trace("not killing socket: %u -> %u", s->sport, s->dport);
+            continue;
+        }
+        ks_trace("killing socket: %u -> %u", s->sport, s->dport);
+        if (sock_kill(family, proto, s, kerr, sizeof(kerr)) < 0)
+            ks_trace("Unable to kill socket (%u -> %u): %s", s->sport,
+                   s->dport, kerr);
+    }
+    free(socks);
+    return 0;
+}
+
+void ks_kill_all_sockets(void)
+{
+    static const struct {
+        uint8_t family, proto;
+    } opts[] = {
+        {AF_INET, IPPROTO_TCP},  {AF_INET6, IPPROTO_TCP},
+        {AF_INET, IPPROTO_UDP},  {AF_INET6, IPPROTO_UDP},
+        {AF_INET, IPPROTO_SCTP}, {AF_INET6, IPPROTO_SCTP},
+    };
+    char err[512];
+    for (size_t i = 0; i < sizeof(opts) / sizeof(opts[0]); i++)
+        (void)ks_kill_sockets(opts[i].family, opts[i].proto, true, err, sizeof(err));
+}
+
+/* vishvananda/netlink ConntrackTableFlush: an IPCTNL_MSG_CT_DELETE without
+ * a tuple, which the kernel takes as "flush everything" (nfgen version 0
+ * means any family). */
+static int conntrack_flush(uint8_t subsys, char *err, size_t errlen)
+{
+    struct {
+        struct nlmsghdr nh;
+        struct nfgenmsg g;
+    } req;
+    memset(&req, 0, sizeof(req));
+    req.nh.nlmsg_len = sizeof(req);
+    req.nh.nlmsg_type = (uint16_t)(subsys << 8 | IPCTNL_MSG_CT_DELETE);
+    req.nh.nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+    req.nh.nlmsg_seq = 1;
+    req.g.nfgen_family = AF_INET;
+    req.g.version = NFNETLINK_V0;
+    return ack_request(NETLINK_NETFILTER, &req, sizeof(req), err, errlen);
+}
+
+void ks_flush_connections(void)
+{
+    char err[256];
+    if (conntrack_flush(NFNL_SUBSYS_CTNETLINK, err, sizeof(err)) < 0)
+        ks_error("error flushing ConntrackTable %s", err);
+    if (conntrack_flush(NFNL_SUBSYS_CTNETLINK_EXP, err, sizeof(err)) < 0)
+        ks_error("error flusing ConntrackExpectTable %s", err);
+    /* Force established connections to reestablish again. */
+    ks_kill_all_sockets();
 }

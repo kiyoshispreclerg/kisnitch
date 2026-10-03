@@ -203,12 +203,14 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - Sem UI ainda: conexões sem regra recebem `DefaultAction`.
 - Limpeza completa ao sair (SIGTERM, SIGINT) e ao reiniciar; monitor que reinstala as regras se forem removidas externamente.
 
-**Aceite (testes de integração em `ip netns`, como root):**
-- [ ] Regra `deny` para `curl` faz o curl falhar; regra `allow` faz funcionar.
-- [ ] Conexão sem regra segue a `DefaultAction`.
-- [ ] Após `kill` do daemon, `nft list ruleset` não tem nada nosso (ou a rede continua funcionando se `QueueBypass` estiver ativo).
-- [ ] `nft flush ruleset` com o daemon rodando → regras reinstaladas dentro do intervalo de monitoramento.
-- [ ] Medição: RSS ocioso e sob 1000 conexões/s. Registrar em `docs/BENCH.md`.
+> Nota (conferido no upstream): o backend nftables não usa marcas de conntrack. Conexões já decididas não voltam à fila porque as regras só enfileiram o SYN do TCP e `ct state new,related` dos demais protocolos. O conntrack só é usado em `FlushConnections` (`Internal.FlushConnsOnStart`). Ver `docs/UPSTREAM.md`.
+
+**Aceite (testes de integração em network namespace: `make test-integration`, como root ou num user namespace):**
+- [x] Regra `deny` para `curl` faz o curl falhar; regra `allow` faz funcionar.
+- [x] Conexão sem regra segue a `DefaultAction`.
+- [x] Após `kill` do daemon, `nft list ruleset` não tem nada nosso (ou a rede continua funcionando se `QueueBypass` estiver ativo).
+- [x] `nft flush ruleset` com o daemon rodando → regras reinstaladas dentro do intervalo de monitoramento.
+- [x] Medição: RSS ocioso e sob 1000 conexões/s. Registrar em `docs/BENCH.md`.
 
 ### Fase 4 — DNS
 

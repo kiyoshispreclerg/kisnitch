@@ -15,13 +15,18 @@ VENDOR_SRC = common/vendor/cjson/cJSON.c
 # Everything in the daemon except main.c goes into a static lib so the unit
 # tests can link against it.
 DAEMON_LIB_SRC = daemon/config.c \
+                 daemon/conn.c \
                  daemon/evloop.c \
+                 daemon/fw/fw.c \
+                 daemon/fw/nft.c \
+                 daemon/intercept.c \
                  daemon/netstat.c \
                  daemon/sockdiag.c \
                  daemon/procmon/cache.c \
                  daemon/procmon/events.c \
                  daemon/procmon/process.c \
                  daemon/procmon/procmon.c \
+                 daemon/queue.c \
                  daemon/rules/aliases.c \
                  daemon/rules/lists.c \
                  daemon/rules/loader.c \
@@ -30,6 +35,7 @@ DAEMON_LIB_SRC = daemon/config.c \
 DAEMON_MAIN    = daemon/main.c
 
 UNIT_TESTS = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(wildcard tests/unit/test_*.c))
+INTEGRATION_TESTS = $(patsubst tests/integration/%.c,$(BUILD)/itests/%,$(wildcard tests/integration/test_*.c))
 FUZZERS    = $(patsubst tests/fuzz/%.c,$(BUILD)/fuzz/%,$(wildcard tests/fuzz/fuzz_*.c))
 
 ALL_CFLAGS  = $(STDFLAGS) $(OPTFLAGS) $(SANFLAGS) $(CFLAGS)
@@ -38,7 +44,7 @@ ALL_LDFLAGS = $(SANFLAGS) $(LDFLAGS)
 LIBCOMMON = $(BUILD)/libcommon.a
 LIBDAEMON = $(BUILD)/libdaemon.a
 
-.PHONY: all test asan valgrind lint fuzz fuzz-run diff clean
+.PHONY: all test asan valgrind lint fuzz fuzz-run diff clean test-integration
 
 all: $(BUILD)/kisnitchd
 
@@ -78,6 +84,24 @@ test: all $(UNIT_TESTS)
 asan:
 	$(MAKE) BUILD=$(BUILD)/asan SANITIZE=1 test
 
+# ---- integration tests (network namespaces; see tests/integration/) ------
+# As root they use a new network namespace; otherwise an unprivileged user
+# namespace, where the kernel allows it. Never the host's network.
+
+$(BUILD)/itests/%: tests/integration/%.c tests/integration/netns.h tests/harness.h \
+                   $(LIBDAEMON) $(LIBCOMMON)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(TEST_CPPFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP \
+		$(ALL_LDFLAGS) -o $@ $< $(LIBDAEMON) $(LIBCOMMON) $(LDLIBS)
+
+test-integration: all $(INTEGRATION_TESTS)
+	@fail=0; for t in $(INTEGRATION_TESTS); do \
+		$$t || fail=1; \
+	done; \
+	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd tests/integration/run.sh || fail=1; \
+	if [ $$fail -ne 0 ]; then echo "*** integration tests FAILED"; exit 1; fi; \
+	echo "*** all integration tests passed"
+
 valgrind: $(UNIT_TESTS)
 	@fail=0; for t in $(UNIT_TESTS); do \
 		KS_TEST_VALGRIND=1 valgrind -q --error-exitcode=1 --leak-check=full \
@@ -100,7 +124,8 @@ diff:
 
 OWN_SOURCES = common/*.c common/*.h daemon/*.c daemon/*.h daemon/*/*.c \
               daemon/*/*.h tests/harness.h tests/diff/*.c \
-              tests/unit/*.c tests/fuzz/*.c
+              tests/unit/*.c tests/fuzz/*.c tests/integration/*.c \
+              tests/integration/*.h
 
 lint:
 	@if grep -nE '\b(strcpy|strcat|sprintf|vsprintf|gets)[[:space:]]*\(' $(OWN_SOURCES); then \
@@ -110,7 +135,7 @@ lint:
 		--error-exitcode=1 --inline-suppr --quiet \
 		-I. -Icommon -Icommon/vendor/cjson \
 		-D_POSIX_C_SOURCE=200809L -DKS_VERSION='"lint"' -DKS_FIXTURES_DIR='"."' \
-		$(PCRE2_CFLAGS) common/*.c daemon tests/unit
+		$(PCRE2_CFLAGS) common/*.c daemon tests/unit tests/integration
 
 # ---- fuzzing (clang + libFuzzer) ------------------------------------------
 

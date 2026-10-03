@@ -39,6 +39,13 @@ PCRE2_LIBS   := $(shell $(PKG_CONFIG) --libs libpcre2-8)
 CPPFLAGS += $(PCRE2_CFLAGS)
 LDLIBS   += $(PCRE2_LIBS)
 
+# Interception (phase 3): nfqueue, and nftables through libnftnl + libmnl.
+NETFILTER_PKGS   = libnetfilter_queue libnftnl libmnl
+NETFILTER_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(NETFILTER_PKGS))
+NETFILTER_LIBS   := $(shell $(PKG_CONFIG) --libs $(NETFILTER_PKGS))
+CPPFLAGS += $(NETFILTER_CFLAGS)
+LDLIBS   += $(NETFILTER_LIBS)
+
 # `make asan` sets SANITIZE=1.
 SANITIZE ?= 0
 ifeq ($(SANITIZE),1)

@@ -155,8 +155,36 @@ TEST(rule_duration_kinds)
     CHECK(ks_rule_duration_kind("") == KS_RULE_TEMPORARY);
 }
 
+/* Go's time_test.go durationTests. */
+TEST(format_durations)
+{
+    static const struct {
+        const char *str;
+        int64_t d;
+    } cases[] = {
+        {"0s", 0},
+        {"1ns", 1 * KS_NANOSECOND},
+        {"1.1\xc2\xb5s", 1100 * KS_NANOSECOND},
+        {"2.2ms", 2200 * KS_MICROSECOND},
+        {"3.3s", 3300 * KS_MILLISECOND},
+        {"4m5s", 4 * KS_MINUTE + 5 * KS_SECOND},
+        {"4m5.001s", 4 * KS_MINUTE + 5001 * KS_MILLISECOND},
+        {"5h6m7.001s", 5 * KS_HOUR + 6 * KS_MINUTE + 7001 * KS_MILLISECOND},
+        {"8m0.000000001s", 8 * KS_MINUTE + 1 * KS_NANOSECOND},
+        {"2562047h47m16.854775807s", INT64_MAX},
+        {"-2562047h47m16.854775808s", INT64_MIN},
+        {"-1.5s", -1500 * KS_MILLISECOND},
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        char buf[KS_DURATION_STRLEN];
+        ks_format_duration(cases[i].d, buf, sizeof(buf));
+        CHECK_STR_EQ(buf, cases[i].str);
+    }
+}
+
 int main(void)
 {
+    RUN(format_durations);
     RUN(valid_durations);
     RUN(invalid_durations);
     RUN(null_error_buffer_is_allowed);

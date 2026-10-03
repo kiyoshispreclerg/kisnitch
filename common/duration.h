@@ -29,6 +29,11 @@
  * writes a message identical to Go's error text into it. */
 int ks_parse_duration(const char *s, int64_t *ns, char *err, size_t errlen);
 
+/* Duration.String: "1h2m3.5s", "1.5ms", "0s"... Needs at most
+ * KS_DURATION_STRLEN bytes. */
+#define KS_DURATION_STRLEN 33
+void ks_format_duration(int64_t ns, char *buf, size_t len);
+
 /* Rule duration keywords, verbatim from upstream. */
 #define KS_DURATION_ONCE    "once"
 #define KS_DURATION_RESTART "until restart"

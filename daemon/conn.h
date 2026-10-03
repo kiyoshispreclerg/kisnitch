@@ -2,20 +2,29 @@
  *
  * A connection as seen by the rules engine: the fields of upstream's
  * conman.Connection, procmon.Process and netstat.Entry that operators read.
- * Phases 2 (process monitor) and 3 (packet parsing) fill these in from the
- * system; for now tests build them by hand.
+ * The process monitor (daemon/procmon/) and the packet decoder below fill
+ * them in from the system; tests also build them by hand.
+ *
+ * The packet decoder is a port of the parts of gopacket (v1.1.19, used by
+ * upstream) that conman.Parse() reaches: the IPv4/IPv6 layers, IPv6
+ * extension headers, IPsec AH, IP-in-IP, and the TCP, UDP, UDP-Lite, SCTP,
+ * ICMPv4 and ICMPv6 headers, including how gopacket handles malformed ones.
  *
  * Copyright (C) 2018 Simone Margaritelli, 2019-2025 Gustavo Iñiguez Goia
  *               and the OpenSnitch contributors.
+ * Copyright (C) 2012 Google, Inc. (gopacket, BSD-3-Clause)
  * Copyright (C) 2026 the Kisnitch contributors.
  *
  * Memory: these structs only borrow. Whoever builds a ks_conn keeps the
  * strings, the process and its parents alive while rules are evaluated.
+ * struct ks_packet points into the decoded buffer.
  */
 #ifndef KS_DAEMON_CONN_H
 #define KS_DAEMON_CONN_H
 
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "common/netaddr.h"
 
@@ -52,5 +61,44 @@ struct ks_conn {
     long long uid;         /* Entry.UserId (-1: unknown) */
     const struct ks_process *process;
 };
+
+/* The transport layer conman.parseDirection() looks for. */
+enum ks_l4 {
+    KS_L4_NONE,
+    KS_L4_TCP,
+    KS_L4_UDP,
+    KS_L4_UDPLITE,
+    KS_L4_SCTP,
+    KS_L4_ICMPV4,
+    KS_L4_ICMPV6,
+};
+
+/* What upstream reads from a queued packet's gopacket layers. */
+struct ks_packet {
+    /* Packet.IsIPv4(): the first nibble is 4. Anything else is decoded as
+     * IPv6, as upstream does. */
+    bool ipv4;
+    /* The outermost IP layer's SrcIP and DstIP (len 0 when the header was
+     * too short to hold them). */
+    struct ks_ip src, dst;
+    /* The transport layer (none if decoding stopped before one: fragments,
+     * malformed or unknown headers, encapsulations not decoded). Ports are
+     * 0 for ICMP and for TCP, UDP and SCTP headers too short to hold them,
+     * where gopacket still adds the layer. */
+    enum ks_l4 l4;
+    unsigned sport, dport;
+    /* UDP payload (Layer.LayerPayload()), NULL if none. */
+    const uint8_t *udp_payload;
+    size_t udp_payload_len;
+};
+
+/* Decodes the IP packet in `data` (as received from nfqueue). Never fails:
+ * whatever can't be decoded is left out of `out`. */
+void ks_packet_decode(const uint8_t *data, size_t len, struct ks_packet *out);
+
+/* conman.parseDirection(): the connection's protocol ("tcp", "udp6",
+ * "udplite", "sctp6", "icmp", "icmp6"...), or NULL if the packet has no
+ * transport layer (upstream discards the connection). Static string. */
+const char *ks_packet_protocol(const struct ks_packet *p);
 
 #endif

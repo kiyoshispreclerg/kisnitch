@@ -29,7 +29,8 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `time.ParseDuration` (Go stdlib) | `common/duration.c` | portado | tradução linha a linha de `src/time/format.go` (Go 1.23) |
 | `daemon/rule/rule.go` (`Once`, `Restart`, `Always`) | `common/duration.h` | portado | |
 | `daemon/rule/loader.go` (`isTemporary`) | `common/duration.c` (`ks_rule_duration_kind`) | portado | |
-| `daemon/main.go` | `daemon/main.c` | parcial | feito: flags `-version`, `-config-file`, `-log-file`, `-log-utc`, `-log-micro`, `-debug`, `-warning`, `-important`, `-error`; `setupLogging`, `overwriteLogging`, `loadDiskConfiguration`, `Rules.Path` padrão. Falta: as demais flags e o loop principal (fases 1–5) |
+| `daemon/main.go` | `daemon/main.c` | parcial | feito: flags `-version`, `-config-file`, `-log-file`, `-log-utc`, `-log-micro`, `-debug`, `-warning`, `-important`, `-error`, `-queue-num`, `-fw-config-file`; `setupLogging`, `overwriteLogging`, `loadDiskConfiguration`, `Rules.Path` padrão, `setupSignals`, `setupQueues` (só a fila principal), loop principal, `doCleanup`. Falta: `-ui-socket` e a fila de repetição (fase 5), `-workers` (sem workers, ver divergência 24), `-check-requirements`, flags de profiling |
+| `daemon/main.go` (`onPacket`, `acceptOrDeny`, `applyDefaultAction`) | `daemon/intercept.c` | parcial | sem UI: conexão sem regra recebe a ação padrão, como upstream com a UI desconectada; perguntar à UI e estatísticas na fase 5 |
 | `daemon/rule/rule.go` | `daemon/rules/rule.c` | parcial | `Rule`, `Create`, `String`, JSON; `Serialize`/`Deserialize` (protobuf) na fase 5 |
 | `daemon/rule/operator.go` | `daemon/rules/rule.c` | portado | `Compile` e `Match` ramo a ramo, inclusive as alterações em `Data`/`Operand` |
 | `daemon/rule/operator_lists.go` | `daemon/rules/lists.c` | portado | formatos, filtros, deduplicação, polling de 4 s |
@@ -42,13 +43,26 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `conman.Connection`, `procmon.Process`, `netstat.Entry` (campos usados pelas regras) | `daemon/conn.h` | estrutura | preenchidos pelas fases 2 e 3 |
 | `daemon/main.go` (regras) | `daemon/main.c` | parcial | `LoadAliases`, flags `-rules-path` e `-no-live-reload`, carga das regras |
 | `daemon/netstat/*.go` | `daemon/netstat.c` | portado | linhas lidas com as próprias regex do upstream (via `daemon/rules/regex.c`) |
-| `daemon/netlink/socket.go`, `socket_linux.go` (consulta) | `daemon/sockdiag.c` | parcial | `GetSocketInfo`, `SocketGet`, `SocketsDump`, `GetSocketInfoByInode`; `KillSocket(s)`/`FlushConnections` na fase 3; netlink cru, sem libmnl |
+| `daemon/netlink/socket.go`, `socket_linux.go` | `daemon/sockdiag.c` | portado | `GetSocketInfo`, `SocketGet`, `SocketsDump`, `GetSocketInfoByInode`, `SocketKill`, `KillSocket`, `KillSockets`, `KillAllSockets`, `FlushConnections`; netlink cru, sem libmnl |
+| `daemon/netlink/ifaces.go` (`isPrivate`) | `daemon/sockdiag.c` | portado | |
+| `vishvananda/netlink` `ConntrackTableFlush` | `daemon/sockdiag.c` (`conntrack_flush`) | portado | netlink cru; dispensa a libnetfilter_conntrack |
 | `daemon/procmon/process.go`, `details.go` | `daemon/procmon/process.c` | parcial | tudo que o método proc usa; `GetExtraInfo` (descritores, I/O, status, statm, maps) e `Serialize` na fase 5 |
 | `daemon/procmon/cache.go`, `cache_events.go` | `daemon/procmon/cache.c` | portado | |
 | `daemon/procmon/find.go`, `parse.go` | `daemon/procmon/procmon.c` | parcial | método proc; o caminho do audit na fase 10 |
 | `daemon/procmon/activepids.go`, `netlink/procmon/procmon.go` | `daemon/procmon/procmon.c`, `events.c` | portado | conector de eventos via netlink cru |
 | `daemon/procmon/monitor/init.go` | `daemon/procmon/procmon.c` (`ks_procmon_init`) | parcial | só o método proc; ebpf (fase 9) e audit (fase 10) |
-| `daemon/conman/connection.go` (`newConnectionImpl`, busca do processo) | `daemon/procmon/procmon.c` (`ks_procmon_resolve`) | parcial | método proc; parse de pacote na fase 3 |
+| `daemon/conman/connection.go` (`newConnectionImpl`, busca do processo) | `daemon/procmon/procmon.c` (`ks_procmon_resolve`) | parcial | método proc; ebpf (fase 9) e audit (fase 10) |
+| `daemon/conman/connection.go` (`Parse`, `NewConnection(6)`, `parseDirection`) | `daemon/conn.c`, `daemon/intercept.c` | parcial | `DstHost`/`getDomains` (DNS) na fase 4; `Serialize` na fase 5 |
+| `gopacket` v1.1.19 `layers/` (IPv4, IPv6 e extensões, AH, TCP, UDP, UDP-Lite, SCTP, ICMPv4/v6) e a decodificação preguiçosa de `packet.go` | `daemon/conn.c` | parcial | só as camadas que `conman` alcança; inclusive as falhas que ainda adicionam a camada. Ver divergência 22 |
+| `daemon/netfilter/queue.go`, `queue.h`, `packet.go` | `daemon/queue.c` | portado | leitura no loop de eventos em vez de goroutine + canais; `SetRequeueVerdict` e `SetVerdictWithPacket` com a fase 5 |
+| `daemon/dns/track.go` (`TrackAnswers`) | `daemon/intercept.c` | parcial | só o desvio "resposta DNS é aceita"; parse e cache na fase 4 (divergência 23) |
+| `daemon/core/system.go` (`IPv6Enabled`) | `daemon/intercept.c` | portado | |
+| `daemon/ui/client.go` (`DefaultAction`, `InterceptUnknown`), `config_utils.go` (`reloadConfiguration`: firewall e `FlushConnsOnStart`) | `daemon/intercept.c`, `daemon/main.c` (`start_firewall`) | parcial | só a primeira carga; recarga do config com a fase 5 |
+| `daemon/firewall/rules.go` | `daemon/fw/fw.c` | parcial | `Init`, `Reload`, `Stop`, `IsRunning`, `Enable/DisableInterception`, `CleanRules`; `ReloadSystemRules`, `SaveConfiguration`, `ErrorsChan` na fase 8; `Serialize`/`Deserialize` na fase 5 |
+| `daemon/firewall/nftables/{nftables,tables,chains,rules,monitor,utils}.go` | `daemon/fw/nft.c` | parcial | interceptação completa (tabela, cadeias, as 3 regras, limpeza por chave, `AreRulesLoaded`, `ReloadRulesCallback`); regras de sistema (`system.go`, `parser.go`, `rule_helpers.go`, `exprs/`) na fase 8 |
+| `daemon/firewall/common/common.go` | `daemon/fw/nft.c` | parcial | verificador de regras (`NewRulesChecker`, `StopCheckingRules`, `SetRulesCheckerInterval`); `ErrChan`/`SendError` na fase 8 |
+| `daemon/firewall/iptables/` | — | pendente | config com `"Firewall": "iptables"` usa nftables com aviso (divergência 30) |
+| `time.Duration.String` (Go stdlib) | `common/duration.c` (`ks_format_duration`) | portado | |
 | `crypto/md5`, `crypto/sha1` (Go stdlib) | `common/hash.c` | portado | sem OpenSSL |
 | `proto/ui.proto` | `proto/ui.proto` | copiado | `tools/sync-proto.sh`; código em `common/pb/` gerado na fase 5 |
 | `daemon/data/default-config.json`, `network_aliases.json`, `daemon/ui/testdata/*.json`, `daemon/rule/testdata/` | `tests/fixtures/upstream/` | copiado | `tools/sync-fixtures.sh` |
@@ -80,7 +94,16 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 18 | `daemon/procmon/process.c` | se nenhum caminho do executável abre, faz dump da memória do processo e acaba gravando o hash de um buffer vazio (`readMem` nunca preenche o retorno) | o checksum fica ausente | um hash fixo de "vazio" casaria regras por engano |
 | 19 | `daemon/procmon/process.c` | `IsAbsPath("")` entra em pânico | caminho vazio é tratado como relativo | não derrubar o daemon |
 | 20 | `daemon/procmon/events.c`, `procmon.c` | quatro goroutines processam eventos exec/exit em paralelo | tratados no loop principal, um por vez | arquitetura de um loop só (seção 4 do PORTING.md); a ordem dos eventos é preservada |
-| 21 | `daemon/procmon/process.c` | checksums calculados na goroutine que achou o processo | calculados de forma síncrona | o pool de workers da seção 4 entra na fase 3, junto com o caminho dos pacotes |
+| 21 | `daemon/procmon/process.c` | checksums calculados na goroutine que achou o processo | calculados de forma síncrona | o pool de workers da seção 4 fica para quando houver veredictos assíncronos (fase 5); a medição da fase 3 (`docs/BENCH.md`) não mostrou necessidade antes disso |
+| 22 | `daemon/conn.c` | o gopacket abre encapsulamentos GRE, EtherIP, MPLS-em-IP e túneis sobre UDP (VXLAN, Geneve, GTP...), e `parseDirection` pode pegar o TCP/UDP de dentro do túnel | só IP-em-IP (IPv4/IPv6) é aberto; nos outros a conexão fica sem camada de transporte (ação padrão) | túneis gerados localmente são raros, e decodificar Ethernet/MPLS/GRE num parser que roda como root aumentaria muito a superfície |
+| 23 | `daemon/intercept.c` | resposta UDP da porta 53 só é aceita direto se o gopacket decodificar uma camada DNS válida; senão segue o caminho normal (quase sempre ação padrão) | qualquer UDP da porta 53 com payload é aceito | só até a fase 4, que traz o parser de DNS |
+| 24 | `daemon/main.c`, `daemon/queue.c` | 16 workers; se nenhum pega o pacote em 1 ms, ele é aceito sem avaliação (marca 0) | cada pacote é avaliado no loop, em ordem; nunca aceito sem avaliação | arquitetura de um loop (seção 4 do PORTING.md); o upstream abre a rede sob carga |
+| 25 | `daemon/fw/nft.c` | `MonitorInterval` negativo derruba o daemon (`time.NewTicker` entra em pânico) | o verificador é desligado, com aviso | não derrubar o daemon por config |
+| 26 | `daemon/main.c` | se a fila não pode ser criada, `log.Fatal` sai com as regras de interceptação instaladas (sem `QueueBypass`, a rede fica bloqueada) | as regras são removidas antes de sair | não deixar a máquina sem rede por um erro de inicialização |
+| 27 | `daemon/queue.c` | `go_callback` indexaria um payload vazio (pânico) | pacote sem payload é aceito | o kernel não manda pacote vazio; defensivo |
+| 28 | `daemon/fw/nft.c` | mensagens de regra com `NLM_F_ECHO`; `ReloadRulesCallback` dorme 500 ms na goroutine do verificador | sem eco; os 500 ms são um timer do loop | não muda o estado do kernel; o loop não pode bloquear |
+| 29 | `daemon/fw/nft.c` | listas de cadeias e regras com o buffer do google/nftables | respostas lidas com buffer de 64 KiB, e respostas pendentes de um dump interrompido são descartadas antes da próxima operação | robustez; mesmo resultado |
+| 30 | `daemon/fw/fw.c` | `"Firewall": "iptables"` usa o binário iptables | usa nftables, com aviso (o upstream faz o mesmo quando o iptables não está disponível) | backend iptables ainda não portado |
 
 ## Bugs do upstream a relatar
 
@@ -119,6 +142,28 @@ comportamento, a não ser onde a tabela acima diz o contrário.
 - Sem eventos de processo (não root, ou kernel sem `CONFIG_PROC_EVENTS`), um
   PID reaproveitado por outro programa continua com os dados antigos no cache
   enquanto estiver vivo. O port reproduz.
+- `nonSystemRules` (nftables/tables.go) pula uma cadeia só se o nome **e** a
+  família da tabela forem diferentes (`&&`): conta as regras de todas as
+  tabelas `inet` e de todas as tabelas chamadas `opensnitch`. Com outra
+  tabela `inet` com regras (ex.: firewalld), a tabela `inet opensnitch`
+  (vazia) fica para trás ao parar o daemon. O port reproduz (teste
+  `upstream_keeps_table_if_inet_has_rules`).
+- `-queue-num` sem `-fw-config-file`: as regras do nftables usam o
+  `QueueNum` do config, mas o daemon escuta na fila da linha de comando. Sem
+  `QueueBypass` a rede para; com ele, nada é interceptado. O port reproduz.
+- Com `"Firewall": "iptables"` e `FwOptions` todo vazio, a primeira carga do
+  config não vê mudança no firewall e ele nunca é iniciado. O port reproduz.
+- `nfq_set_verdict2` sempre envia a marca: `SetVerdict` (conexões do próprio
+  daemon e o timeout de 1 ms) zera a marca do pacote. O port reproduz para
+  as conexões do próprio daemon.
+- `KillSocket` (ação `reject`) destrói todos os sockets da família e
+  protocolo com a mesma porta de origem, qualquer que seja o destino. O port
+  reproduz.
+- "Running on netfilter queue #%d" mostra o valor de `-queue-num`, não a fila
+  em uso. O port reproduz.
+- gopacket: num jumbograma IPv6 (opção jumbo com payload length 0) a camada
+  seguinte é decodificada a partir do próprio cabeçalho hop-by-hop. O port
+  reproduz.
 
 ## Decisões do port
 
@@ -130,5 +175,16 @@ comportamento, a não ser onde a tabela acima diz o contrário.
   `~/.config/opensnitch/`).
 - **Regex:** pcre2 (dependência prevista), com a sintaxe Go traduzida em
   `daemon/rules/regex.c` para manter a semântica do upstream.
+- **nftables:** libnftnl + libmnl (dependências previstas). As regras levam
+  o mesmo user data do upstream (`opensnitch-key-interception`, bytes crus),
+  então um daemon limpa as regras deixadas pelo outro.
+- **Conntrack:** o caminho nftables do upstream não usa marcas de conntrack;
+  quem evita reavaliar conexões já decididas são as próprias regras (só o
+  SYN no TCP, `ct state new,related` no resto). O conntrack só aparece em
+  `FlushConnections`, feito com netlink cru. A libnetfilter_conntrack não é
+  usada.
+- **Testes de integração:** `make test-integration` roda em network
+  namespace próprio: como root, `unshare -n`; sem root, num user namespace
+  (`unshare -Urn`), onde o kernel permite. Nunca na rede do host.
 - **Versão:** `0.0.1+os1.8.0` (`config.mk`). Betas usarão til
   (`1.0.0~beta1+os...`) para o dpkg ordenar antes da versão final.

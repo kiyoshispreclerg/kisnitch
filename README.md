@@ -7,30 +7,44 @@ O objetivo é ser um substituto direto: mesmos arquivos de configuração e de
 regras, e o mesmo protocolo gRPC entre daemon e interface. Assim o daemon do
 Kisnitch funciona com a UI original e vice-versa.
 
-> **Estado:** em desenvolvimento, fase 2 (motor de regras e identificação do
-> processo dono de cada conexão). Ainda não intercepta conexões. O plano completo está em [docs/PORTING.md](docs/PORTING.md).
+> **Estado:** em desenvolvimento, fase 3: o daemon intercepta conexões
+> (nfqueue + nftables) e aplica as regras; sem UI ainda, conexões sem regra
+> recebem a `DefaultAction`. O plano completo está em [docs/PORTING.md](docs/PORTING.md).
 
 ## Compilar e testar
 
 Em Debian/Devuan/Ubuntu:
 
 ```sh
-sudo apt install build-essential pkg-config libpcre2-dev
+sudo apt install build-essential pkg-config libpcre2-dev \
+    libnetfilter-queue-dev libnftnl-dev libmnl-dev
 make            # build/kisnitchd
 make test       # testes unitários (sem root, sem rede)
 make asan       # os mesmos testes com AddressSanitizer + UBSan
 ```
 
+Testes de integração (precisam de `nftables`, `curl` e `python3`). Rodam num
+network namespace próprio e não mexem na rede da máquina:
+
+```sh
+sudo make test-integration   # ou sem sudo, se o kernel permitir user namespaces
+```
+
 Opcionais: `valgrind` (`make valgrind`), `cppcheck` (`make lint`) e `clang`
 (`make fuzz-run`).
 
-Nada é instalado no sistema: tudo fica em `build/`. Para ver o daemon carregar
-uma configuração e regras (ele sai em seguida; a interceptação vem na fase 3):
+Nada é instalado no sistema: tudo fica em `build/`. O daemon usa os mesmos
+arquivos do OpenSnitch (`/etc/opensnitchd/default-config.json` e
+`/etc/opensnitchd/rules/`) e precisa de root. Pare o `opensnitchd` antes,
+porque os dois usam a mesma fila e a mesma tabela do nftables:
 
 ```sh
-./build/kisnitchd -config-file tests/fixtures/upstream/default-config.json \
-    -rules-path tests/fixtures/upstream/rules -debug -log-file /dev/stdout
+sudo ./build/kisnitchd -debug -log-file /dev/stdout
 ```
+
+Ctrl+C remove as regras de interceptação. Para experimentar sem tocar na
+rede da máquina, rode-o dentro de `sudo unshare -n` (é o que os testes de
+integração fazem).
 
 ### Teste diferencial (opcional)
 

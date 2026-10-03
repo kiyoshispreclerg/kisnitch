@@ -13,6 +13,7 @@
 #ifndef KS_DAEMON_SOCKDIAG_H
 #define KS_DAEMON_SOCKDIAG_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -53,5 +54,27 @@ size_t ks_socket_info(const char *proto, const struct ks_ip *src_ip,
 
 /* GetSocketInfoByInode: searches TCP and UDP, IPv4 and IPv6. 0 if found. */
 int ks_sock_find_by_inode(uint32_t inode, struct ks_sock *out);
+
+/* KillSocket: destroys (SOCK_DESTROY) every socket of the connection's
+ * family and protocol with its source port, as upstream does. Used for the
+ * "reject" action. Errors are only logged. */
+void ks_kill_socket(const char *proto, const struct ks_ip *src_ip,
+                    unsigned src_port, const struct ks_ip *dst_ip,
+                    unsigned dst_port);
+
+/* KillSockets: destroys every socket of `family`/`proto`; with
+ * `exclude_local`, not those to private networks or with an unspecified
+ * address. -1 only if the dump fails. */
+int ks_kill_sockets(uint8_t family, uint8_t proto, bool exclude_local,
+                    char *err, size_t errlen);
+
+/* KillAllSockets: KillSockets for TCP, UDP and SCTP, IPv4 and IPv6,
+ * excluding local ones. */
+void ks_kill_all_sockets(void);
+
+/* FlushConnections: flushes the conntrack table and the expectations
+ * table, then KillAllSockets, so that established connections go through
+ * the queue again. Errors are logged. */
+void ks_flush_connections(void);
 
 #endif

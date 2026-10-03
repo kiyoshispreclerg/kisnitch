@@ -1,6 +1,6 @@
 # Projeto: Kisnitch, port do OpenSnitch para C + GTK2
 
-Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 2 concluída. Próxima: 3.
+Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 3 concluída. Próxima: 4.
 (O teste diferencial opcional da fase 1 roda no job `diff` do CI ou com `make diff`
 numa máquina com Go.)
 
@@ -31,5 +31,6 @@ numa máquina com Go.)
 - make / make test / make asan / make valgrind / make lint
 - make diff (teste diferencial contra o Go do upstream; ver tests/diff/run.sh)
 - make fuzz-run FUZZ_TIME=60 (nesta máquina: `FUZZ_LDFLAGS=-L/usr/lib/gcc/x86_64-linux-gnu/11`)
-- sudo make test-integration (a partir da fase 3)
+- make test-integration (network namespace: como root usa `unshare -n`; sem root, user namespace, se o kernel permitir. Precisa de nft, curl e python3)
+- tools/bench.sh [taxa] [segundos] (RSS do daemon ocioso e sob carga; resultados em docs/BENCH.md)
 - tools/upstream-diff.sh, tools/sync-proto.sh, tools/sync-fixtures.sh
