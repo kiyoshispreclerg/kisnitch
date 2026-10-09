@@ -52,3 +52,31 @@ Leitura:
 - **Veredicto síncrono:** o pacote é decidido no próprio loop. Não há o
   timeout de 1 ms do upstream que aceita o pacote sem avaliar quando os 16
   workers estão ocupados (ver divergências em `docs/UPSTREAM.md`).
+
+## Fase 4 (2026-10-09)
+
+Mesma máquina e build da fase 3, agora com o rastreamento de DNS.
+
+```
+$ tools/bench.sh 1000 10
+RSS idle:                1308 KiB
+load: target 1000/s for 10s -> 9930 connections (0 failed) in 10.01s = 992/s
+RSS peak under load:     3764 KiB (VmHWM 3888 KiB)
+RSS right after / +3s:   3888 / 3888 KiB
+daemon CPU during load:  61% of one core
+```
+
+Sem regressão: a carga do bench não passa por DNS, e cada conexão só
+ganha uma consulta ao cache (`HostOr`).
+
+Cache de DNS (`daemon/dns/cache.c`, limite de 8192 entradas, divergência 31
+em `docs/UPSTREAM.md`), medido com um programa que grava entradas IPv6 com
+nomes de ~40 bytes (`host-N.some-cdn-provider.example.com`):
+
+| Situação | RSS a mais |
+|---|---|
+| 8192 entradas | 1,8 MB |
+| 16384 gravações (metade despejada) | 2,3 MB |
+
+Com o cache cheio de nomes longos, o daemon ocioso fica perto de 3,5 MB,
+ainda abaixo da meta de 5 MB. Nomes reais costumam ser mais curtos.

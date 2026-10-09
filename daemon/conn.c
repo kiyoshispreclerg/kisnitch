@@ -341,6 +341,47 @@ void ks_packet_decode(const uint8_t *data, size_t len, struct ks_packet *out)
             break;
         }
     }
+    if (out->udp_payload != NULL)
+        out->udp_payload_cap = (size_t)(data + len - out->udp_payload);
+}
+
+/* udpPortLayerType (layers/ports.go): the ports gopacket decodes UDP
+ * payloads for. Only whether it is DNS matters here. */
+enum udp_next { UDP_NEXT_PAYLOAD, UDP_NEXT_DNS, UDP_NEXT_OTHER };
+
+static enum udp_next udp_port_layer_type(unsigned port)
+{
+    switch (port) {
+    case 53:
+        return UDP_NEXT_DNS;
+    case 123:  /* NTP */
+    case 4789: /* VXLAN */
+    case 67:   /* DHCPv4 */
+    case 68:
+    case 546: /* DHCPv6 */
+    case 547:
+    case 5060: /* SIP */
+    case 6343: /* SFlow */
+    case 6081: /* Geneve */
+    case 3784: /* BFD */
+    case 2152: /* GTPv1U */
+    case 623:  /* RMCP */
+    case 1812: /* RADIUS */
+        return UDP_NEXT_OTHER;
+    default:
+        return UDP_NEXT_PAYLOAD;
+    }
+}
+
+bool ks_packet_udp_next_is_dns(const struct ks_packet *p)
+{
+    /* lazyPacket.decodeNextLayer() stops at an empty payload. */
+    if (p->l4 != KS_L4_UDP || p->udp_payload == NULL || p->udp_payload_len == 0)
+        return false;
+    enum udp_next lt = udp_port_layer_type(p->dport);
+    if (lt == UDP_NEXT_PAYLOAD)
+        lt = udp_port_layer_type(p->sport);
+    return lt == UDP_NEXT_DNS;
 }
 
 const char *ks_packet_protocol(const struct ks_packet *p)

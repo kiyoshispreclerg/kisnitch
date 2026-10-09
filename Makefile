@@ -16,6 +16,9 @@ VENDOR_SRC = common/vendor/cjson/cJSON.c
 # tests can link against it.
 DAEMON_LIB_SRC = daemon/config.c \
                  daemon/conn.c \
+                 daemon/dns/cache.c \
+                 daemon/dns/parse.c \
+                 daemon/dns/resolved.c \
                  daemon/evloop.c \
                  daemon/fw/fw.c \
                  daemon/fw/nft.c \

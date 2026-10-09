@@ -24,6 +24,8 @@
 
 #include "common/log.h"
 #include "daemon/config.h"
+#include "daemon/dns/cache.h"
+#include "daemon/dns/resolved.h"
 #include "daemon/evloop.h"
 #include "daemon/fw/fw.h"
 #include "daemon/intercept.h"
@@ -428,16 +430,22 @@ int main(int argc, char **argv)
         ks_debug("  %s", desc);
     }
 
+    /* The ebpf DNS listener (dns.ListenerEbpf) comes with phase 9. */
+    struct ks_resolved *resolved = ks_resolved_start(d.loop, KS_RESOLVED_SOCKET);
+
     ks_info("Running on netfilter queue #%d ...", opt.queue_num);
     ks_evloop_run(d.loop);
 
-    /* doCleanup() */
+    /* doCleanup(). Upstream never closes the resolved monitor here (the
+     * variable it closes is shadowed in initSystemdResolvedMonitor). */
     ks_info("Cleaning up ...");
     ks_fw_stop(&fw);
     ks_procmon_end();
+    ks_resolved_stop(resolved);
     ks_queue_free(queue);
 
     ks_fw_destroy(&fw);
+    ks_dns_cache_reset();
     ks_loader_free(rules);
     if (d.sigfd >= 0)
         close(d.sigfd);

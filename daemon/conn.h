@@ -90,6 +90,9 @@ struct ks_packet {
     /* UDP payload (Layer.LayerPayload()), NULL if none. */
     const uint8_t *udp_payload;
     size_t udp_payload_len;
+    /* Bytes from udp_payload to the end of the packet buffer: the Go
+     * slice's capacity, which some gopacket reads go up to. */
+    size_t udp_payload_cap;
 };
 
 /* Decodes the IP packet in `data` (as received from nfqueue). Never fails:
@@ -100,5 +103,10 @@ void ks_packet_decode(const uint8_t *data, size_t len, struct ks_packet *out);
  * "udplite", "sctp6", "icmp", "icmp6"...), or NULL if the packet has no
  * transport layer (upstream discards the connection). Static string. */
 const char *ks_packet_protocol(const struct ks_packet *p);
+
+/* True if gopacket would decode the UDP payload as DNS: there is a
+ * non-empty payload and UDP.NextLayerType() picks LayerTypeDNS (the
+ * destination port's layer type if it has one, else the source port's). */
+bool ks_packet_udp_next_is_dns(const struct ks_packet *p);
 
 #endif

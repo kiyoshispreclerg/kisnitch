@@ -10,12 +10,14 @@
 #include "daemon/intercept.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "common/log.h"
 #include "daemon/conn.h"
+#include "daemon/dns/cache.h"
 #include "daemon/procmon/procmon.h"
 #include "daemon/rules/loader.h"
 #include "daemon/sockdiag.h"
@@ -42,15 +44,30 @@ struct con {
     struct ks_conn c;
     struct ks_packet pkt;
     struct ks_procmon_result owner;
+    char *dst_host; /* owned; c.dst_host points here (or to "") */
 };
 
+static void con_clear(struct con *con)
+{
+    ks_procmon_result_clear(&con->owner);
+    free(con->dst_host);
+    con->dst_host = NULL;
+}
+
+/* Connection.String(), with To(): "host (ip)" once the host is known. */
 static void con_string(const struct con *con, char *buf, size_t len)
 {
     char dst[KS_IP_STRLEN];
     ks_ip_string(&con->c.dst_ip, dst, sizeof(dst));
     const struct ks_proc *p = con->owner.proc;
-    snprintf(buf, len, "%s (%d) -> %s:%u (proto:%s uid:%lld)", p && p->path ? p->path : "",
-             p ? p->pid : -1, dst, con->c.dst_port, con->c.protocol, con->c.uid);
+    const char *host = con->c.dst_host;
+    if (host[0] != '\0')
+        snprintf(buf, len, "%s (%d) -> %s (%s):%u (proto:%s uid:%lld)",
+                 p && p->path ? p->path : "", p ? p->pid : -1, host, dst, con->c.dst_port,
+                 con->c.protocol, con->c.uid);
+    else
+        snprintf(buf, len, "%s (%d) -> %s:%u (proto:%s uid:%lld)", p && p->path ? p->path : "",
+                 p ? p->pid : -1, dst, con->c.dst_port, con->c.protocol, con->c.uid);
 }
 
 static void accept_mark(const struct ks_nfq_packet *p, struct ks_verdict *v)
@@ -89,16 +106,27 @@ static int parse(struct ks_intercept *ic, const struct ks_nfq_packet *p, struct 
         return -1;
 
     struct ks_conn *c = &con->c;
+    c->src_ip = con->pkt.src;
+    c->dst_ip = con->pkt.dst;
+    /* NewConnection(6): DstHost: dns.HostOr(ip.DstIP, "") */
+    con->dst_host = ks_dns_host_or(&c->dst_ip, "");
     c->protocol = ks_packet_protocol(&con->pkt);
     if (c->protocol == NULL) { /* parseDirection: not enough info */
         ks_trace("discarding connection");
         return -1;
     }
-    c->src_ip = con->pkt.src;
-    c->dst_ip = con->pkt.dst;
     c->src_port = con->pkt.sport;
     c->dst_port = con->pkt.dport;
-    c->dst_host = ""; /* dns.HostOr(): phase 4 */
+    /* getDomains(): a DNS query names the host being resolved. Over TCP
+     * gopacket never decodes DNS (DecodeStreamsAsDatagrams is off). */
+    if (con->pkt.l4 == KS_L4_UDP && con->pkt.dport == 53) {
+        char *q = ks_dns_query_domain(&con->pkt);
+        if (q != NULL) {
+            free(con->dst_host);
+            con->dst_host = q;
+        }
+    }
+    c->dst_host = con->dst_host != NULL ? con->dst_host : "";
     c->iface_in = (int)p->indev;
     c->iface_out = (int)p->outdev;
 
@@ -106,8 +134,8 @@ static int parse(struct ks_intercept *ic, const struct ks_nfq_packet *p, struct 
         char src[KS_IP_STRLEN], dst[KS_IP_STRLEN];
         ks_ip_string(&c->src_ip, src, sizeof(src));
         ks_ip_string(&c->dst_ip, dst, sizeof(dst));
-        ks_debug("new connection %s => %u:%s -> %s ():%u uid: %u, mark: %x", c->protocol,
-                 c->src_port, src, dst, c->dst_port, p->uid, p->mark);
+        ks_debug("new connection %s => %u:%s -> %s (%s):%u uid: %u, mark: %x", c->protocol,
+                 c->src_port, src, dst, c->dst_host, c->dst_port, p->uid, p->mark);
     }
 
     if (ks_procmon_resolve(c->protocol, &c->src_ip, c->src_port, &c->dst_ip, c->dst_port,
@@ -160,26 +188,25 @@ void ks_intercept_packet(struct ks_intercept *ic, const struct ks_nfq_packet *p,
     struct con con;
     memset(&con, 0, sizeof(con));
 
-    /* DNS response: accepted (and, from phase 4 on, parsed and tracked).
-     * dns.TrackAnswers() needs a UDP layer from port 53 and a DNS layer,
-     * which gopacket only decodes from a non-empty payload. */
+    /* DNS response, just parse, track and accept. */
     ks_packet_decode(p->data, p->len, &con.pkt);
-    if (con.pkt.l4 == KS_L4_UDP && con.pkt.sport == 53 && con.pkt.udp_payload_len > 0) {
+    if (ks_dns_track_answers(&con.pkt)) {
         accept_mark(p, out);
         return;
     }
 
     if (parse(ic, p, &con) < 0) {
         apply_default_action(ic, p, NULL, out);
+        con_clear(&con);
         return;
     }
     /* accept our own connections */
     if (con.owner.proc->pid == ic->own_pid) {
         out->verdict = KS_NF_ACCEPT; /* SetVerdict(NF_ACCEPT): mark 0 */
         out->mark = 0;
-        ks_procmon_result_clear(&con.owner);
+        con_clear(&con);
         return;
     }
     accept_or_deny(ic, p, &con, out);
-    ks_procmon_result_clear(&con.owner);
+    con_clear(&con);
 }

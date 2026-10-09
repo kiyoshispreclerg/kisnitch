@@ -2,8 +2,10 @@
  *
  * The verdict on each queued packet. Port of upstream daemon/main.go
  * onPacket(), acceptOrDeny() and applyDefaultAction(), with
- * conman.Parse()/newConnectionImpl() (daemon/conman/connection.go) and the
- * DNS-response shortcut of dns.TrackAnswers().
+ * conman.Parse()/newConnectionImpl() (daemon/conman/connection.go), and
+ * the DNS hooks: responses are tracked and accepted (dns.TrackAnswers()),
+ * and each connection gets its DstHost (dns.HostOr(), or the name asked
+ * for in a DNS query).
  *
  * Without a UI (phase 5), a connection no rule matches gets the
  * configured DefaultAction, as upstream does while the UI is disconnected.

@@ -1,6 +1,6 @@
 # Projeto: Kisnitch, port do OpenSnitch para C + GTK2
 
-Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 3 concluída. Próxima: 4.
+Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 4 concluída. Próxima: 5.
 (O teste diferencial opcional da fase 1 roda no job `diff` do CI ou com `make diff`
 numa máquina com Go.)
 
@@ -24,6 +24,7 @@ numa máquina com Go.)
 - Comportamento do Go (encoding/json, regexp, net, strings) é reproduzido em common/ e daemon/rules/regex.c: use esses módulos, não equivalentes da libc.
 - Divergências do upstream e bugs dele vão para docs/UPSTREAM.md.
 - Netlink sem libmnl para sock_diag e o conector de processos (daemon/sockdiag.c, daemon/procmon/events.c); libmnl/libnftnl entram com o nftables (fase 3).
+- DNS sem dependência de systemd: o monitor do systemd-resolved (daemon/dns/resolved.c) fala varlink direto e só liga se o socket existir; o resto vem da fila do nfqueue, que funciona com qualquer resolvedor (Devuan incluído).
 - Estado global de módulo é aceito onde o upstream usa globais (caches do procmon); APIs de teste para resetar (ks_procmon_cache_reset).
 - Testes que inspecionam processos filhos via /proc são pulados sob valgrind (KS_TEST_VALGRIND): o filho de um processo sob valgrind é o próprio valgrind.
 
@@ -31,6 +32,6 @@ numa máquina com Go.)
 - make / make test / make asan / make valgrind / make lint
 - make diff (teste diferencial contra o Go do upstream; ver tests/diff/run.sh)
 - make fuzz-run FUZZ_TIME=60 (nesta máquina: `FUZZ_LDFLAGS=-L/usr/lib/gcc/x86_64-linux-gnu/11`)
-- make test-integration (network namespace: como root usa `unshare -n`; sem root, user namespace, se o kernel permitir. Precisa de nft, curl e python3)
+- make test-integration (network namespace: como root usa `unshare -nm`; sem root, user namespace, se o kernel permitir. Precisa de nft, curl e python3; openssl para o teste HTTPS. Os testes de DNS trocam /etc/resolv.conf só dentro do mount namespace)
 - tools/bench.sh [taxa] [segundos] (RSS do daemon ocioso e sob carga; resultados em docs/BENCH.md)
 - tools/upstream-diff.sh, tools/sync-proto.sh, tools/sync-fixtures.sh

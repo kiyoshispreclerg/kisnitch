@@ -5,7 +5,9 @@
  * child, so the process lookup is the real one.
  *
  * Run as `test_intercept --child-connect <port>`, the binary connects to
- * 127.0.0.1:<port> and waits (the child of the rule tests).
+ * 127.0.0.1:<port> and waits (the child of the rule tests). With
+ * `--child-udp53` it connects a UDP socket to 127.0.0.1:53, prints its
+ * local port and waits.
  */
 #define _XOPEN_SOURCE 700 /* realpath() */
 #include "daemon/intercept.h"
@@ -22,7 +24,9 @@
 #include "common/log.h"
 #include "daemon/procmon/procmon.h"
 #include "daemon/rules/loader.h"
+#include "daemon/dns/cache.h"
 #include "tests/harness.h"
+#include "tests/unit/dns_build.h"
 
 static char self_exe[PATH_MAX];
 
@@ -135,23 +139,49 @@ TEST(own_connections_are_accepted)
     ks_loader_free(l);
 }
 
+static struct msg dns;
+
+/* `dns` in a UDP packet 127.0.0.1:sport -> 127.0.0.1:dport. */
+static struct ks_verdict decide_dns(struct ks_intercept *ic, unsigned sport, unsigned dport,
+                                    uint32_t mark)
+{
+    size_t len;
+    uint8_t *b = udp_packet(&dns, sport, dport, &len);
+    static const uint8_t lo[4] = {127, 0, 0, 1};
+    memcpy(b + 12, lo, 4);
+    memcpy(b + 16, lo, 4);
+    struct ks_nfq_packet q = {.id = 1, .mark = mark, .uid = KS_NFQ_NO_UID, .data = b,
+                              .len = len};
+    struct ks_verdict v = {99, 99};
+    ks_intercept_packet(ic, &q, &v);
+    free(b);
+    return v;
+}
+
 TEST(dns_responses_are_accepted)
 {
+    ks_dns_cache_reset();
     struct ks_intercept ic;
     ks_intercept_init(&ic, NULL);
     ks_intercept_set_default_action(&ic, KS_ACTION_DENY);
-    struct pkt p = make_pkt(IPPROTO_UDP, 53, 40000);
-    struct ks_verdict v = decide(&ic, &p, 0x42);
+    sample_response(&dns);
+    struct ks_verdict v = decide_dns(&ic, 53, 40000, 0x42);
     CHECK_INT_EQ(v.verdict, KS_NF_ACCEPT);
     CHECK_INT_EQ(v.mark, 0x42);
+    CHECK_STR_EQ(ks_dns_host("93.184.216.34"), "cdn.example.net");
 
-    /* Without a payload there's no DNS layer: a normal (unknown)
-     * connection, so the default action. */
+    /* From port 53 but not DNS: a normal (unknown) connection, so the
+     * default action. */
+    struct pkt p = make_pkt(IPPROTO_UDP, 53, 40000);
+    v = decide(&ic, &p, 0x42);
+    CHECK_INT_EQ(v.verdict, KS_NF_DROP);
+    /* Without a payload there's no DNS layer either. */
     p.b[20 + 5] = 8;
     p.len = 28;
     p.b[3] = 28;
     v = decide(&ic, &p, 0x42);
     CHECK_INT_EQ(v.verdict, KS_NF_DROP);
+    ks_dns_cache_reset();
 }
 
 TEST(no_connection_gets_the_default_action)
@@ -245,6 +275,59 @@ TEST(rules_decide_a_childs_connection)
     CHECK_INT_EQ(v4.verdict, KS_NF_DROP);
 }
 
+/* A child's DNS query: dest.host is the name being asked for. */
+TEST(dns_queries_are_decided_by_host)
+{
+    int pfd[2];
+    CHECK(pipe(pfd) == 0);
+    pid_t child = fork();
+    CHECK(child >= 0);
+    if (child == 0) {
+        dup2(pfd[1], STDOUT_FILENO);
+        execl(self_exe, self_exe, "--child-udp53", (char *)NULL);
+        _exit(127);
+    }
+    close(pfd[1]);
+    char line[16] = "";
+    ssize_t n = read(pfd[0], line, sizeof(line) - 1);
+    close(pfd[0]);
+    unsigned port = n > 0 ? (unsigned)atoi(line) : 0;
+
+    struct ks_loader *l = ks_loader_new(NULL, NULL, false);
+    add(l, rule("000-blocked", KS_ACTION_DENY, true, KS_OP_DST_HOST, "blocked.example"));
+    struct ks_intercept ic;
+    ks_intercept_init(&ic, l);
+    ks_intercept_set_default_action(&ic, KS_ACTION_ALLOW);
+
+    header(&dns, 0x0100, 1, 0, 0, 0);
+    question(&dns, "blocked.example", 1);
+    struct ks_verdict v1 = decide_dns(&ic, port, 53, 3);
+    header(&dns, 0x0100, 1, 0, 0, 0);
+    question(&dns, "fine.example", 1);
+    struct ks_verdict v2 = decide_dns(&ic, port, 53, 3);
+
+    kill(child, SIGKILL);
+    waitpid(child, NULL, 0);
+    ks_loader_free(l);
+
+    CHECK(port != 0);
+    CHECK_INT_EQ(v1.verdict, KS_NF_DROP);
+    CHECK_INT_EQ(v2.verdict, KS_NF_ACCEPT);
+}
+
+static int child_udp53(void)
+{
+    int fd = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+    struct sockaddr_in a = {.sin_family = AF_INET, .sin_port = htons(53),
+                            .sin_addr.s_addr = htonl(INADDR_LOOPBACK)};
+    if (fd < 0 || connect(fd, (struct sockaddr *)&a, sizeof(a)) < 0)
+        return 1;
+    printf("%u\n", local_port(fd));
+    fflush(stdout);
+    pause();
+    return 0;
+}
+
 static int child_connect(const char *port)
 {
     int fd = connect_lo((unsigned)atoi(port));
@@ -258,6 +341,8 @@ int main(int argc, char **argv)
 {
     if (argc == 3 && strcmp(argv[1], "--child-connect") == 0)
         return child_connect(argv[2]);
+    if (argc == 2 && strcmp(argv[1], "--child-udp53") == 0)
+        return child_udp53();
     if (realpath("/proc/self/exe", self_exe) == NULL) {
         perror("realpath");
         return 1;
@@ -270,8 +355,10 @@ int main(int argc, char **argv)
     RUN(no_connection_gets_the_default_action);
     RUN(ipv6_disabled);
     /* Under valgrind the child is valgrind itself (see test_procmon.c). */
-    if (getenv("KS_TEST_VALGRIND") == NULL)
+    if (getenv("KS_TEST_VALGRIND") == NULL) {
         RUN(rules_decide_a_childs_connection);
+        RUN(dns_queries_are_decided_by_host);
+    }
     ks_procmon_end();
     return harness_report();
 }

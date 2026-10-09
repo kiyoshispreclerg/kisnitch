@@ -1,18 +1,25 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# End-to-end tests of kisnitchd (phase 3 acceptance criteria), inside a
-# network namespace of their own: never the host's network.
+# End-to-end tests of kisnitchd (phase 3 and 4 acceptance criteria), inside
+# a network namespace of their own: never the host's network.
 #
 #   - a "deny" rule for curl makes curl fail; an "allow" rule lets it work;
 #   - a connection without rules gets the DefaultAction;
 #   - after the daemon is killed, nothing of ours is left in nftables (and
 #     with QueueBypass the network keeps working even after a SIGKILL);
 #   - after `nft flush ruleset`, the rules come back within the monitor
-#     interval.
+#     interval;
+#   - rules on dest.host decide `curl https://exemplo.test`, resolved through
+#     the C library by a test DNS server (tests/integration/dns_server.py).
+#     The namespace also gets its own mounts, so /etc/resolv.conf and
+#     /etc/nsswitch.conf are replaced only inside it: plain resolv.conf
+#     resolution, as on systems without systemd-resolved.
 #
-# As root this uses `unshare -n`; otherwise `unshare -Urn` (an unprivileged
-# user namespace), where the kernel allows it. Needs curl, python3 and nft.
+# As root this uses `unshare -nm`; otherwise `unshare -Urnm` (an
+# unprivileged user namespace), where the kernel allows it; without a mount
+# namespace the DNS tests are skipped. Needs curl, python3 and nft; openssl
+# for HTTPS (otherwise the DNS tests use HTTP).
 #
 # KISNITCHD: path of the daemon (default: build/kisnitchd).
 
@@ -33,11 +40,17 @@ if [ -z "${KS_TEST_IN_NETNS:-}" ]; then
     else
         ns="unshare -Urn"
     fi
-    if ! $ns true 2>/dev/null; then
+    mountns=1
+    if $ns -m true 2>/dev/null; then
+        ns="$ns -m"
+    elif $ns true 2>/dev/null; then
+        mountns=
+    else
         echo "SKIP: can't create a network namespace (run as root?)"
         exit 0
     fi
-    KS_TEST_IN_NETNS=1 KISNITCHD="$KISNITCHD" exec $ns sh "$0" "$@"
+    KS_TEST_IN_NETNS=1 KS_TEST_MOUNTNS=$mountns KISNITCHD="$KISNITCHD" \
+        exec $ns sh "$0" "$@"
 fi
 
 # ---- inside the namespace ------------------------------------------------
@@ -49,9 +62,14 @@ server_pid=
 fails=0
 total=0
 
+dns_pid=
+web_pid=
+
 cleanup() {
     [ -n "$daemon_pid" ] && kill -9 "$daemon_pid" 2>/dev/null
     [ -n "$server_pid" ] && kill "$server_pid" 2>/dev/null
+    [ -n "$dns_pid" ] && kill "$dns_pid" 2>/dev/null
+    [ -n "$web_pid" ] && kill "$web_pid" 2>/dev/null
     rm -rf "$work"
 }
 trap cleanup EXIT
@@ -131,6 +149,42 @@ write_rule() {
     }
 }
 EOF
+}
+
+# rule_json <name> <action> <operator JSON>
+rule_json() {
+    cat > "$work/rules/$1.json" <<EOF
+{
+    "created": "2026-01-01T00:00:00Z",
+    "updated": "2026-01-01T00:00:00Z",
+    "name": "$1",
+    "description": "",
+    "enabled": true,
+    "precedence": false,
+    "nolog": false,
+    "action": "$2",
+    "duration": "always",
+    "operator": $3
+}
+EOF
+}
+
+# host_rule <name> <action> <host>: dest.host only (DNS queries for the
+# host match too: their dest.host is the name asked for).
+host_rule() {
+    rule_json "$1" "$2" "{\"type\": \"simple\", \"operand\": \"dest.host\",
+        \"sensitive\": false, \"data\": \"$3\", \"list\": []}"
+}
+
+# host_tcp_rule <name> <action> <host>: dest.host and TCP, so only the
+# connection to the resolved IP matches, not the DNS query.
+host_tcp_rule() {
+    rule_json "$1" "$2" "{\"type\": \"list\", \"operand\": \"list\",
+        \"sensitive\": false, \"data\": \"\", \"list\": [
+        {\"type\": \"simple\", \"operand\": \"dest.host\", \"sensitive\": false,
+         \"data\": \"$3\", \"list\": null},
+        {\"type\": \"simple\", \"operand\": \"protocol\", \"sensitive\": false,
+         \"data\": \"tcp\", \"list\": null}]}"
 }
 
 start_daemon() {
@@ -248,6 +302,98 @@ n=$(nft list ruleset | grep -c "queue")
 [ "$n" -eq 3 ] && ok "reinstalled rules are complete" || fail "$n queue rules after reload"
 stop_daemon
 if ours_in_nft; then fail "cleanup after reload: rules left"; else ok "cleanup after reload"; fi
+
+# 5. DNS: rules on dest.host -----------------------------------------------
+if [ -z "${KS_TEST_MOUNTNS:-}" ]; then
+    echo "  skip DNS tests: no mount namespace to replace /etc/resolv.conf"
+else
+    # The web server's address must not be loopback: dns.Track ignores
+    # answers in 127.0.0.0/8.
+    ip addr add 10.99.0.1/32 dev lo
+    echo "nameserver 127.0.0.1" > "$work/resolv.conf"
+    printf 'hosts: files dns\n' > "$work/nsswitch.conf"
+    mount --bind "$work/resolv.conf" /etc/resolv.conf &&
+        mount --bind "$work/nsswitch.conf" /etc/nsswitch.conf ||
+        fail "can't replace /etc/resolv.conf in the mount namespace"
+
+    python3 "$here/dns_server.py" 127.0.0.1 53 10.99.0.1 >/dev/null 2>&1 &
+    dns_pid=$!
+    scheme=http
+    tls=
+    if command -v openssl >/dev/null 2>&1 &&
+        openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj /CN=exemplo.test \
+            -addext "subjectAltName=DNS:exemplo.test,DNS:alias.exemplo.test" \
+            -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1; then
+        scheme=https
+        tls="$work/cert.pem $work/key.pem"
+    else
+        echo "  (openssl not available: DNS tests over HTTP)"
+    fi
+    # shellcheck disable=SC2086 # $tls is two words or none
+    python3 "$here/web_server.py" 10.99.0.1 8443 "$work/www" $tls >/dev/null 2>&1 &
+    web_pid=$!
+
+    fetch_host() { # fetch_host <name>: succeeds if the page is fetched
+        if [ "$scheme" = https ]; then
+            curl -s --max-time 5 --cacert "$work/cert.pem" \
+                "https://$1:8443/index.html" 2>/dev/null | grep -q hello
+        else
+            curl -s --max-time 5 "http://$1:8443/index.html" 2>/dev/null | grep -q hello
+        fi
+    }
+    i=0
+    until fetch_host exemplo.test; do
+        i=$((i + 1)); [ $i -gt 50 ] && { fail "DNS test servers didn't start"; break; }
+        sleep 0.1
+    done
+
+    # Deny the host: the query and the connection both match.
+    rm -f "$work/rules"/*.json
+    write_config allow true 10s
+    host_rule 000-host deny exemplo.test
+    start_daemon || exit 1
+    if fetch_host exemplo.test; then fail "dest.host deny: curl $scheme got through"; else
+        ok "dest.host deny blocks curl $scheme://exemplo.test"; fi
+    stop_daemon
+
+    # Deny only TCP to the host: the query goes out, its answer is tracked
+    # from the queue and the connection to 10.99.0.1 is denied by name.
+    rm -f "$work/rules"/*.json
+    host_tcp_rule 000-host-tcp deny exemplo.test
+    start_daemon || exit 1
+    if fetch_host exemplo.test; then fail "dest.host+tcp deny: curl got through"; else
+        ok "dest.host deny applies to the resolved IP"; fi
+    grep -q "New DNS record: 10.99.0.1 -> exemplo.test" "$work/daemon.log" &&
+        ok "the DNS answer was tracked from the queue" || fail "DNS answer not tracked"
+    grep -q "exemplo.test (10.99.0.1):8443.*(000-host-tcp)" "$work/daemon.log" &&
+        ok "the connection was denied by host name" || fail "no deny verdict by host name"
+    stop_daemon
+
+    # CNAMEs: dest.host is the name asked for, not the canonical one.
+    rm -f "$work/rules"/*.json
+    host_tcp_rule 000-alias deny alias.exemplo.test
+    start_daemon || exit 1
+    if fetch_host exemplo.test; then ok "the canonical name isn't affected"; else
+        fail "CNAME rule blocked the canonical name"; fi
+    if fetch_host alias.exemplo.test; then fail "CNAME: curl got through"; else
+        ok "dest.host follows CNAMEs back to the name asked for"; fi
+    # As upstream: the cache now maps exemplo.test back to the alias, so
+    # the canonical name is denied too (docs/UPSTREAM.md, upstream bugs).
+    if fetch_host exemplo.test; then fail "canonical name after the alias: allowed"; else
+        ok "after the alias, the canonical name maps to it (as upstream)"; fi
+    stop_daemon
+
+    # Allow the host against DefaultAction deny.
+    rm -f "$work/rules"/*.json
+    write_config deny true 10s
+    host_rule 000-host allow exemplo.test
+    start_daemon || exit 1
+    if fetch_host exemplo.test; then ok "dest.host allow lets curl $scheme through"; else
+        fail "dest.host allow: curl blocked"; fi
+    if fetch; then fail "DefaultAction deny: other hosts got through"; else
+        ok "other destinations still get the DefaultAction"; fi
+    stop_daemon
+fi
 
 echo "tests/integration/run.sh: $((total - fails))/$total passed"
 [ "$fails" -eq 0 ]

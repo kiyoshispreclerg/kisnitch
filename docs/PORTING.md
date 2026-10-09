@@ -217,10 +217,12 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - `dns/parse.c`: captura de respostas DNS (mesmo mecanismo que o upstream usa no nfqueue) e cache IP → hostname, para que regras por `dest.host` funcionem.
 - Integração com systemd-resolved se o upstream suportar (conferir em `upstream/daemon/dns/`).
 
+> Nota (conferido no upstream): o systemd-resolved é opcional. O upstream lê os nomes de duas fontes: as respostas DNS na fila (regra `udp sport 53`, que pega qualquer resolvedor em UDP, inclusive caches locais via `lo`) e, se o socket existir, o monitor varlink do resolved. O port fala varlink direto, sem libsystemd; sem resolved (Devuan) só a fila é usada. Ver "DNS e resolvedores" em `docs/UPSTREAM.md`.
+
 **Aceite:**
-- [ ] Regra por domínio bloqueia `curl https://exemplo` dentro do netns com resolver de teste.
-- [ ] Alvo de fuzzing do parser roda 1 hora sem crash em ASan.
-- [ ] Respostas truncadas, com ponteiros de compressão em laço e tamanhos inválidos são rejeitadas sem leitura fora dos limites.
+- [x] Regra por domínio bloqueia `curl https://exemplo` dentro do netns com resolver de teste.
+- [x] Alvo de fuzzing do parser roda 1 hora sem crash em ASan (`fuzz_dns`: 230 milhões de execuções em 3600 s, 2026-10-09; `fuzz_packet`, que passa pelo mesmo parser, idem).
+- [x] Respostas truncadas, com ponteiros de compressão em laço e tamanhos inválidos são rejeitadas sem leitura fora dos limites.
 
 ### Fase 5 — Protocolo (daemon ↔ UI)
 

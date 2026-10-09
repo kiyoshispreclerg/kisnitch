@@ -1,0 +1,1 @@
+{"parameters":{"state":"success","question":[{"class":1,"type":1,"name":"www.example.com"}],"answer":[{"rr":{"key":{"class":1,"type":5,"name":"www.example.com"},"name":"cdn.example.net"},"raw":"AAA=","ifindex":2},{"rr":{"key":{"class":1,"type":1,"name":"cdn.example.net"},"address":[93,184,216,34]}},{"rr":{"key":{"type":1,"name":"b"},"address":"BAQEBA=="}}]},"continues":true}

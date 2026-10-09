@@ -29,8 +29,8 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `time.ParseDuration` (Go stdlib) | `common/duration.c` | portado | tradução linha a linha de `src/time/format.go` (Go 1.23) |
 | `daemon/rule/rule.go` (`Once`, `Restart`, `Always`) | `common/duration.h` | portado | |
 | `daemon/rule/loader.go` (`isTemporary`) | `common/duration.c` (`ks_rule_duration_kind`) | portado | |
-| `daemon/main.go` | `daemon/main.c` | parcial | feito: flags `-version`, `-config-file`, `-log-file`, `-log-utc`, `-log-micro`, `-debug`, `-warning`, `-important`, `-error`, `-queue-num`, `-fw-config-file`; `setupLogging`, `overwriteLogging`, `loadDiskConfiguration`, `Rules.Path` padrão, `setupSignals`, `setupQueues` (só a fila principal), loop principal, `doCleanup`. Falta: `-ui-socket` e a fila de repetição (fase 5), `-workers` (sem workers, ver divergência 24), `-check-requirements`, flags de profiling |
-| `daemon/main.go` (`onPacket`, `acceptOrDeny`, `applyDefaultAction`) | `daemon/intercept.c` | parcial | sem UI: conexão sem regra recebe a ação padrão, como upstream com a UI desconectada; perguntar à UI e estatísticas na fase 5 |
+| `daemon/main.go` | `daemon/main.c` | parcial | feito: flags `-version`, `-config-file`, `-log-file`, `-log-utc`, `-log-micro`, `-debug`, `-warning`, `-important`, `-error`, `-queue-num`, `-fw-config-file`; `setupLogging`, `overwriteLogging`, `loadDiskConfiguration`, `Rules.Path` padrão, `setupSignals`, `setupQueues` (só a fila principal), `initSystemdResolvedMonitor`, loop principal, `doCleanup`. Falta: `-ui-socket` e a fila de repetição (fase 5), `-workers` (sem workers, ver divergência 24), `dns.ListenerEbpf` (fase 9), `-check-requirements`, flags de profiling |
+| `daemon/main.go` (`onPacket`, `acceptOrDeny`, `applyDefaultAction`) | `daemon/intercept.c` | parcial | sem UI: conexão sem regra recebe a ação padrão, como upstream com a UI desconectada; perguntar à UI e estatísticas (`OnDNSResponse` etc.) na fase 5 |
 | `daemon/rule/rule.go` | `daemon/rules/rule.c` | parcial | `Rule`, `Create`, `String`, JSON; `Serialize`/`Deserialize` (protobuf) na fase 5 |
 | `daemon/rule/operator.go` | `daemon/rules/rule.c` | portado | `Compile` e `Match` ramo a ramo, inclusive as alterações em `Data`/`Operand` |
 | `daemon/rule/operator_lists.go` | `daemon/rules/lists.c` | portado | formatos, filtros, deduplicação, polling de 4 s |
@@ -52,10 +52,15 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/procmon/activepids.go`, `netlink/procmon/procmon.go` | `daemon/procmon/procmon.c`, `events.c` | portado | conector de eventos via netlink cru |
 | `daemon/procmon/monitor/init.go` | `daemon/procmon/procmon.c` (`ks_procmon_init`) | parcial | só o método proc; ebpf (fase 9) e audit (fase 10) |
 | `daemon/conman/connection.go` (`newConnectionImpl`, busca do processo) | `daemon/procmon/procmon.c` (`ks_procmon_resolve`) | parcial | método proc; ebpf (fase 9) e audit (fase 10) |
-| `daemon/conman/connection.go` (`Parse`, `NewConnection(6)`, `parseDirection`) | `daemon/conn.c`, `daemon/intercept.c` | parcial | `DstHost`/`getDomains` (DNS) na fase 4; `Serialize` na fase 5 |
-| `gopacket` v1.1.19 `layers/` (IPv4, IPv6 e extensões, AH, TCP, UDP, UDP-Lite, SCTP, ICMPv4/v6) e a decodificação preguiçosa de `packet.go` | `daemon/conn.c` | parcial | só as camadas que `conman` alcança; inclusive as falhas que ainda adicionam a camada. Ver divergência 22 |
+| `daemon/conman/connection.go` (`Parse`, `NewConnection(6)`, `parseDirection`, `getDomains`, `To`, `String`) | `daemon/conn.c`, `daemon/intercept.c` | parcial | `Serialize` na fase 5 |
+| `gopacket` v1.1.19 `layers/` (IPv4, IPv6 e extensões, AH, TCP, UDP, UDP-Lite, SCTP, ICMPv4/v6, a escolha da camada seguinte por porta de `ports.go`/`UDP.NextLayerType`) e a decodificação preguiçosa de `packet.go` | `daemon/conn.c` | parcial | só as camadas que `conman` e `dns` alcançam; inclusive as falhas que ainda adicionam a camada. Ver divergência 22 |
+| `gopacket` v1.1.19 `layers/dns.go` (`DecodeFromBytes`, `decodeName`, `decodeRData`, `decodeCharacterStrings`, `decodeOPTs`) | `daemon/dns/parse.c` | portado | só decodificação (o upstream não serializa DNS). Leituras que no Go entram em pânico (e o gopacket recupera sem adicionar a camada) são erros; os campos fixos da pergunta podem ler até a capacidade do slice, como no Go. Ver divergências 32 e 33 |
 | `daemon/netfilter/queue.go`, `queue.h`, `packet.go` | `daemon/queue.c` | portado | leitura no loop de eventos em vez de goroutine + canais; `SetRequeueVerdict` e `SetVerdictWithPacket` com a fase 5 |
-| `daemon/dns/track.go` (`TrackAnswers`) | `daemon/intercept.c` | parcial | só o desvio "resposta DNS é aceita"; parse e cache na fase 4 (divergência 23) |
+| `daemon/dns/track.go` (`TrackAnswers`, `Track`, `Host`, `HostOr`) | `daemon/dns/cache.c` | portado | cache limitado (divergência 31) |
+| `daemon/dns/parse.go` (`GetQuestions`) | `daemon/dns/cache.c` (`ks_dns_query_domain`) | portado | |
+| `daemon/dns/systemd/monitor.go`, `daemon/main.go` (`initSystemdResolvedMonitor`) | `daemon/dns/resolved.c` | portado | sem libsystemd; reconexão diferente (divergência 34) |
+| `github.com/varlink/go` v0.4.0 (`NewConnection`, `Send` e o callback de recebimento) | `daemon/dns/resolved.c` | portado | só o cliente, só o que o monitor usa |
+| `daemon/dns/ebpfhook.go` (`ListenerEbpf`) | — | pendente | fase 9 (EBPF=1) |
 | `daemon/core/system.go` (`IPv6Enabled`) | `daemon/intercept.c` | portado | |
 | `daemon/ui/client.go` (`DefaultAction`, `InterceptUnknown`), `config_utils.go` (`reloadConfiguration`: firewall e `FlushConnsOnStart`) | `daemon/intercept.c`, `daemon/main.c` (`start_firewall`) | parcial | só a primeira carga; recarga do config com a fase 5 |
 | `daemon/firewall/rules.go` | `daemon/fw/fw.c` | parcial | `Init`, `Reload`, `Stop`, `IsRunning`, `Enable/DisableInterception`, `CleanRules`; `ReloadSystemRules`, `SaveConfiguration`, `ErrorsChan` na fase 8; `Serialize`/`Deserialize` na fase 5 |
@@ -96,7 +101,6 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 20 | `daemon/procmon/events.c`, `procmon.c` | quatro goroutines processam eventos exec/exit em paralelo | tratados no loop principal, um por vez | arquitetura de um loop só (seção 4 do PORTING.md); a ordem dos eventos é preservada |
 | 21 | `daemon/procmon/process.c` | checksums calculados na goroutine que achou o processo | calculados de forma síncrona | o pool de workers da seção 4 fica para quando houver veredictos assíncronos (fase 5); a medição da fase 3 (`docs/BENCH.md`) não mostrou necessidade antes disso |
 | 22 | `daemon/conn.c` | o gopacket abre encapsulamentos GRE, EtherIP, MPLS-em-IP e túneis sobre UDP (VXLAN, Geneve, GTP...), e `parseDirection` pode pegar o TCP/UDP de dentro do túnel | só IP-em-IP (IPv4/IPv6) é aberto; nos outros a conexão fica sem camada de transporte (ação padrão) | túneis gerados localmente são raros, e decodificar Ethernet/MPLS/GRE num parser que roda como root aumentaria muito a superfície |
-| 23 | `daemon/intercept.c` | resposta UDP da porta 53 só é aceita direto se o gopacket decodificar uma camada DNS válida; senão segue o caminho normal (quase sempre ação padrão) | qualquer UDP da porta 53 com payload é aceito | só até a fase 4, que traz o parser de DNS |
 | 24 | `daemon/main.c`, `daemon/queue.c` | 16 workers; se nenhum pega o pacote em 1 ms, ele é aceito sem avaliação (marca 0) | cada pacote é avaliado no loop, em ordem; nunca aceito sem avaliação | arquitetura de um loop (seção 4 do PORTING.md); o upstream abre a rede sob carga |
 | 25 | `daemon/fw/nft.c` | `MonitorInterval` negativo derruba o daemon (`time.NewTicker` entra em pânico) | o verificador é desligado, com aviso | não derrubar o daemon por config |
 | 26 | `daemon/main.c` | se a fila não pode ser criada, `log.Fatal` sai com as regras de interceptação instaladas (sem `QueueBypass`, a rede fica bloqueada) | as regras são removidas antes de sair | não deixar a máquina sem rede por um erro de inicialização |
@@ -104,6 +108,12 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 28 | `daemon/fw/nft.c` | mensagens de regra com `NLM_F_ECHO`; `ReloadRulesCallback` dorme 500 ms na goroutine do verificador | sem eco; os 500 ms são um timer do loop | não muda o estado do kernel; o loop não pode bloquear |
 | 29 | `daemon/fw/nft.c` | listas de cadeias e regras com o buffer do google/nftables | respostas lidas com buffer de 64 KiB, e respostas pendentes de um dump interrompido são descartadas antes da próxima operação | robustez; mesmo resultado |
 | 30 | `daemon/fw/fw.c` | `"Firewall": "iptables"` usa o binário iptables | usa nftables, com aviso (o upstream faz o mesmo quando o iptables não está disponível) | backend iptables ainda não portado |
+| 31 | `daemon/dns/cache.c` | o mapa IP/CNAME → nome nunca diminui: cada IP e CNAME distinto visto fica até o daemon parar | guarda as 8192 entradas usadas mais recentemente (consultar ou gravar conta como uso); a mais antiga sai | memória limitada (cheio, cerca de 2 MB; `docs/BENCH.md`). A conexão vem logo depois da resolução, então a entrada que importa é sempre recente |
+| 32 | `daemon/dns/parse.c` | percorre os nomes da mensagem sem limite: cadeias de ponteiros de compressão compartilhadas por milhares de registros custam dezenas de MB de cópia por pacote | no máximo 4 MiB de rótulos percorridos por mensagem (`KS_DNS_WORK_MAX`); acima disso a mensagem é rejeitada (sem camada DNS) | o parser roda como root sobre pacotes da rede; respostas reais ficam ordens de grandeza abaixo (teste `work_is_bounded`) |
+| 33 | `daemon/dns/cache.c` | nomes com bytes NUL (rótulos DNS aceitam qualquer byte) são guardados e comparados inteiros | respostas e perguntas com NUL no nome são ignoradas (não entram no cache nem viram `DstHost`) | strings C; truncar no NUL faria `a.com\0x` casar com regras de `a.com` |
+| 34 | `daemon/dns/resolved.c` | após perder a conexão com o systemd-resolved, `connPoller` tenta reconectar uma vez (em até 5 s); se falhar, ou se a nova inscrição falhar, o monitor fica desligado até reiniciar o daemon | tenta a cada 5 s até conseguir | o resolved reinicia em atualizações de pacote; o upstream perde o monitor se ele demorar |
+| 35 | `daemon/dns/resolved.c` | mensagens varlink de qualquer tamanho | até 4 MiB; acima disso desconecta e reconecta | proteção de memória; as respostas do monitor têm poucos KB |
+| 36 | `daemon/dns/resolved.c` | as linhas de log de resposta sem sucesso e de trace imprimem a struct com `%v`/`%#v` | imprimem estado e número de respostas | formato de struct do Go; só log |
 
 ## Bugs do upstream a relatar
 
@@ -164,6 +174,26 @@ comportamento, a não ser onde a tabela acima diz o contrário.
 - gopacket: num jumbograma IPv6 (opção jumbo com payload length 0) a camada
   seguinte é decodificada a partir do próprio cabeçalho hop-by-hop. O port
   reproduz.
+- O cache de DNS (`dns/track.go`) guarda um nome por IP e mapeia o alvo de
+  um CNAME de volta para o alias: depois de resolver
+  `alias.exemplo.test` (CNAME `exemplo.test`), conexões para `exemplo.test`
+  passam a ter `dest.host` igual a `alias.exemplo.test`; um IP compartilhado
+  por vários nomes (CDN) fica com o último nome resolvido. O port reproduz
+  (teste de integração "after the alias, the canonical name maps to it").
+- Respostas DNS por TCP nunca entram no cache: a regra do nftables só
+  enfileira `udp sport 53`, `TrackAnswers` só olha UDP, e em `getDomains` o
+  gopacket nunca decodifica DNS sobre TCP (`DecodeStreamsAsDatagrams`
+  desligado). Respostas grandes (TC) refeitas por TCP deixam o IP sem nome.
+  O port reproduz.
+- UDP da porta 53 para uma porta que o gopacket associa a outra camada
+  (123/NTP, 67-68/DHCP, 4789/VXLAN...) não é decodificado como DNS: não
+  entra no cache e segue o caminho normal. O port reproduz.
+- O cache nunca é limpo (ver divergência 31).
+- `initSystemdResolvedMonitor` declara `resolvMonitor` com `:=`, escondendo
+  a variável global: `doCleanup` nunca fecha o monitor. Inofensivo na
+  saída. O port fecha.
+- `connPoller` do monitor do systemd-resolved reconecta uma vez só (ver
+  divergência 34).
 
 ## Decisões do port
 
@@ -185,6 +215,27 @@ comportamento, a não ser onde a tabela acima diz o contrário.
   usada.
 - **Testes de integração:** `make test-integration` roda em network
   namespace próprio: como root, `unshare -n`; sem root, num user namespace
-  (`unshare -Urn`), onde o kernel permite. Nunca na rede do host.
+  (`unshare -Urn`), onde o kernel permite. Nunca na rede do host. Com mount
+  namespace (`-m`), os testes de DNS trocam `/etc/resolv.conf` e
+  `/etc/nsswitch.conf` só dentro dele.
+- **DNS e resolvedores:** como no upstream, os nomes vêm de duas fontes, e
+  nenhuma depende de systemd:
+  1. respostas DNS na fila do nfqueue (regra `udp sport 53` na cadeia de
+     entrada, sem filtro de interface). Cobre qualquer resolvedor que fale
+     DNS em UDP: servidor remoto direto pelo `resolv.conf` (Devuan e
+     similares), dnsmasq/unbound/stubby/dnscrypt-proxy locais e o stub
+     127.0.0.53 do systemd-resolved, porque a resposta ao programa passa
+     pelo `lo`;
+  2. o monitor varlink do systemd-resolved, se o socket
+     `/run/systemd/resolve/io.systemd.Resolve.Monitor` existir (systemd 252
+     ou mais novo) quando o daemon sobe. Pega também respostas servidas do
+     cache do resolved a programas que usam `nss-resolve` (sem pacote DNS).
+     O varlink é falado direto (JSON terminado em NUL num socket Unix), sem
+     libsystemd.
+
+  Sem resolved (Devuan, systemd antigo), o monitor não sobe e só a fila é
+  usada. O que nenhuma das duas vê, igual ao upstream: buscas respondidas
+  pelo cache do `nscd`, DNS sobre TCP, e DoH/DoT feitos pelo próprio
+  programa.
 - **Versão:** `0.0.1+os1.8.0` (`config.mk`). Betas usarão til
   (`1.0.0~beta1+os...`) para o dpkg ordenar antes da versão final.
