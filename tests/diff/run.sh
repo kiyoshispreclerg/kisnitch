@@ -5,7 +5,7 @@
 # Needs Go >= 1.21 (upstream asks for 1.23; newer Go downloads that toolchain
 # by itself), the upstream/ submodule checked out, network access the first
 # time (Go modules), and libnetfilter-queue-dev + pkg-config + a C compiler
-# (upstream's netfilter package is cgo).
+# (upstream's netfilter package is cgo), and protobuf-compiler (protoc).
 #
 # Usage: tools are built under build/diff/; run from anywhere.
 set -eu
@@ -19,6 +19,22 @@ if [ ! -f upstream/daemon/rule/operator.go ]; then
     exit 2
 fi
 command -v go >/dev/null || { echo "go not found" >&2; exit 2; }
+
+# upstream doesn't commit the generated Go protobuf code, but its conman
+# package (imported by rule) needs it. Generate it into the submodule tree
+# (ignored by our repo) the way upstream/proto/Makefile does.
+pbdir=upstream/daemon/ui/protocol
+if [ ! -f "$pbdir/ui.pb.go" ]; then
+    echo "== generating $pbdir/ui.pb.go"
+    GOBIN="$(pwd)/$out/bin"; export GOBIN
+    PATH="$GOBIN:$PATH"; export PATH
+    command -v protoc >/dev/null || { echo "protoc not found (apt: protobuf-compiler)" >&2; exit 2; }
+    command -v protoc-gen-go >/dev/null || go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+    command -v protoc-gen-go-grpc >/dev/null || go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+    (cd upstream/proto && protoc -I. ui.proto \
+        --go_out=../daemon/ui/protocol/ --go-grpc_out=../daemon/ui/protocol/ \
+        --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative)
+fi
 
 echo "== building the Go harness (upstream $(git -C upstream describe --tags 2>/dev/null || echo '?'))"
 (cd tests/diff/go && go mod tidy >/dev/null && go build -o "../../../$out/diff-go" .)
