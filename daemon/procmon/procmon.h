@@ -28,10 +28,35 @@ struct ks_evloop;
 #define KS_PROCMON_METHOD_AUDIT "audit"
 #define KS_PROCMON_METHOD_EBPF "ebpf"
 
-/* monitor.Init for the proc method: cache cleanups on `loop` and, if the
- * kernel allows it (needs CAP_NET_ADMIN), the exec/exit event listener.
- * Returns 0; a missing event listener is only logged. */
+/* monitor.Error kinds (monitor.NoError, ProcFsErr...). */
+enum {
+    KS_MONITOR_NO_ERROR,
+    KS_MONITOR_PROCFS_ERR,
+    KS_MONITOR_AUDITD_ERR,
+    KS_MONITOR_EBPF_ERR,
+    KS_MONITOR_EBPF_EVENTS_ERR,
+};
+
+/* procmon.GetMonitorMethod(): "" until a method was configured. */
+const char *ks_procmon_get_method(void);
+
+/* monitor.ReconfigureMonitorMethod(): End(), then Init() with `method`.
+ * Only "proc" exists so far: the others fail (KS_MONITOR_EBPF_ERR,
+ * KS_MONITOR_AUDITD_ERR, message in `err`) and fall back to the proc
+ * monitors, and the configured method is rolled back, as upstream does
+ * when a method fails to start. Returns the error kind. */
+int ks_procmon_reconfigure(struct ks_evloop *loop, const char *method, char *err,
+                           size_t errlen);
+/* monitor.Init(): cache cleanups on `loop` (once) and, if the kernel
+ * allows it (needs CAP_NET_ADMIN), the exec/exit event listener. */
+int ks_procmon_monitor_init(struct ks_evloop *loop, char *err, size_t errlen);
+/* monitor.End(): stops the exec/exit event listener. */
+void ks_procmon_monitor_end(void);
+
+/* Shortcut for "proc" (tests and startup): sets the method and runs
+ * monitor.Init(). Returns 0. */
 int ks_procmon_init(struct ks_evloop *loop);
+/* Stops everything and drops the caches (shutdown, tests). */
 void ks_procmon_end(void);
 /* Whether exec/exit events are being received. */
 bool ks_procmon_events_running(void);

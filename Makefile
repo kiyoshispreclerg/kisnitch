@@ -3,6 +3,7 @@ include config.mk
 BUILD ?= build
 
 COMMON_SRC = common/log.c \
+             common/arena.c \
              common/json_util.c \
              common/json_schema.c \
              common/unicode.c \
@@ -10,8 +11,11 @@ COMMON_SRC = common/log.c \
              common/netaddr.c \
              common/strset.c \
              common/hash.c \
-             common/strmap.c
-VENDOR_SRC = common/vendor/cjson/cJSON.c
+             common/strmap.c \
+             common/grpc/grpc.c
+# Third-party and generated code: built with the base warnings only.
+VENDOR_SRC = common/vendor/cjson/cJSON.c \
+             common/pb/ui.pb-c.c
 # Everything in the daemon except main.c goes into a static lib so the unit
 # tests can link against it.
 DAEMON_LIB_SRC = daemon/config.c \
@@ -29,7 +33,10 @@ DAEMON_LIB_SRC = daemon/config.c \
                  daemon/procmon/events.c \
                  daemon/procmon/process.c \
                  daemon/procmon/procmon.c \
+                 daemon/protocol.c \
                  daemon/queue.c \
+                 daemon/stats.c \
+                 daemon/uiclient.c \
                  daemon/rules/aliases.c \
                  daemon/rules/lists.c \
                  daemon/rules/loader.c \
@@ -61,6 +68,10 @@ $(LIBDAEMON): $(patsubst %.c,$(BUILD)/%.o,$(DAEMON_LIB_SRC))
 	$(AR) rcs $@ $^
 
 $(BUILD)/common/vendor/%.o: common/vendor/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(VENDOR_WARNFLAGS) -MMD -MP -c -o $@ $<
+
+$(BUILD)/common/pb/%.o: common/pb/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(VENDOR_WARNFLAGS) -MMD -MP -c -o $@ $<
 
@@ -125,7 +136,7 @@ diff:
 
 # ---- static checks --------------------------------------------------------
 
-OWN_SOURCES = common/*.c common/*.h daemon/*.c daemon/*.h daemon/*/*.c \
+OWN_SOURCES = common/*.c common/*.h common/grpc/*.c common/grpc/*.h daemon/*.c daemon/*.h daemon/*/*.c \
               daemon/*/*.h tests/harness.h tests/diff/*.c \
               tests/unit/*.c tests/fuzz/*.c tests/integration/*.c \
               tests/integration/*.h
@@ -136,9 +147,10 @@ lint:
 	@command -v cppcheck >/dev/null || { echo "*** cppcheck not installed"; exit 1; }
 	cppcheck --std=c11 --enable=warning,performance,portability \
 		--error-exitcode=1 --inline-suppr --quiet \
+		--suppress='preprocessorErrorDirective:common/pb/*' \
 		-I. -Icommon -Icommon/vendor/cjson \
-		-D_POSIX_C_SOURCE=200809L -DKS_VERSION='"lint"' -DKS_FIXTURES_DIR='"."' \
-		$(PCRE2_CFLAGS) common/*.c daemon tests/unit tests/integration
+		-D_POSIX_C_SOURCE=200809L -DKS_VERSION='"lint"' -DKS_UPSTREAM_VERSION='"lint"' -DKS_FIXTURES_DIR='"."' \
+		$(PCRE2_CFLAGS) common/*.c common/grpc daemon tests/unit tests/integration
 
 # ---- fuzzing (clang + libFuzzer) ------------------------------------------
 

@@ -17,6 +17,7 @@
  */
 #include "daemon/conn.h"
 
+#include <stdio.h>
 #include <string.h>
 
 /* IPProtocol values gopacket has decoders for that can lead to a
@@ -405,4 +406,20 @@ const char *ks_packet_protocol(const struct ks_packet *p)
         break;
     }
     return NULL;
+}
+
+void ks_conn_string(const struct ks_conn *c, char *buf, size_t len)
+{
+    char dst[KS_IP_STRLEN];
+    ks_ip_string(&c->dst_ip, dst, sizeof(dst));
+    const struct ks_process *p = c->process;
+    const char *path = p && p->path ? p->path : "";
+    int pid = p ? p->pid : -1;
+    const char *host = c->dst_host ? c->dst_host : "";
+    if (host[0] != '\0')
+        snprintf(buf, len, "%s (%d) -> %s (%s):%u (proto:%s uid:%lld)", path, pid, host,
+                 dst, c->dst_port, c->protocol, c->uid);
+    else
+        snprintf(buf, len, "%s (%d) -> %s:%u (proto:%s uid:%lld)", path, pid, dst,
+                 c->dst_port, c->protocol, c->uid);
 }

@@ -2,10 +2,10 @@
  *
  * kisnitchd entry point. Port of upstream daemon/main.go.
  *
- * Parses the command line, sets up logging, loads the configuration, the
- * network aliases and the rules, starts the process monitor and the
- * firewall, and answers the packets of the netfilter queue until a signal
- * arrives. The UI client arrives in phase 5.
+ * Parses the command line, sets up logging, loads the network aliases and
+ * the configuration; the UI client then applies the configuration (rules,
+ * process monitor, firewall) and connects to the UI, and the netfilter
+ * queue is served until a signal arrives.
  *
  * Copyright (C) 2018 Simone Margaritelli, 2019-2025 Gustavo Iñiguez Goia
  *               and the OpenSnitch contributors.
@@ -34,6 +34,8 @@
 #include "daemon/rules/aliases.h"
 #include "daemon/rules/loader.h"
 #include "daemon/sockdiag.h"
+#include "daemon/stats.h"
+#include "daemon/uiclient.h"
 
 #define KS_NAME "kisnitchd"
 
@@ -42,6 +44,7 @@
 static struct {
     bool show_version;
     const char *config_file;
+    const char *ui_socket;
     const char *rules_path;
     const char *procmon_method;
     int queue_num;
@@ -53,6 +56,7 @@ static struct {
     bool debug, warning, important, errorlog;
 } opt = {
     .config_file = KS_CONFIG_DEFAULT_FILE,
+    .ui_socket = "",
     .rules_path = "",
     .procmon_method = "",
     .fw_config_file = "",
@@ -70,6 +74,7 @@ static const struct flag {
 } flags[] = {
     {"version", FLAG_BOOL, &opt.show_version, "Show daemon version of this executable and exit."},
     {"config-file", FLAG_STRING, &opt.config_file, "Path to the daemon configuration file."},
+    {"ui-socket", FLAG_STRING, &opt.ui_socket, "Path the UI gRPC service listener (https://github.com/grpc/grpc/blob/master/doc/naming.md)."},
     {"process-monitor-method", FLAG_STRING, &opt.procmon_method, "Options: audit, ebpf, proc (default)"},
     {"queue-num", FLAG_INT, &opt.queue_num, "Netfilter queue number."},
     {"rules-path", FLAG_STRING, &opt.rules_path, "Path to load JSON rules from."},
@@ -211,24 +216,11 @@ static bool overwrite_logging(void)
            opt.log_file[0] != '\0' || opt.log_micro;
 }
 
-/* The logging part of ui/config_utils.go reloadConfiguration(). */
-static void apply_log_config(const struct ks_config *cfg)
-{
-    if (cfg->log_level.set)
-        ks_log_set_level(cfg->log_level.value);
-    ks_log_set_utc(cfg->log_utc);
-    ks_log_set_micro(cfg->log_micro);
-    if (cfg->server.log_file[0] != '\0') {
-        ks_debug("[config] using config.server.logfile: %s", cfg->server.log_file);
-        ks_log_close();
-        ks_log_open_file(cfg->server.log_file);
-    }
-}
-
 /* State the signal and packet handlers reach. */
 static struct {
     struct ks_evloop *loop;
     struct ks_intercept intercept;
+    struct ks_queue *queue;
     int sigfd;
 } d = {.sigfd = -1};
 
@@ -294,33 +286,16 @@ static void on_packet(struct ks_queue *q, const struct ks_nfq_packet *p, void *d
 {
     (void)data;
     struct ks_verdict v;
-    ks_intercept_packet(&d.intercept, p, &v);
-    ks_queue_verdict(q, p->id, v.verdict, v.mark);
+    if (ks_intercept_packet(&d.intercept, p, &v))
+        ks_queue_verdict(q, p->id, v.verdict, v.mark);
 }
 
-/* The firewall part of ui/config_utils.go reloadConfiguration() on the
- * first load, when the previous configuration is empty. */
-static void start_firewall(struct ks_fw *fw, const struct ks_config *cfg)
+/* The verdict of a packet whose connection was sent to the UI. */
+static void on_deferred_verdict(uint32_t id, const struct ks_verdict *v, void *data)
 {
-    const struct ks_fw_options *o = &cfg->fw_options;
-    /* GetFirewallType() of the empty configuration is "iptables". */
-    bool reload_fw = strcmp(cfg->firewall, KS_FW_IPTABLES) != 0 ||
-                     o->config_path[0] != '\0' || o->queue_num != 0 ||
-                     o->monitor_interval[0] != '\0' || o->queue_bypass;
-    if (reload_fw) {
-        ks_debug("[config] reloading config.firewall");
-        ks_fw_reload(fw, cfg->firewall, o->config_path, o->monitor_interval,
-                     o->queue_bypass, o->queue_num);
-    } else {
-        ks_debug("[config] config.firewall not changed");
-    }
-    /* The process monitor method is always (re)loaded the first time. */
-    if (cfg->internal.flush_conns_on_start) {
-        ks_debug("[config] flushing established connections");
-        ks_flush_connections();
-    } else {
-        ks_debug("[config] not flushing established connections");
-    }
+    (void)data;
+    if (d.queue != NULL)
+        ks_queue_verdict(d.queue, id, v->verdict, v->mark);
 }
 
 int main(int argc, char **argv)
@@ -367,17 +342,20 @@ int main(int argc, char **argv)
     if (setup_signals() < 0)
         ks_fatal("Error setting up signal handling: %s", strerror(errno));
 
-    /* ui.NewClient() -> loadDiskConfiguration() -> reloadConfiguration() */
-    apply_log_config(&cfg);
-    ks_intercept_init(&d.intercept, rules);
-    ks_intercept_set_default_action(&d.intercept, cfg.default_action);
-    d.intercept.intercept_unknown = cfg.intercept_unknown;
     ks_info("Loading rules from %s ...", cfg.rules.path);
-    ks_loader_enable_checksums(rules, cfg.rules.enable_checksums);
-    if (ks_loader_reload(rules, cfg.rules.path, err, sizeof(err)) < 0)
-        ks_warning("%s", err);
-    ks_procmon_init(d.loop);
-    start_firewall(&fw, &cfg);
+    struct ks_stats stats;
+    ks_stats_init(&stats, rules);
+    /* ui.NewClient(): loadDiskConfiguration() -> reloadConfiguration()
+     * applies logging, rules, the process monitor and the firewall. */
+    struct ks_uiclient_deps deps = {.loop = d.loop, .rules = rules, .stats = &stats,
+                                    .fw = &fw};
+    struct ks_uiclient *ui = ks_uiclient_new(&deps, opt.ui_socket, opt.config_file);
+    if (ui == NULL)
+        ks_fatal("out of memory");
+    ks_intercept_init(&d.intercept, rules);
+    d.intercept.ui = ui;
+    d.intercept.stats = &stats;
+    d.intercept.deferred = on_deferred_verdict;
 
     /* Default expected queue from the cli is 0. If it's greater than 0,
      * overwrite the config value. */
@@ -386,15 +364,22 @@ int main(int argc, char **argv)
         qnum = (uint16_t)opt.queue_num;
     ks_info("Using queue number %u ...", qnum);
 
-    /* setupQueues(). The repeat queue (qnum + 1) is only used to ask the
-     * UI: phase 5. */
-    struct ks_queue *queue = ks_queue_new(d.loop, qnum, on_packet, NULL, err, sizeof(err));
-    if (queue == NULL) {
+    /* setupQueues(). Upstream's repeat queue (qnum + 1) only lets a
+     * goroutine wait for the UI; here the packet just waits for its
+     * verdict (docs/UPSTREAM.md). */
+    d.queue = ks_queue_new(d.loop, qnum, on_packet, NULL, err, sizeof(err));
+    if (d.queue == NULL) {
+        char msg[1200];
+        snprintf(msg, sizeof(msg), "Error creating queue #%u: %s", qnum, err);
+        ks_uiclient_send_warning_alert(ui, msg);
         ks_warning("Is opensnitchd already running?");
         ks_fw_stop(&fw);
-        ks_fatal("Error creating queue #%u: %s", qnum, err);
+        ks_fatal("%s", msg);
     }
     ks_info("Listening on queue number %u ...", qnum);
+
+    /* queue and firewall rules should be ready by now */
+    ks_uiclient_connect(ui);
 
     /* Command line options take precedence over the configuration file. */
     if (overwrite_logging())
@@ -411,12 +396,21 @@ int main(int argc, char **argv)
             ks_fatal("Error loading rules path %s", opt.rules_path);
     }
 
-    /* monitor.ReconfigureMonitorMethod: the command line wins. Only "proc"
-     * exists so far; the others fall back to it, as upstream does when they
-     * fail to start. */
-    const char *method = opt.procmon_method[0] ? opt.procmon_method : cfg.proc_monitor_method;
-    if (method[0] != '\0' && strcmp(method, KS_PROCMON_METHOD_PROC) != 0)
-        ks_warning("error starting %s monitor method: not implemented yet", method);
+    /* overwrite monitor method from configuration if the user has passed
+     * the option via command line. */
+    if (opt.procmon_method[0] != '\0') {
+        ks_info("Reloading proc monitor (%s) (ebpf mods path: %s)...", opt.procmon_method,
+                cfg.ebpf.modules_path);
+        char merr[256];
+        if (ks_procmon_reconfigure(d.loop, opt.procmon_method, merr, sizeof(merr)) >
+            KS_MONITOR_NO_ERROR) {
+            char msg[400];
+            snprintf(msg, sizeof(msg),
+                     "Unable to set process monitor method via parameter: %s", merr);
+            ks_uiclient_send_warning_alert(ui, msg);
+            ks_warning("%s", msg);
+        }
+    }
 
     ks_debug("Configuration: DefaultAction=%s DefaultDuration=%s "
              "ProcMonitorMethod=%s Firewall=%s Server.Address=%s",
@@ -439,10 +433,13 @@ int main(int argc, char **argv)
     /* doCleanup(). Upstream never closes the resolved monitor here (the
      * variable it closes is shadowed in initSystemdResolvedMonitor). */
     ks_info("Cleaning up ...");
+    ks_uiclient_free(ui); /* a pending question gets the default action */
     ks_fw_stop(&fw);
     ks_procmon_end();
     ks_resolved_stop(resolved);
-    ks_queue_free(queue);
+    ks_queue_free(d.queue);
+    d.queue = NULL;
+    ks_stats_free(&stats);
 
     ks_fw_destroy(&fw);
     ks_dns_cache_reset();

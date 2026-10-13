@@ -21,6 +21,8 @@
 #include "daemon/procmon/procmon.h"
 #include "daemon/rules/loader.h"
 #include "daemon/sockdiag.h"
+#include "daemon/stats.h"
+#include "daemon/uiclient.h"
 
 void ks_intercept_init(struct ks_intercept *ic, struct ks_loader *rules)
 {
@@ -54,26 +56,10 @@ static void con_clear(struct con *con)
     con->dst_host = NULL;
 }
 
-/* Connection.String(), with To(): "host (ip)" once the host is known. */
-static void con_string(const struct con *con, char *buf, size_t len)
-{
-    char dst[KS_IP_STRLEN];
-    ks_ip_string(&con->c.dst_ip, dst, sizeof(dst));
-    const struct ks_proc *p = con->owner.proc;
-    const char *host = con->c.dst_host;
-    if (host[0] != '\0')
-        snprintf(buf, len, "%s (%d) -> %s (%s):%u (proto:%s uid:%lld)",
-                 p && p->path ? p->path : "", p ? p->pid : -1, host, dst, con->c.dst_port,
-                 con->c.protocol, con->c.uid);
-    else
-        snprintf(buf, len, "%s (%d) -> %s:%u (proto:%s uid:%lld)", p && p->path ? p->path : "",
-                 p ? p->pid : -1, dst, con->c.dst_port, con->c.protocol, con->c.uid);
-}
-
-static void accept_mark(const struct ks_nfq_packet *p, struct ks_verdict *v)
+static void accept_mark(uint32_t mark, struct ks_verdict *v)
 {
     v->verdict = KS_NF_ACCEPT; /* SetVerdictAndMark(NF_ACCEPT, packet.Mark) */
-    v->mark = p->mark;
+    v->mark = mark;
 }
 
 static void drop(struct ks_verdict *v)
@@ -82,16 +68,29 @@ static void drop(struct ks_verdict *v)
     v->mark = 0;
 }
 
+/* uiClient.DefaultAction() */
+static const char *default_action(const struct ks_intercept *ic)
+{
+    return ic->ui ? ks_uiclient_default_action(ic->ui) : ic->default_action;
+}
+
+static bool intercept_unknown(const struct ks_intercept *ic)
+{
+    return ic->ui ? ks_uiclient_intercept_unknown(ic->ui) : ic->intercept_unknown;
+}
+
 /* applyDefaultAction */
-static void apply_default_action(struct ks_intercept *ic, const struct ks_nfq_packet *p,
+static void apply_default_action(struct ks_intercept *ic, uint32_t mark,
                                  const struct con *con, struct ks_verdict *v)
 {
-    ks_trace("Applying DefaultAction (%s)", ic->default_action);
-    if (strcmp(ic->default_action, KS_ACTION_ALLOW) == 0) {
-        accept_mark(p, v);
+    const char *action = default_action(ic);
+    ks_trace("Applying DefaultAction (%s)", action);
+    if (strcmp(action, KS_ACTION_ALLOW) == 0) {
+        v->verdict = KS_NF_ACCEPT;
+        v->mark = mark;
         return;
     }
-    if (strcmp(ic->default_action, KS_ACTION_REJECT) == 0 && con != NULL)
+    if (strcmp(action, KS_ACTION_REJECT) == 0 && con != NULL)
         ks_kill_socket(con->c.protocol, &con->c.src_ip, con->c.src_port, &con->c.dst_ip,
                        con->c.dst_port);
     drop(v);
@@ -139,35 +138,28 @@ static int parse(struct ks_intercept *ic, const struct ks_nfq_packet *p, struct 
     }
 
     if (ks_procmon_resolve(c->protocol, &c->src_ip, c->src_port, &c->dst_ip, c->dst_port,
-                           p->uid, ic->intercept_unknown, &con->owner) < 0)
+                           p->uid, intercept_unknown(ic), &con->owner) < 0)
         return -1;
     c->uid = con->owner.uid;
     c->process = &con->owner.proc->view;
     return 0;
 }
 
-/* acceptOrDeny, without the UI (phase 5): no match -> default action. */
-static const struct ks_rule *accept_or_deny(struct ks_intercept *ic,
-                                            const struct ks_nfq_packet *p, struct con *con,
-                                            struct ks_verdict *v)
+/* The verdict for a connection `r` matched (the second half of
+ * acceptOrDeny). */
+static void verdict_for_rule(struct ks_intercept *ic, uint32_t mark, struct con *con,
+                             const struct ks_rule *r, struct ks_verdict *v)
 {
-    const struct ks_rule *r = ks_loader_find_first_match(ic->rules, &con->c);
-    if (r == NULL) {
-        apply_default_action(ic, p, con, v);
-        ks_debug("UI is not running or busy, connected: false, running: false");
-        return NULL;
-    }
-
     char desc[1024];
     if (!r->enabled) {
-        apply_default_action(ic, p, con, v);
-        con_string(con, desc, sizeof(desc));
-        ks_info("DISABLED (%s) %s (%s)", ic->default_action, desc, r->name);
+        apply_default_action(ic, mark, con, v);
+        ks_conn_string(&con->c, desc, sizeof(desc));
+        ks_info("DISABLED (%s) %s (%s)", default_action(ic), desc, r->name);
     } else if (strcmp(r->action, KS_ACTION_ALLOW) == 0) {
-        accept_mark(p, v);
+        accept_mark(mark, v);
         if (ks_log_get_level() <= KS_LOG_DEBUG) {
-            con_string(con, desc, sizeof(desc));
-            ks_debug("✔ %s, mark: %x (%s)", desc, p->mark, r->name);
+            ks_conn_string(&con->c, desc, sizeof(desc));
+            ks_debug("✔ %s, mark: %x (%s)", desc, mark, r->name);
         }
     } else {
         if (strcmp(r->action, KS_ACTION_REJECT) == 0)
@@ -175,14 +167,122 @@ static const struct ks_rule *accept_or_deny(struct ks_intercept *ic,
                            &con->c.dst_ip, con->c.dst_port);
         drop(v);
         if (ks_log_get_level() <= KS_LOG_DEBUG) {
-            con_string(con, desc, sizeof(desc));
-            ks_debug("✘ %s, mark: %x (%s)", desc, p->mark, r->name);
+            ks_conn_string(&con->c, desc, sizeof(desc));
+            ks_debug("✘ %s, mark: %x (%s)", desc, mark, r->name);
         }
     }
-    return r;
 }
 
-void ks_intercept_packet(struct ks_intercept *ic, const struct ks_nfq_packet *p,
+/* The end of onPacket(): the connection goes to the stats unless its rule
+ * says nolog. */
+static void on_connection_event(struct ks_intercept *ic, struct con *con,
+                                const struct ks_rule *r)
+{
+    if (r != NULL && r->nolog)
+        return;
+    if (ic->stats)
+        ks_stats_on_connection(ic->stats, &con->c, con->owner.proc, r, r == NULL);
+}
+
+/* A question to the UI in flight: the connection and its packet. */
+struct pending {
+    struct ks_intercept *ic;
+    uint32_t id, mark;
+    struct con con;
+};
+
+/* The rest of acceptOrDeny once the UI answered. `rule` is ours. */
+static void on_answer(struct ks_rule *rule, void *data)
+{
+    struct pending *pd = data;
+    struct ks_intercept *ic = pd->ic;
+    struct ks_verdict v;
+    if (rule == NULL) {
+        ks_error("Invalid rule received, applying default action");
+        apply_default_action(ic, pd->mark, &pd->con, &v);
+        ic->deferred(pd->id, &v, ic->deferred_data);
+        on_connection_event(ic, &pd->con, NULL);
+        con_clear(&pd->con);
+        free(pd);
+        return;
+    }
+
+    /* check if and how the rule needs to be saved */
+    bool always = strcmp(rule->duration, "always") == 0;
+    const char *pers = always ? "Saved" : "Added";
+    char err[512], op[512];
+    ks_operator_describe(&rule->operator, op, sizeof(op));
+    struct ks_rule *copy = ks_rule_copy(rule);
+    if (copy == NULL || ks_loader_add(ic->rules, copy, always, err, sizeof(err)) < 0)
+        ks_error("Error while %s rule: %s", always ? "saving" : "adding",
+                 copy ? err : "out of memory");
+    else
+        ks_important("%s new rule: %s if %s", pers, rule->action, op);
+
+    verdict_for_rule(ic, pd->mark, &pd->con, rule, &v);
+    ic->deferred(pd->id, &v, ic->deferred_data);
+    on_connection_event(ic, &pd->con, rule);
+    ks_rule_free(rule);
+    con_clear(&pd->con);
+    free(pd);
+}
+
+/* acceptOrDeny(). Returns false if the verdict was deferred (the UI was
+ * asked; `con` then belongs to the question). Otherwise `*match` is the
+ * rule that decided it, or NULL. */
+static bool accept_or_deny(struct ks_intercept *ic, const struct ks_nfq_packet *p,
+                           struct con *con, struct ks_verdict *v,
+                           const struct ks_rule **match)
+{
+    const struct ks_rule *r = ks_loader_find_first_match(ic->rules, &con->c);
+    *match = r;
+    if (r != NULL) {
+        verdict_for_rule(ic, p->mark, con, r, v);
+        return true;
+    }
+
+    /* send a request to the UI client if 1) connected and running and 2) we
+     * are not already asking */
+    bool connected = ic->ui != NULL && ks_uiclient_connected(ic->ui);
+    bool asking = ic->ui != NULL && ks_uiclient_is_asking(ic->ui);
+    if (!connected || asking) {
+        apply_default_action(ic, p->mark, con, v);
+        ks_debug("UI is not running or busy, connected: %s, running: %s",
+                 connected ? "true" : "false", asking ? "true" : "false");
+        return true;
+    }
+
+    struct pending *pd = malloc(sizeof(*pd));
+    if (pd == NULL) {
+        apply_default_action(ic, p->mark, con, v);
+        return true;
+    }
+    pd->ic = ic;
+    pd->id = p->id;
+    pd->mark = p->mark;
+    pd->con = *con; /* moves the strings and the process reference */
+    /* Update the hostname again: a DNS answer may have arrived meanwhile. */
+    if (pd->con.c.dst_host[0] == '\0') {
+        char *h = ks_dns_host_or(&pd->con.c.dst_ip, "");
+        if (h != NULL) {
+            free(pd->con.dst_host);
+            pd->con.dst_host = h;
+            pd->con.c.dst_host = h;
+        }
+    }
+    if (ks_uiclient_ask(ic->ui, &pd->con.c, pd->con.owner.proc, on_answer, pd) < 0) {
+        /* Ask() returned nil */
+        *con = pd->con;
+        free(pd);
+        ks_error("Invalid rule received, applying default action");
+        apply_default_action(ic, p->mark, con, v);
+        return true;
+    }
+    memset(con, 0, sizeof(*con));
+    return false;
+}
+
+bool ks_intercept_packet(struct ks_intercept *ic, const struct ks_nfq_packet *p,
                          struct ks_verdict *out)
 {
     struct con con;
@@ -191,22 +291,28 @@ void ks_intercept_packet(struct ks_intercept *ic, const struct ks_nfq_packet *p,
     /* DNS response, just parse, track and accept. */
     ks_packet_decode(p->data, p->len, &con.pkt);
     if (ks_dns_track_answers(&con.pkt)) {
-        accept_mark(p, out);
-        return;
+        accept_mark(p->mark, out);
+        if (ic->stats)
+            ks_stats_on_dns_response(ic->stats);
+        return true;
     }
 
     if (parse(ic, p, &con) < 0) {
-        apply_default_action(ic, p, NULL, out);
+        apply_default_action(ic, p->mark, NULL, out);
         con_clear(&con);
-        return;
+        return true;
     }
     /* accept our own connections */
     if (con.owner.proc->pid == ic->own_pid) {
         out->verdict = KS_NF_ACCEPT; /* SetVerdict(NF_ACCEPT): mark 0 */
         out->mark = 0;
         con_clear(&con);
-        return;
+        return true;
     }
-    accept_or_deny(ic, p, &con, out);
+    const struct ks_rule *r;
+    if (!accept_or_deny(ic, p, &con, out, &r))
+        return false;
+    on_connection_event(ic, &con, r);
     con_clear(&con);
+    return true;
 }

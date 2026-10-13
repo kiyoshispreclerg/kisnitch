@@ -80,3 +80,34 @@ nomes de ~40 bytes (`host-N.some-cdn-provider.example.com`):
 
 Com o cache cheio de nomes longos, o daemon ocioso fica perto de 3,5 MB,
 ainda abaixo da meta de 5 MB. Nomes reais costumam ser mais curtos.
+
+## Fase 5 (2026-10-13)
+
+Mesma máquina. O daemon agora linka nghttp2 e protobuf-c, roda o cliente
+da UI (poller de 1 s, reconexão) e conta estatísticas de cada conexão.
+
+```
+$ tools/bench.sh 1000 10        # sem UI (o daemon tenta conectar a cada segundo)
+RSS idle:                2724 KiB
+load: target 1000/s for 10s -> 9590 connections (0 failed) in 10.00s = 959/s
+RSS peak under load:     4300 KiB (VmHWM 4300 KiB)
+RSS right after / +3s:   4300 / 4300 KiB
+daemon CPU during load:  69% of one core
+```
+
+| Ocioso | VmRSS | anônima | páginas de arquivo |
+|---|---|---|---|
+| fase 4 (mesmo método) | 1340 KiB | 160 KiB | 1156 KiB |
+| fase 5, sem UI | 2724 KiB | 284 KiB | 2440 KiB |
+| fase 5, UI conectada (`fake_ui.py`) | 2616 KiB | 284 KiB | 2332 KiB |
+
+Quase todo o aumento do RSS ocioso é de páginas de arquivo: código das
+bibliotecas (libnghttp2 ~100 KiB, libprotobuf-c ~40 KiB, o binário +100 KiB)
+e mais páginas da libc tocadas. Essas páginas são compartilhadas com os outros
+processos que usam as mesmas bibliotecas. A memória própria do daemon
+(anônima) subiu 124 KiB. Sob carga, o pico subiu de 3888 para 4300 KiB:
+as estatísticas guardam até 150 eventos (cópia da regra e referência ao
+processo) entre um Ping e outro, como o upstream. Tudo abaixo da meta de
+5 MB. A CPU sob carga subiu de 61% para 68-69% (duas execuções): cada
+conexão agora também passa pelas estatísticas (mapas `By*` e cópia da regra
+para o evento).

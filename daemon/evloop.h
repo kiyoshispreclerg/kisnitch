@@ -34,6 +34,8 @@ void ks_evloop_free(struct ks_evloop *loop);
 int ks_evloop_add_fd(struct ks_evloop *loop, int fd, uint32_t events,
                      ks_fd_cb cb, void *data);
 void ks_evloop_del_fd(struct ks_evloop *loop, int fd);
+/* Changes the events a watched fd waits for. */
+int ks_evloop_mod_fd(struct ks_evloop *loop, int fd, uint32_t events);
 
 /* Fires `cb` after `delay_ns`, then every `interval_ns` if it's > 0.
  * Returns NULL on OOM. */

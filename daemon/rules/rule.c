@@ -196,14 +196,19 @@ struct ks_rule *ks_rule_create(const char *name, const char *description,
     return r;
 }
 
+void ks_operator_describe(const struct ks_operator *o, char *buf, size_t len)
+{
+    bool re = o->type != NULL && strcmp(o->type, KS_TYPE_REGEXP) == 0;
+    snprintf(buf, len, "%s %s '%s'", o->operand ? o->operand : "", re ? "matches" : "is",
+             o->data ? o->data : "");
+}
+
 void ks_rule_describe(const struct ks_rule *r, char *buf, size_t len)
 {
-    const struct ks_operator *o = &r->operator;
-    bool re = o->type != NULL && strcmp(o->type, KS_TYPE_REGEXP) == 0;
-    snprintf(buf, len, "[%s] %s: if(%s %s '%s'){ %s %s }",
-             r->enabled ? "Enabled" : "Disabled", r->name ? r->name : "",
-             o->operand ? o->operand : "", re ? "matches" : "is",
-             o->data ? o->data : "", r->action ? r->action : "",
+    char op[512];
+    ks_operator_describe(&r->operator, op, sizeof(op));
+    snprintf(buf, len, "[%s] %s: if(%s){ %s %s }", r->enabled ? "Enabled" : "Disabled",
+             r->name ? r->name : "", op, r->action ? r->action : "",
              r->duration ? r->duration : "");
 }
 

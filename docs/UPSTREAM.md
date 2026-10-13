@@ -21,20 +21,20 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/ui/config/config.go` | `daemon/config.c` | portado | `Parse`, `Load`, `Save`, `Marshal`; todos os campos de `Config` |
 | `daemon/procmon/audit/config.go` (`Config`) | `daemon/config.c` | estrutura | uso na fase 10 |
 | `daemon/procmon/ebpf/config.go` (`Config`) | `daemon/config.c` | estrutura | uso na fase 9 |
-| `daemon/statistics/stats.go` (`StatsConfig`) | `daemon/config.c` | estrutura | uso na fase 5 |
+| `daemon/statistics/stats.go` (`StatsConfig`) | `daemon/config.c` | portado | aplicado por `daemon/stats.c` |
 | `daemon/log/loggers/logger.go` (`LoggerConfig`) | `daemon/config.c` | estrutura | uso na fase 10 |
-| `daemon/ui/config_utils.go` (`loadDiskConfiguration`, `loadConfiguration`) | `daemon/config.c` (`ks_config_reload`) | parcial | recarga mantém o config anterior em erro de parse; aplicar cada opção recarregada vem com o módulo de cada fase; monitoramento por inotify na fase 1 |
-| `daemon/ui/config_utils.go` (`reloadConfiguration`, parte de log) | `daemon/main.c` (`apply_log_config`) | portado | |
+| `daemon/ui/config_utils.go` (`loadDiskConfiguration`, `loadConfiguration`, `reloadConfiguration`, `getSocketPath`) | `daemon/uiclient.c` | parcial | inclusive o monitoramento do arquivo (inotify, como o fsnotify: escrita e remoção). Falta aplicar `Server.Loggers` e `TasksOptions` (fase 10), `Ebpf` e `Audit` (fases 9 e 10); `Internal.GCPercent` não se aplica a C |
+| `daemon/ui/config_utils.go` (`reloadConfiguration`, parte de log) | `daemon/uiclient.c` | portado | |
 | `daemon/log/log.go` | `common/log.c` | portado | mesmo formato de linha, rótulos e cores |
 | `time.ParseDuration` (Go stdlib) | `common/duration.c` | portado | tradução linha a linha de `src/time/format.go` (Go 1.23) |
 | `daemon/rule/rule.go` (`Once`, `Restart`, `Always`) | `common/duration.h` | portado | |
 | `daemon/rule/loader.go` (`isTemporary`) | `common/duration.c` (`ks_rule_duration_kind`) | portado | |
-| `daemon/main.go` | `daemon/main.c` | parcial | feito: flags `-version`, `-config-file`, `-log-file`, `-log-utc`, `-log-micro`, `-debug`, `-warning`, `-important`, `-error`, `-queue-num`, `-fw-config-file`; `setupLogging`, `overwriteLogging`, `loadDiskConfiguration`, `Rules.Path` padrão, `setupSignals`, `setupQueues` (só a fila principal), `initSystemdResolvedMonitor`, loop principal, `doCleanup`. Falta: `-ui-socket` e a fila de repetição (fase 5), `-workers` (sem workers, ver divergência 24), `dns.ListenerEbpf` (fase 9), `-check-requirements`, flags de profiling |
-| `daemon/main.go` (`onPacket`, `acceptOrDeny`, `applyDefaultAction`) | `daemon/intercept.c` | parcial | sem UI: conexão sem regra recebe a ação padrão, como upstream com a UI desconectada; perguntar à UI e estatísticas (`OnDNSResponse` etc.) na fase 5 |
-| `daemon/rule/rule.go` | `daemon/rules/rule.c` | parcial | `Rule`, `Create`, `String`, JSON; `Serialize`/`Deserialize` (protobuf) na fase 5 |
+| `daemon/main.go` | `daemon/main.c` | parcial | feito: flags `-version`, `-config-file`, `-log-file`, `-log-utc`, `-log-micro`, `-debug`, `-warning`, `-important`, `-error`, `-queue-num`, `-fw-config-file`; `setupLogging`, `overwriteLogging`, `loadDiskConfiguration`, `Rules.Path` padrão, `setupSignals`, `setupQueues` (só a fila principal), `initSystemdResolvedMonitor`, loop principal, `doCleanup`. Feito na fase 5: `-ui-socket`, `ui.NewClient` e `Connect`, estatísticas, alertas de erro da fila e do `-process-monitor-method`; a fila de repetição não existe (divergência 37). Falta: `-workers` (sem workers, ver divergência 24), `dns.ListenerEbpf` (fase 9), `-check-requirements`, flags de profiling |
+| `daemon/main.go` (`onPacket`, `acceptOrDeny`, `applyDefaultAction`) | `daemon/intercept.c` | portado | pergunta à UI com veredicto adiado em vez da fila de repetição (divergência 37) |
+| `daemon/rule/rule.go` | `daemon/rules/rule.c`, `daemon/protocol.c` | portado | `Serialize`/`Deserialize` em `protocol.c` (divergência 46) |
 | `daemon/rule/operator.go` | `daemon/rules/rule.c` | portado | `Compile` e `Match` ramo a ramo, inclusive as alterações em `Data`/`Operand` |
 | `daemon/rule/operator_lists.go` | `daemon/rules/lists.c` | portado | formatos, filtros, deduplicação, polling de 4 s |
-| `daemon/rule/operator_aliases.go` | `daemon/rules/aliases.c` | parcial | `LoadAliases`, `GetAliasByIP`; `SerializeData` na fase 5 |
+| `daemon/rule/operator_aliases.go` | `daemon/rules/aliases.c` | portado | `SerializeData` não é chamado em lugar nenhum do upstream; não portado |
 | `daemon/rule/loader.go` | `daemon/rules/loader.c` | parcial | tudo menos a parte de procmon de `EnableChecksums`/`HasChecksums` (fase 2) |
 | `regexp` (Go stdlib, RE2) | `daemon/rules/regex.c` | portado | sintaxe Go traduzida para PCRE2 |
 | `net` (`ParseIP`, `ParseCIDR`, `IP.String`, `IPNet.Contains`) | `common/netaddr.c` | portado | |
@@ -46,30 +46,37 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/netlink/socket.go`, `socket_linux.go` | `daemon/sockdiag.c` | portado | `GetSocketInfo`, `SocketGet`, `SocketsDump`, `GetSocketInfoByInode`, `SocketKill`, `KillSocket`, `KillSockets`, `KillAllSockets`, `FlushConnections`; netlink cru, sem libmnl |
 | `daemon/netlink/ifaces.go` (`isPrivate`) | `daemon/sockdiag.c` | portado | |
 | `vishvananda/netlink` `ConntrackTableFlush` | `daemon/sockdiag.c` (`conntrack_flush`) | portado | netlink cru; dispensa a libnetfilter_conntrack |
-| `daemon/procmon/process.go`, `details.go` | `daemon/procmon/process.c` | parcial | tudo que o método proc usa; `GetExtraInfo` (descritores, I/O, status, statm, maps) e `Serialize` na fase 5 |
+| `daemon/procmon/process.go`, `details.go` | `daemon/procmon/process.c` | parcial | tudo que o método proc usa; `GetExtraInfo` (descritores, I/O, status, statm, maps) e `Serialize` com as tarefas (`pid-monitor`, fase 10) e os eventos de kernel do ebpf (fase 9), que são os únicos usos |
 | `daemon/procmon/cache.go`, `cache_events.go` | `daemon/procmon/cache.c` | portado | |
 | `daemon/procmon/find.go`, `parse.go` | `daemon/procmon/procmon.c` | parcial | método proc; o caminho do audit na fase 10 |
 | `daemon/procmon/activepids.go`, `netlink/procmon/procmon.go` | `daemon/procmon/procmon.c`, `events.c` | portado | conector de eventos via netlink cru |
-| `daemon/procmon/monitor/init.go` | `daemon/procmon/procmon.c` (`ks_procmon_init`) | parcial | só o método proc; ebpf (fase 9) e audit (fase 10) |
+| `daemon/procmon/monitor/init.go` | `daemon/procmon/procmon.c` (`ks_procmon_reconfigure`, `ks_procmon_monitor_init`, `ks_procmon_monitor_end`) | parcial | `ReconfigureMonitorMethod`, `Init`, `End` com o rollback de método; ebpf (fase 9) e audit (fase 10) falham com o erro do tipo certo e caem no proc |
 | `daemon/conman/connection.go` (`newConnectionImpl`, busca do processo) | `daemon/procmon/procmon.c` (`ks_procmon_resolve`) | parcial | método proc; ebpf (fase 9) e audit (fase 10) |
-| `daemon/conman/connection.go` (`Parse`, `NewConnection(6)`, `parseDirection`, `getDomains`, `To`, `String`) | `daemon/conn.c`, `daemon/intercept.c` | parcial | `Serialize` na fase 5 |
+| `daemon/conman/connection.go` (`Parse`, `NewConnection(6)`, `parseDirection`, `getDomains`, `To`, `String`, `Serialize`) | `daemon/conn.c`, `daemon/intercept.c`, `daemon/protocol.c` | portado | |
 | `gopacket` v1.1.19 `layers/` (IPv4, IPv6 e extensões, AH, TCP, UDP, UDP-Lite, SCTP, ICMPv4/v6, a escolha da camada seguinte por porta de `ports.go`/`UDP.NextLayerType`) e a decodificação preguiçosa de `packet.go` | `daemon/conn.c` | parcial | só as camadas que `conman` e `dns` alcançam; inclusive as falhas que ainda adicionam a camada. Ver divergência 22 |
 | `gopacket` v1.1.19 `layers/dns.go` (`DecodeFromBytes`, `decodeName`, `decodeRData`, `decodeCharacterStrings`, `decodeOPTs`) | `daemon/dns/parse.c` | portado | só decodificação (o upstream não serializa DNS). Leituras que no Go entram em pânico (e o gopacket recupera sem adicionar a camada) são erros; os campos fixos da pergunta podem ler até a capacidade do slice, como no Go. Ver divergências 32 e 33 |
-| `daemon/netfilter/queue.go`, `queue.h`, `packet.go` | `daemon/queue.c` | portado | leitura no loop de eventos em vez de goroutine + canais; `SetRequeueVerdict` e `SetVerdictWithPacket` com a fase 5 |
+| `daemon/netfilter/queue.go`, `queue.h`, `packet.go` | `daemon/queue.c` | portado | leitura no loop de eventos em vez de goroutine + canais; `SetRequeueVerdict` não é usado (divergência 37); `SetVerdictWithPacket` não é chamado pelo upstream |
 | `daemon/dns/track.go` (`TrackAnswers`, `Track`, `Host`, `HostOr`) | `daemon/dns/cache.c` | portado | cache limitado (divergência 31) |
 | `daemon/dns/parse.go` (`GetQuestions`) | `daemon/dns/cache.c` (`ks_dns_query_domain`) | portado | |
 | `daemon/dns/systemd/monitor.go`, `daemon/main.go` (`initSystemdResolvedMonitor`) | `daemon/dns/resolved.c` | portado | sem libsystemd; reconexão diferente (divergência 34) |
 | `github.com/varlink/go` v0.4.0 (`NewConnection`, `Send` e o callback de recebimento) | `daemon/dns/resolved.c` | portado | só o cliente, só o que o monitor usa |
 | `daemon/dns/ebpfhook.go` (`ListenerEbpf`) | — | pendente | fase 9 (EBPF=1) |
 | `daemon/core/system.go` (`IPv6Enabled`) | `daemon/intercept.c` | portado | |
-| `daemon/ui/client.go` (`DefaultAction`, `InterceptUnknown`), `config_utils.go` (`reloadConfiguration`: firewall e `FlushConnsOnStart`) | `daemon/intercept.c`, `daemon/main.c` (`start_firewall`) | parcial | só a primeira carga; recarga do config com a fase 5 |
-| `daemon/firewall/rules.go` | `daemon/fw/fw.c` | parcial | `Init`, `Reload`, `Stop`, `IsRunning`, `Enable/DisableInterception`, `CleanRules`; `ReloadSystemRules`, `SaveConfiguration`, `ErrorsChan` na fase 8; `Serialize`/`Deserialize` na fase 5 |
+| `daemon/ui/client.go` | `daemon/uiclient.c` | parcial | `NewClient`, `Connect`, `poller`, `connect`, `openSocket` (sem TLS: fase 10, divergência 39), `disconnect`, `ping`, `Ask`, `PostAlert`, `DefaultAction`, `DefaultDuration`, `Connected`, `IsAsking`, `InterceptUnknown`, `GetFirewallType`, `monitorConfigWorker`. Conexão: `common/grpc/` |
+| `daemon/ui/notifications.go` | `daemon/uiclient.c` | parcial | `getClientConfig` (sem `SystemFirewall`: fase 8), `Subscribe`, `listenForNotifications`, `sendNotificationReply` e todos os `handleAction*`, menos o efeito de `RELOAD_FW_RULES` (fase 8) e das tarefas (fase 10), que respondem erro (divergências 40 e 41) |
+| `daemon/ui/notifications_tasks.go` | — | pendente | fase 10 (tarefas) |
+| `daemon/ui/alerts.go` | `daemon/uiclient.c`, `daemon/protocol.c` (`ks_pb_alert_text`) | parcial | alertas de texto e a fila do `alertsDispatcher`; sem gzip (divergência 38). Alertas com processo ou conexão não têm quem os gere ainda (ebpf, fase 9) |
+| `daemon/ui/auth/auth.go` | — | pendente | TLS (`TLS=1`, fase 10) |
+| `daemon/statistics/stats.go`, `event.go` | `daemon/stats.c` | portado | sem workers (contagem no loop); `SetLoggers`/`logger.Log` com os loggers (fase 10); divergência 45 |
+| `daemon/core/system.go` (`GetHostname`, `GetKernelVersion`) | `daemon/uiclient.c` | portado | |
+| `google.golang.org/grpc` (cliente: `Dial`, keepalive, prazos, status) | `common/grpc/grpc.c` | portado | só o que o protocolo usa; ver `docs/PROTOCOL.md` |
+| `daemon/firewall/rules.go` | `daemon/fw/fw.c` | parcial | `Init`, `Reload`, `Stop`, `IsRunning`, `Enable/DisableInterception`, `CleanRules`; `ReloadSystemRules`, `SaveConfiguration`, `ErrorsChan`, `Serialize`/`Deserialize` (que dependem do `system-fw.json`) na fase 8 |
 | `daemon/firewall/nftables/{nftables,tables,chains,rules,monitor,utils}.go` | `daemon/fw/nft.c` | parcial | interceptação completa (tabela, cadeias, as 3 regras, limpeza por chave, `AreRulesLoaded`, `ReloadRulesCallback`); regras de sistema (`system.go`, `parser.go`, `rule_helpers.go`, `exprs/`) na fase 8 |
 | `daemon/firewall/common/common.go` | `daemon/fw/nft.c` | parcial | verificador de regras (`NewRulesChecker`, `StopCheckingRules`, `SetRulesCheckerInterval`); `ErrChan`/`SendError` na fase 8 |
 | `daemon/firewall/iptables/` | — | pendente | config com `"Firewall": "iptables"` usa nftables com aviso (divergência 30) |
 | `time.Duration.String` (Go stdlib) | `common/duration.c` (`ks_format_duration`) | portado | |
 | `crypto/md5`, `crypto/sha1` (Go stdlib) | `common/hash.c` | portado | sem OpenSSL |
-| `proto/ui.proto` | `proto/ui.proto` | copiado | `tools/sync-proto.sh`; código em `common/pb/` gerado na fase 5 |
+| `proto/ui.proto` | `proto/ui.proto`, `common/pb/` | copiado | `tools/sync-proto.sh` copia e regenera `common/pb/` (protoc-c 1.3.3; o código gerado roda com libprotobuf-c 1.3 ou mais nova) |
 | `daemon/data/default-config.json`, `network_aliases.json`, `daemon/ui/testdata/*.json`, `daemon/rule/testdata/` | `tests/fixtures/upstream/` | copiado | `tools/sync-fixtures.sh` |
 
 ## Divergências conhecidas
@@ -114,6 +121,17 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 34 | `daemon/dns/resolved.c` | após perder a conexão com o systemd-resolved, `connPoller` tenta reconectar uma vez (em até 5 s); se falhar, ou se a nova inscrição falhar, o monitor fica desligado até reiniciar o daemon | tenta a cada 5 s até conseguir | o resolved reinicia em atualizações de pacote; o upstream perde o monitor se ele demorar |
 | 35 | `daemon/dns/resolved.c` | mensagens varlink de qualquer tamanho | até 4 MiB; acima disso desconecta e reconecta | proteção de memória; as respostas do monitor têm poucos KB |
 | 36 | `daemon/dns/resolved.c` | as linhas de log de resposta sem sucesso e de trace imprimem a struct com `%v`/`%#v` | imprimem estado e número de respostas | formato de struct do Go; só log |
+| 37 | `daemon/intercept.c`, `daemon/main.c` | para perguntar à UI, o pacote é reenfileirado na fila `N+1` (`SetRequeueVerdict`) e lido de volta em até 1 s; a goroutine fica bloqueada na resposta | o veredicto do pacote fica pendente pelo id e sai quando a UI responde; não há fila `N+1` | loop único (seção 4 do PORTING.md); o efeito para o resto do tráfego é o mesmo, e a fila `N+1` deixa de ser ocupada |
+| 38 | `daemon/uiclient.c` | `PostAlert` com compressão gzip | sem compressão | evita a zlib; a UI aceita os dois |
+| 39 | `daemon/uiclient.c` | `Server.Authentication.Type` `tls-simple`/`tls-mutual` conecta com TLS | não conecta; avisa a cada segundo ("Invalid client auth options") | TLS vem na fase 10 (`TLS=1`) |
+| 40 | `daemon/uiclient.c` | `RELOAD_FW_RULES` grava e aplica o `system-fw.json`; o `Subscribe` manda as regras de sistema | responde erro; o `Subscribe` vai sem `systemFirewall` | regras de sistema vêm na fase 8 |
+| 41 | `daemon/uiclient.c` | `TASK_START` de `pid-monitor`, `node-monitor` e `sockets-monitor` inicia a tarefa; `TASK_STOP` a remove | o start responde erro ("not supported yet"); o stop não faz nada | tarefas vêm na fase 10 |
+| 42 | `daemon/uiclient.c` | `ENABLE_RULE`/`DISABLE_RULE` com regra sem operador derruba o daemon (ponteiro nulo) | responde erro | não derrubar o daemon por mensagem da rede |
+| 43 | `daemon/uiclient.c` | `unix-abstract:<nome>` disca a rede `unix-abstract`, que o Go não conhece: nunca conecta | conecta no socket abstrato `<nome>` | é o que o endereço quer dizer (a UI converte `unix:@nome` para `unix-abstract:nome` achando que o daemon entende) |
+| 44 | `daemon/stats.c` | `Statistics.daemon_version` é a versão do daemon | é a versão do upstream (`1.8.0`) | a UI espera `x.y.z` (`Utils.check_versions`); com a versão do port ela descartaria as estatísticas |
+| 45 | `daemon/stats.c` | se `Stats.MaxEvents` diminui em execução abaixo do número de eventos guardados, o teste `==` nunca mais dispara e a lista cresce sem limite | descarta os mais antigos até caber | memória limitada |
+| 46 | `daemon/protocol.c` | `Rule.Serialize()` de regra `list` também apaga `Operator.Data` da regra carregada em memória | só a mensagem vai com `data` vazio | a regra em memória não é gravada de novo a partir daí; mesmo resultado na rede |
+| 47 | `daemon/uiclient.c` | cada evento do fsnotify no arquivo de config recarrega o arquivo | vários eventos lidos de uma vez recarregam uma vez | a segunda recarga do upstream compara com o config já atualizado e não muda nada |
 
 ## Bugs do upstream a relatar
 
@@ -194,6 +212,28 @@ comportamento, a não ser onde a tabela acima diz o contrário.
   saída. O port fecha.
 - `connPoller` do monitor do systemd-resolved reconecta uma vez só (ver
   divergência 34).
+- `getClientConfig()` manda como `Id` o `UnixNano()` de um `time.Time`
+  zerado (estoura o int64: 11651379494838206464). O port reproduz.
+- `Statistics.SetLimits` imprime "max events" e "max stats" trocados. O port
+  reproduz.
+- "UI connected, dispathing queued alerts: %d" imprime o tamanho do canal de
+  entrada (quase sempre 0), não o da fila de alertas guardados. O port
+  reproduz.
+- `NewAlert` testa `case procmon.Process:` e converte para
+  `*procmon.Process`: alerta com processo nunca é montado (ou entra em
+  pânico se receber o valor). Sem uso hoje (só o ebpf manda processos).
+- `ENABLE_RULE`/`DISABLE_RULE` com regra sem operador: ponteiro nulo (ver
+  divergência 42).
+- `TASK_START` de `pid-monitor`/`node-monitor` com `Data` que não é objeto
+  retorna sem responder à UI.
+- `CHANGE_CONFIG` aplica o config duas vezes (no handler e de novo quando o
+  fsnotify vê o arquivo gravado), e o handler não atualiza o config em uso:
+  só a recarga pelo arquivo faz isso. O port reproduz.
+- Nas estatísticas, conexão sem regra conta como `Dropped` mesmo quando a
+  ação padrão a deixou passar. O port reproduz.
+- `unix-abstract:` nunca conecta (divergência 43).
+- UI: `Utils.check_versions` quebra com versão que não seja `x.y.z`, e o
+  `Ping` dela descarta as estatísticas nesse caso (divergência 44).
 
 ## Decisões do port
 
@@ -237,5 +277,12 @@ comportamento, a não ser onde a tabela acima diz o contrário.
   usada. O que nenhuma das duas vê, igual ao upstream: buscas respondidas
   pelo cache do `nscd`, DNS sobre TCP, e DoH/DoT feitos pelo próprio
   programa.
+- **gRPC e protobuf:** nghttp2 + protobuf-c (dependências previstas), sem a
+  biblioteca oficial do gRPC. O transporte em `common/grpc/` não depende do
+  loop do daemon (a UI da fase 6 vai usá-lo com o loop do GLib): quem o usa
+  observa o fd e chama `ks_grpc_conn_on_io()`/`ks_grpc_conn_tick()`.
+  Mensagens montadas para envio usam uma arena (`common/arena.c`) e são
+  liberadas de uma vez depois do `pack`. Notas do protocolo em
+  `docs/PROTOCOL.md`.
 - **Versão:** `0.0.1+os1.8.0` (`config.mk`). Betas usarão til
   (`1.0.0~beta1+os...`) para o dpkg ordenar antes da versão final.

@@ -119,6 +119,10 @@ void ks_rule_free(struct ks_rule *r);
 /* time.Now().Format(time.RFC3339), as upstream stamps rules. */
 void ks_rfc3339_now(char *buf, size_t len);
 
+/* Operator.String() without colors: "operand is 'data'" ("matches" for
+ * regexps). */
+void ks_operator_describe(const struct ks_operator *o, char *buf, size_t len);
+
 /* Rule.String() without colors:
  * "[Enabled] name: if(operand is 'data'){ action duration }". */
 void ks_rule_describe(const struct ks_rule *r, char *buf, size_t len);

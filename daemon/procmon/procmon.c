@@ -292,13 +292,86 @@ void ks_procmon_on_exit(int pid)
 
 /* ---- monitor.Init ----------------------------------------------------- */
 
-int ks_procmon_init(struct ks_evloop *loop)
+/* procmon.monitorMethod ("" until the first ReconfigureMonitorMethod) and
+ * monitor.cacheMonitorsRunning. */
+static char monitor_method[16];
+static bool cache_monitors_running;
+static struct ks_evloop *monitor_loop;
+
+const char *ks_procmon_get_method(void)
 {
-    ks_procmon_cache_init(loop);
-    if (loop != NULL && ks_proc_events_start(loop) < 0)
+    return monitor_method;
+}
+
+static void set_method(const char *m)
+{
+    snprintf(monitor_method, sizeof(monitor_method), "%s", m);
+}
+
+/* monitor.startProcMonitors() */
+static void start_proc_monitors(void)
+{
+    if (monitor_loop != NULL && !ks_proc_events_running() &&
+        ks_proc_events_start(monitor_loop) < 0)
         ks_warning("unable to start netlink.ProcEventMonitor: process exec/exit "
                    "events won't be tracked (needs root)");
+}
+
+/* monitor.Init() */
+int ks_procmon_monitor_init(struct ks_evloop *loop, char *err, size_t errlen)
+{
+    int what = KS_MONITOR_NO_ERROR;
+    monitor_loop = loop;
+    if (!cache_monitors_running) {
+        ks_procmon_cache_init(loop);
+        cache_monitors_running = true;
+    }
+    if (strcmp(monitor_method, KS_PROCMON_METHOD_EBPF) == 0) {
+        what = KS_MONITOR_EBPF_ERR;
+        snprintf(err, errlen, "the ebpf method is not available yet (EBPF=1, phase 9)");
+        ks_warning("error starting ebpf monitor method: %s", err);
+    } else if (strcmp(monitor_method, KS_PROCMON_METHOD_AUDIT) == 0) {
+        what = KS_MONITOR_AUDITD_ERR;
+        snprintf(err, errlen, "the audit method is not available yet (phase 10)");
+        ks_warning("error starting audit monitor method: %s", err);
+    }
+    start_proc_monitors();
+    /* if any of the above methods have failed, fallback to proc */
     ks_info("Process monitor method /proc");
+    set_method(KS_PROCMON_METHOD_PROC);
+    return what;
+}
+
+/* monitor.End(): stops the exec/exit listener; the caches stay. */
+void ks_procmon_monitor_end(void)
+{
+    ks_debug("monitor.End()");
+    ks_proc_events_stop();
+}
+
+/* monitor.ReconfigureMonitorMethod() */
+int ks_procmon_reconfigure(struct ks_evloop *loop, const char *method, char *err,
+                           size_t errlen)
+{
+    char old[sizeof(monitor_method)];
+    snprintf(old, sizeof(old), "%s", monitor_method[0] ? monitor_method
+                                                         : KS_PROCMON_METHOD_PROC);
+    ks_procmon_monitor_end();
+    set_method(method);
+    /* if the new monitor method fails to start, rollback the change */
+    int what = ks_procmon_monitor_init(loop, err, errlen);
+    if (what > KS_MONITOR_NO_ERROR) {
+        ks_error("Reconf() -> Init() error: %s", err);
+        set_method(old);
+    }
+    return what;
+}
+
+int ks_procmon_init(struct ks_evloop *loop)
+{
+    char err[128];
+    set_method(KS_PROCMON_METHOD_PROC);
+    ks_procmon_monitor_init(loop, err, sizeof(err));
     return 0;
 }
 
@@ -306,6 +379,9 @@ void ks_procmon_end(void)
 {
     ks_proc_events_stop();
     ks_procmon_cache_reset();
+    cache_monitors_running = false;
+    monitor_loop = NULL;
+    monitor_method[0] = '\0';
 }
 
 bool ks_procmon_events_running(void)

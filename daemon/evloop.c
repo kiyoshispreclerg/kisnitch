@@ -124,6 +124,17 @@ int ks_evloop_add_fd(struct ks_evloop *loop, int fd, uint32_t events,
     return 0;
 }
 
+int ks_evloop_mod_fd(struct ks_evloop *loop, int fd, uint32_t events)
+{
+    for (struct watcher *w = loop->watchers; w != NULL; w = w->next) {
+        if (w->fd == fd && !w->dead) {
+            struct epoll_event ev = {.events = events, .data.ptr = w};
+            return epoll_ctl(loop->epfd, EPOLL_CTL_MOD, fd, &ev);
+        }
+    }
+    return -1;
+}
+
 static void reap_watchers(struct ks_evloop *loop)
 {
     struct watcher **pp = &loop->watchers;

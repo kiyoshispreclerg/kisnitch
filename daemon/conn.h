@@ -62,6 +62,10 @@ struct ks_conn {
     const struct ks_process *process;
 };
 
+/* Connection.String(), with To(): "path (pid) -> host (ip):port (proto:p
+ * uid:u)", or "ip" instead of "host (ip)" while the host is unknown. */
+void ks_conn_string(const struct ks_conn *c, char *buf, size_t len);
+
 /* The transport layer conman.parseDirection() looks for. */
 enum ks_l4 {
     KS_L4_NONE,

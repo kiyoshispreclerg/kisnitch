@@ -125,10 +125,47 @@ TEST(real_timer_and_fd)
     ks_evloop_free(loop);
 }
 
+static int fd_calls;
+static uint32_t fd_last_events;
+
+static void count_fd(int fd, uint32_t events, void *data)
+{
+    (void)fd;
+    (void)data;
+    fd_calls++;
+    fd_last_events = events;
+}
+
+TEST(mod_fd_changes_the_events)
+{
+    struct ks_evloop *loop = ks_evloop_new();
+    int p[2];
+    CHECK(loop != NULL && pipe(p) == 0);
+    /* the write end is always writable */
+    CHECK(ks_evloop_add_fd(loop, p[1], EPOLLOUT, count_fd, NULL) == 0);
+    fd_calls = 0;
+    CHECK_INT_EQ(ks_evloop_run_once(loop, 0), 1);
+    CHECK(fd_last_events & EPOLLOUT);
+    /* stop waiting for writability: nothing fires */
+    CHECK(ks_evloop_mod_fd(loop, p[1], 0) == 0);
+    CHECK_INT_EQ(ks_evloop_run_once(loop, 0), 0);
+    CHECK(ks_evloop_mod_fd(loop, p[1], EPOLLOUT) == 0);
+    CHECK_INT_EQ(ks_evloop_run_once(loop, 0), 1);
+    CHECK_INT_EQ(fd_calls, 2);
+    /* an fd that isn't watched */
+    CHECK(ks_evloop_mod_fd(loop, p[0], EPOLLIN) < 0);
+    ks_evloop_del_fd(loop, p[1]);
+    CHECK(ks_evloop_mod_fd(loop, p[1], EPOLLOUT) < 0);
+    close(p[0]);
+    close(p[1]);
+    ks_evloop_free(loop);
+}
+
 int main(void)
 {
     RUN(timers_fire_in_deadline_order);
     RUN(repeating_timer_and_self_cancel);
     RUN(real_timer_and_fd);
+    RUN(mod_fd_changes_the_events);
     return harness_report();
 }

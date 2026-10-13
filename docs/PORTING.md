@@ -232,9 +232,10 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - Reconexão automática quando a UI cai.
 
 **Aceite:**
-- [ ] **Nosso daemon + UI Python original**: popup aparece, resposta cria regra, estatísticas aparecem, mudanças de preferência chegam ao daemon.
-- [ ] UI fechada → daemon usa ação padrão sem travar; UI reaberta → reconecta.
-- [ ] Timeout de pergunta respeita o configurado.
+- [x] **Nosso daemon + UI Python original**: popup aparece, resposta cria regra, estatísticas aparecem, mudanças de preferência chegam ao daemon.
+  Verificado em parte (2026-10-13): o fluxo completo contra uma UI falsa em grpcio (`tests/integration/run.sh`, seção 6: pergunta, regra criada e gravada, `Ping` com estatísticas, `CHANGE_CONFIG` aplicado e gravado), e contra a UI original 1.6.5 sem tela (Qt `offscreen`): Subscribe, canal de notificações e Ping sem erros, popup que expira e vira regra no daemon. Teste manual na sessão gráfica com a UI 1.6.5 instalada (2026-10-13, relato do usuário: funcionando bem). Não testado com a UI 1.8.0 (precisa de PyQt6); a 1.6.5 fala o mesmo protocolo (o `ui.proto` só ganhou campos).
+- [x] UI fechada → daemon usa ação padrão sem travar; UI reaberta → reconecta. (`run.sh`, seção 6: "UI closed: no waiting", "the daemon reconnects when the UI comes back".)
+- [x] Timeout de pergunta respeita o configurado. O prazo é da UI: com a UI original 1.6.5 configurada para 7 s e `allow`, o curl passou em 7 s e a regra foi criada. Do lado do daemon, o prazo de 120 s do upstream (`KS_UI_ASK_TIMEOUT_NS`) aplica a ação padrão se a UI não responder.
 
 ### Fase 6 — UI base em GTK2
 
