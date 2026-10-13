@@ -90,8 +90,6 @@ struct tr {
     struct frame frames[MAX_DEPTH + 1];
     int depth;
     bool last_repeat;
-    char **names;
-    size_t nnames;
 };
 
 static int fail(struct tr *t, const char *code, size_t from, size_t to)
@@ -113,7 +111,6 @@ static int fail(struct tr *t, const char *code, size_t from, size_t to)
 #define ERR_REPEAT_SIZE "invalid repeat count"
 #define ERR_PERL_OP "invalid or unsupported Perl syntax"
 #define ERR_NAMED_CAPTURE "invalid named capture"
-#define ERR_DUP_NAME "duplicate capture group name"
 #define ERR_UTF8 "invalid UTF-8"
 #define ERR_NESTING "expression nests too deeply"
 
@@ -638,23 +635,6 @@ static int repeat(struct tr *t, size_t before, size_t after, long min,
     return 0;
 }
 
-static int add_name(struct tr *t, const char *name, size_t len, size_t from,
-                    size_t to)
-{
-    for (size_t k = 0; k < t->nnames; k++)
-        if (strlen(t->names[k]) == len && memcmp(t->names[k], name, len) == 0)
-            return fail(t, ERR_DUP_NAME, from, to);
-    char **nn = realloc(t->names, (t->nnames + 1) * sizeof(*nn));
-    if (nn == NULL)
-        return fail(t, "out of memory", from, from);
-    t->names = nn;
-    t->names[t->nnames] = strndup(name, len);
-    if (t->names[t->nnames] == NULL)
-        return fail(t, "out of memory", from, from);
-    t->nnames++;
-    return 0;
-}
-
 static int open_group(struct tr *t, size_t at)
 {
     if (t->depth >= MAX_DEPTH)
@@ -700,9 +680,8 @@ static int perl_flags(struct tr *t)
         for (size_t k = 0; k < name_len; k++)
             if (!is_word(s[name_at + k]))
                 return fail(t, ERR_NAMED_CAPTURE, start, cap_end);
-        if (add_name(t, s + name_at, name_len, start, cap_end) < 0)
-            return -1;
-        /* Names don't matter for matching: a plain group. */
+        /* Names don't matter for matching: a plain group. Go accepts
+         * repeated names ((?P<n>a)(?P<n>b)), so there is nothing to track. */
         put(&t->out, "(", 1);
         t->i = cap_end;
         return open_group(t, start);
@@ -939,9 +918,6 @@ char *ks_regex_translate(const char *pattern, char *err, size_t errlen)
         snprintf(err, errlen, "out of memory");
         ret = -1;
     }
-    for (size_t k = 0; k < t->nnames; k++)
-        free(t->names[k]);
-    free(t->names);
     char *out = t->out.p;
     free(t);
     if (ret < 0) {
