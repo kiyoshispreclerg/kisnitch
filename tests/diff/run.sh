@@ -29,11 +29,12 @@ if [ ! -f "$pbdir/ui.pb.go" ]; then
     GOBIN="$(pwd)/$out/bin"; export GOBIN
     PATH="$GOBIN:$PATH"; export PATH
     command -v protoc >/dev/null || { echo "protoc not found (apt: protobuf-compiler)" >&2; exit 2; }
-    command -v protoc-gen-go >/dev/null || go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
-    command -v protoc-gen-go-grpc >/dev/null || go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+    # Upstream's go.mod pins the protobuf runtime at v1.26 (and grpc at v1.32),
+    # so the plugin must match it. The messages are all the rules package
+    # needs; the grpc stubs (ui_grpc.pb.go) are skipped.
+    command -v protoc-gen-go >/dev/null || go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26.0
     (cd upstream/proto && protoc -I. ui.proto \
-        --go_out=../daemon/ui/protocol/ --go-grpc_out=../daemon/ui/protocol/ \
-        --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative)
+        --go_out=../daemon/ui/protocol/ --go_opt=paths=source_relative)
 fi
 
 echo "== building the Go harness (upstream $(git -C upstream describe --tags 2>/dev/null || echo '?'))"
