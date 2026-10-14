@@ -2,7 +2,9 @@
 
 Implementado na fase 5: transporte em `common/grpc/` (cliente e servidor
 sobre nghttp2), mensagens em `common/pb/` (protobuf-c, gerado), conversões
-em `daemon/protocol.c` e o lado do daemon em `daemon/uiclient.c`.
+em `daemon/protocol.c` e o lado do daemon em `daemon/uiclient.c`. O lado da
+UI veio na fase 6: `ui/server.c` (servidor no loop do GLib) e
+`ui/service.c` (os RPCs), ver "Lado da UI" no fim.
 
 ## Definição
 
@@ -123,8 +125,58 @@ O prazo de resposta que o usuário configura fica na UI (contagem do popup).
 Ao estourar, a UI responde com a ação padrão dela, e o daemon trata como
 qualquer resposta.
 
+## Lado da UI
+
+- **Servidor:** `ui/server.c` escuta onde a UI original escuta
+  (`--socket`, senão `global/server_address` do `settings.conf`, senão
+  `unix:///tmp/osui.sock`; `unix:@nome` vira `unix-abstract:nome`), apaga
+  um socket velho antes do `bind` (como o grpc core) e, com `unix://`, põe
+  o socket em `0640` (`restrict_socket_perms`). TCP: `host:porta` ou
+  `[addr]:porta`, todos os endereços que o `getaddrinfo` der. Cada conexão
+  é um `ks_grpc_conn` de servidor no loop do GLib (`g_unix_fd_add` para
+  leitura, outra fonte para escrita só quando há o que mandar, um timer
+  para prazos e keepalive).
+- **Opções do grpcio da UI:** keepalive do servidor (PING após 5 s sem
+  receber nada, conexão cai sem resposta em 20 s), limite de mensagem de
+  `global/server_max_message_length` (4, 8 ou 16 MiB), e
+  `--max-clients` limita conexões simultâneas.
+- **`:authority`:** o grpc-go do daemon original manda como `:authority` o
+  alvo do `Dial`, que num socket Unix é o caminho (`///tmp/osui.sock`).
+  Não é uma authority válida em HTTP/2 e a validação de mensagens do
+  nghttp2 reseta o stream (`PROTOCOL_ERROR`); o grpc core do Python aceita.
+  Por isso o servidor roda sem essa validação
+  (`nghttp2_option_set_no_http_messaging`); `:path` e `content-type` são
+  conferidos pelo nosso código como antes. O cliente (nosso daemon) segue
+  mandando `localhost`.
+- **Peer:** como o `context.peer()` do grpc core: `unix:` para socket Unix
+  (o daemon não tem nome), `ipv4:a.b.c.d:porta`, `ipv6:[addr]:porta`
+  (endereço IPv4 mapeado em IPv6 sai como `ipv4:`). O nó é
+  `Nodes.get_addr(peer)`: `unix:/local`, `ipv4:a.b.c.d`.
+- **Subscribe:** responde o `ClientConfig` recebido com o `config` trocado
+  pelo `json.dumps` do mesmo JSON com `DefaultAction` da UI
+  (`global/default_action`: `allow` se for 1, senão `deny`); se o config
+  não for JSON, devolve como veio. O nó entra na lista com as regras do
+  daemon (tabela de regras da UI).
+- **Notifications:** se o nó não fez `Subscribe`, o stream termina na hora
+  com OK (o gerador do Python retorna). Senão, o que estava na fila sai e
+  as próximas notificações vão direto; as respostas são casadas pelo id.
+  Quando o stream termina, o nó sai da lista (e a bandeja mostra
+  desconectado se não sobrar nenhum).
+- **AskRule:** uma pergunta na tela por vez, as outras numa fila; a que o
+  daemon abandona enquanto espera sai da fila (divergência 52). A resposta
+  é a regra; sem regra, `UNKNOWN` "Exception serializing response!", o que
+  o grpcio manda quando o handler devolve `None`.
+- **Ping / PostAlert:** `PingReply{id}` e `MsgResponse{id: 0}`. Métodos
+  desconhecidos: `UNIMPLEMENTED`; mensagem que não decodifica: `INTERNAL`.
+
 ## Testes
 
+- `tests/unit/test_ui_service.c`: o servidor e o serviço da UI contra um
+  daemon falso feito com o nosso cliente (inclusive `:authority` com
+  barras, como o grpc-go): Subscribe, Ping, PostAlert, Notifications,
+  AskRule (fila, resposta, erro, prazo, queda).
+- `tests/integration/ui.sh`: a UI (em Xvfb) com o nosso daemon e com o
+  `opensnitchd` original, num netns.
 - `tests/unit/test_grpc.c`: nosso cliente contra nosso servidor
   (`socketpair`): unária, stream, trailers-only, prazo, limite de tamanho,
   queda, keepalive, lixo na conexão.

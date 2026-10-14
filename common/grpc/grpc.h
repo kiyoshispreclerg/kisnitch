@@ -70,7 +70,7 @@ struct ks_grpc_call_cbs {
 };
 
 struct ks_grpc_conn_cbs {
-    /* Client: the server's SETTINGS arrived, the connection is usable
+    /* The peer's SETTINGS arrived. On a client, the connection is usable
      * (grpc-go's connectivity.Ready). Optional. */
     void (*on_ready)(struct ks_grpc_conn *conn, void *data);
     /* Server: a new call to `path` ("/protocol.UI/Ping"). Set its callbacks
@@ -92,7 +92,8 @@ struct ks_grpc_conn_opts {
     /* Messages bigger than this are rejected (RESOURCE_EXHAUSTED).
      * 0 = KS_GRPC_MAX_RECV_DEFAULT. */
     size_t max_recv;
-    /* Client keepalive (grpc-go keepalive.ClientParameters): after
+    /* Keepalive (grpc-go keepalive.ClientParameters; on a server, grpc
+     * core's grpc.keepalive_time_ms / keepalive_timeout_ms): after
      * `keepalive_time_ns` without receiving anything, send a PING; if
      * nothing arrives within `keepalive_timeout_ns` more, close. 0 = off. */
     int64_t keepalive_time_ns;

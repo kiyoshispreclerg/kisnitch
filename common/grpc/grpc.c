@@ -636,7 +636,7 @@ static int on_frame_recv(nghttp2_session *session, const nghttp2_frame *frame,
 
     switch (frame->hd.type) {
     case NGHTTP2_SETTINGS:
-        if (!c->opts.server && !c->ready && !(frame->hd.flags & NGHTTP2_FLAG_ACK)) {
+        if (!c->ready && !(frame->hd.flags & NGHTTP2_FLAG_ACK)) {
             c->ready = true;
             if (c->cbs.on_ready) {
                 c->depth++;
@@ -768,8 +768,23 @@ struct ks_grpc_conn *ks_grpc_conn_new(int fd, const struct ks_grpc_conn_opts *op
     nghttp2_session_callbacks_set_on_stream_close_callback(cb, on_stream_close);
     nghttp2_session_callbacks_set_on_header_callback(cb, on_header);
     nghttp2_session_callbacks_set_on_begin_headers_callback(cb, on_begin_headers);
-    int rv = opts->server ? nghttp2_session_server_new(&c->session, cb, c)
-                          : nghttp2_session_client_new(&c->session, cb, c);
+    int rv;
+    if (opts->server) {
+        /* grpc-go puts the dial target in :authority, which for a unix
+         * socket is its path ("///tmp/osui.sock"): not a valid authority,
+         * and nghttp2's HTTP messaging checks reset the stream for it.
+         * grpc core (the Python UI) takes it, so the server goes without
+         * those checks; :path and content-type are checked here anyway. */
+        nghttp2_option *nopt;
+        rv = nghttp2_option_new(&nopt);
+        if (rv == 0) {
+            nghttp2_option_set_no_http_messaging(nopt, 1);
+            rv = nghttp2_session_server_new2(&c->session, cb, c, nopt);
+            nghttp2_option_del(nopt);
+        }
+    } else {
+        rv = nghttp2_session_client_new(&c->session, cb, c);
+    }
     nghttp2_session_callbacks_del(cb);
     cb = NULL;
     if (rv != 0)

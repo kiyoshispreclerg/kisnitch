@@ -111,3 +111,31 @@ processo) entre um Ping e outro, como o upstream. Tudo abaixo da meta de
 5 MB. A CPU sob carga subiu de 61% para 68-69% (duas execuções): cada
 conexão agora também passa pelas estatísticas (mapas `By*` e cópia da regra
 para o evento).
+
+## Fase 6: UI (2026-10-14)
+
+Mesma máquina, build `0.0.1+os1.8.0` (gcc 11, `-O2 -g`). `kisnitch-gtk` em
+Xvfb (sem bandeja para embutir o ícone), tema GTK padrão, fontes do sistema.
+Meta do `docs/PORTING.md`: UI ociosa (só bandeja) abaixo de 20 MB de RSS.
+
+| Situação | RSS | Anônima | PSS |
+|---|---|---|---|
+| `kisnitch-gtk` ocioso, 3 s após subir | 27,6 MB | 5,0 MB | 7,7 MB |
+| idem, sem `GTK_MODULES=gail:atk-bridge` | 25,6 MB | 4,7 MB | |
+| depois de um popup, conectado ao daemon (`tests/integration/ui.sh`) | 40,7–41,9 MB | | |
+| programa GTK 2 mínimo: só `gtk_init` e um `GtkStatusIcon` | 29,8 MB | 4,6 MB | |
+| idem, sem `GTK_MODULES` | 27,0 MB | 4,3 MB | |
+| UI original 1.6.5 (PyQt5) na sessão do usuário, para comparação | 140,8–222,2 MB | 57–85 MB | 75–110 MB |
+
+Leitura:
+
+- **A meta de 20 MB não é atingível com GTK 2 nesta máquina:** um programa
+  GTK 2 vazio com um ícone de bandeja já ocupa 27–30 MB, quase tudo páginas
+  de bibliotecas (GTK, GLib, cairo, pango, harfbuzz, X11) e do cache do
+  fontconfig, compartilhadas com os outros programas GTK (o PSS da UI é
+  7,7 MB). A parte própria da UI é a memória anônima: ~5 MB, quase igual à
+  do programa vazio.
+- **Depois do primeiro popup** o RSS sobe ~13 MB: glifos das fontes, o
+  tema de ícones (o ícone do programa vem do tema) e as janelas realizadas.
+- **Comparação:** cerca de 5 a 8 vezes menos que a UI Python original.
+

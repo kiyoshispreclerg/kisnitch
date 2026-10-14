@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Test App
+Exec=env A=1 /usr/bin/testapp %U
+Icon=testicon
+Comment=Generic
+Comment[pt]=Teste
+  continued
+
+[Desktop Action x]
+Name=y

@@ -1,6 +1,6 @@
 # Projeto: Kisnitch, port do OpenSnitch para C + GTK2
 
-Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 5 concluída. Próxima: 6.
+Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 6 concluída. Próxima: 7.
 (O teste diferencial opcional da fase 1 roda no job `diff` do CI ou com `make diff`
 numa máquina com Go.)
 
@@ -29,11 +29,15 @@ numa máquina com Go.)
 - DNS sem dependência de systemd: o monitor do systemd-resolved (daemon/dns/resolved.c) fala varlink direto e só liga se o socket existir; o resto vem da fila do nfqueue, que funciona com qualquer resolvedor (Devuan incluído).
 - Estado global de módulo é aceito onde o upstream usa globais (caches do procmon); APIs de teste para resetar (ks_procmon_cache_reset).
 - Testes que inspecionam processos filhos via /proc são pulados sob valgrind (KS_TEST_VALGRIND): o filho de um processo sob valgrind é o próprio valgrind.
+- UI: GTK 2 só em ui/prompt.c, ui/tray.c e ui/main.c; o resto de ui/ (libui.a) usa só GLib e é testado sem display (tests/unit/test_ui_*.c). Comportamento do Python/Qt (slugify, json.dumps, QSettings, configparser, LIKE do SQLite) é reproduzido em ui/: use esses módulos.
+- A lógica do popup é comparada com o código Python do upstream por `make diff-ui`: mudou ui/prompt_rule.c, rode-o.
+- Recursos do upstream usados pela UI ficam em ui/res/ (tools/sync-ui-res.sh) e são embutidos no binário; as tabelas do slugify vêm de tools/gen-slug-tables.py.
 
 ## Comandos
 - make / make test / make asan / make valgrind / make lint
 - make diff (teste diferencial contra o Go do upstream; ver tests/diff/run.sh)
+- make diff-ui (popup contra o código Python do upstream; precisa do submódulo e de python3-protobuf, python3-grpc-tools, python3-slugify, python3-unidecode)
 - make fuzz-run FUZZ_TIME=60 (nesta máquina: `FUZZ_LDFLAGS=-L/usr/lib/gcc/x86_64-linux-gnu/11`)
-- make test-integration (network namespace: como root usa `unshare -nm`; sem root, user namespace, se o kernel permitir. Precisa de nft, curl e python3; openssl para o teste HTTPS; python3-grpcio e python3-grpc-tools para os testes com UI (tests/integration/fake_ui.py). Os testes de DNS trocam /etc/resolv.conf só dentro do mount namespace)
+- make test-integration (network namespace: como root usa `unshare -nm`; sem root, user namespace, se o kernel permitir. Precisa de nft, curl e python3; openssl para o teste HTTPS; python3-grpcio e python3-grpc-tools para os testes com UI (tests/integration/fake_ui.py). Os testes de DNS trocam /etc/resolv.conf só dentro do mount namespace. tests/integration/ui.sh roda a nossa UI em Xvfb (xdotool para o clique) com o nosso daemon e com o original, se OPENSNITCHD (padrão /usr/bin/opensnitchd) existir)
 - tools/bench.sh [taxa] [segundos] (RSS do daemon ocioso e sob carga; resultados em docs/BENCH.md)
 - tools/upstream-diff.sh, tools/sync-proto.sh, tools/sync-fixtures.sh

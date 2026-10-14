@@ -1,0 +1,2 @@
+[Desktop Entry]
+Exec=/usr/bin/flatpak run --command=com.app.Bin org.app

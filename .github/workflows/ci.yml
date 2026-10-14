@@ -16,7 +16,7 @@ jobs:
       # The upstream/ submodule isn't needed: the tests use the copies in
       # tests/fixtures/upstream/.
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev
       - name: build
         run: make CC=${{ matrix.cc }}
       - name: unit tests
@@ -35,7 +35,7 @@ jobs:
         build: [plain, asan]
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev nftables curl python3 openssl python3-grpcio python3-grpc-tools
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev nftables curl python3 openssl python3-grpcio python3-grpc-tools xvfb xdotool
       - name: integration tests
         run: |
           if [ "${{ matrix.build }}" = asan ]; then
@@ -48,23 +48,62 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev valgrind
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev valgrind
       - run: make valgrind
 
   lint:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev cppcheck
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev cppcheck
       - run: make lint
 
   fuzz:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev
       - name: fuzz smoke run (60s per target)
         run: make fuzz-run FUZZ_TIME=60
+
+  # Phase 6 interoperability: our UI with upstream's own daemon (the pinned
+  # tag, built from the submodule), in a network namespace on Xvfb.
+  interop-ui:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev protobuf-compiler nftables curl python3 xvfb xdotool
+      - name: build upstream's daemon
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.0.1
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          (cd upstream/proto && protoc -I. ui.proto \
+              --go_out=../daemon/ui/protocol/ --go-grpc_out=../daemon/ui/protocol/ \
+              --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative)
+          mkdir -p build
+          (cd upstream/daemon && go build -o "$GITHUB_WORKSPACE/build/opensnitchd-upstream" .)
+      - run: make
+      - name: our UI with upstream's daemon (and with ours)
+        run: |
+          sudo env OPENSNITCHD="$PWD/build/opensnitchd-upstream" KISNITCHD="$PWD/build/kisnitchd" \
+              KISNITCH_GTK="$PWD/build/kisnitch-gtk" tests/integration/ui.sh
+
+  # Phase 6 differential test: the same pop-up cases through upstream's
+  # Python pop-up code (Qt replaced by stand-ins) and through ours.
+  diff-ui:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev python3-protobuf python3-grpc-tools python3-slugify python3-unidecode
+      - run: make diff-ui
 
   # Phase 1 differential test: the same corpus through upstream's Go rules
   # package and through ours.
@@ -77,5 +116,5 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev protobuf-compiler
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev protobuf-compiler
       - run: make diff

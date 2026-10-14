@@ -78,6 +78,20 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `crypto/md5`, `crypto/sha1` (Go stdlib) | `common/hash.c` | portado | sem OpenSSL |
 | `proto/ui.proto` | `proto/ui.proto`, `common/pb/` | copiado | `tools/sync-proto.sh` copia e regenera `common/pb/` (protoc-c 1.3.3; o código gerado roda com libprotobuf-c 1.3 ou mais nova) |
 | `daemon/data/default-config.json`, `network_aliases.json`, `daemon/ui/testdata/*.json`, `daemon/rule/testdata/` | `tests/fixtures/upstream/` | copiado | `tools/sync-fixtures.sh` |
+| `ui/bin/opensnitch-ui` | `ui/main.c`, `ui/server.c` | parcial | argumentos (`--socket`, `--socket-auth` só `simple`, `--max-clients`; `--max-workers` e `--tls-*` aceitos e ignorados; `--background`, `--debug`), instância única no mesmo socket do `QLocalServer`, `create_socket_dirs`, endereço de `global/server_address`, opções do servidor (keepalive 5 s / 20 s, `getMaxMsgLength`), `restrict_socket_perms`. Falta: TLS (fase 10); aviso de bandeja indisponível (fase 7, com a janela principal); temas e escala do Qt não se aplicam |
+| `ui/opensnitch/service.py` (`UIService`) | `ui/service.c`, `ui/tray.c`, `ui/main.c` | parcial | `Subscribe` (com `_overwrite_nodes_config`), `Notifications`, `Ping` (aviso de versão), `AskRule` (uma pergunta por vez, mensagem de timeout, `ADD_RULE`/`DELETE_RULE` na tabela de regras, regra temporária desativada ao expirar), `PostAlert` (a mensagem), estado da bandeja (`_set_daemon_connected`, `_update_fw_status`, `_enable_interception`), menu, `_on_close`. Falta: estatísticas, nós e alertas no banco (`_populate_stats`, fase 7), janela principal (fase 7), notificações de desktop (fase 10), plugins, traduções (fase 10) |
+| `ui/opensnitch/nodes.py` | `ui/nodes.c` | parcial | `add`, `get_node`, `delete`, `count`, `get_addr`, `get_client_config`, `get_node_hostname`, fila de notificações, `send_notification(s)`, `reply_notification`, `start_interception`/`stop_interception`. Falta: tabela de nós no banco, `change_node_config`, `reload_fw`, importar/exportar regras (fases 7 e 8) |
+| `ui/opensnitch/rules.py`, `ui/opensnitch/database/__init__.py` (tabela `rules`) | `ui/rulesdb.c` | parcial | em memória, mesmas colunas e valores: `add`, `add_rules` (lista como `MessageToJson`), `exists`, `new_unique_name`, `get_by_field` (com o `LIKE` do SQLite), `disable`, `delete`, `delete_by_field`, `Rule.new_from_records`. SQLite na fase 7 (`ui/db.c`) |
+| `ui/opensnitch/config.py` | `ui/settings.c` | parcial | chaves, valores gravados no primeiro uso, `getBool`/`getInt`/`getSettings`, `reload`; `setRulesDurationFilter` em `ui/rulesdb.c`, `getMaxMsgLength` em `ui/server.c`. O arquivo é lido e gravado no formato INI do `QSettings` (`qsettings.cpp`: `iniEscapedKey`, `iniEscapedString`, `iniUnescapedStringList`), preservando o que não é nosso |
+| `ui/opensnitch/dialogs/prompt/__init__.py`, `_utils.py`, `_constants.py`, `_details.py`, `_checksums.py`, `res/prompt.ui` | `ui/prompt.c` (GTK), `ui/prompt_rule.c` (lógica) | portado | combos, padrões, textos, contagem regressiva, ações, opções avançadas, detalhes, aviso e atualização de checksum; `make diff-ui` compara a lógica com o código Python do upstream. Plugins do popup na fase 10 |
+| `ui/opensnitch/desktop_parser.py` | `ui/desktop.c` | portado | com as regras do `configparser` que ele usa; inotify |
+| `ui/opensnitch/utils/network_aliases/` | `ui/prompt_rule.c` (`ks_py_aliases_*`), `ui/res/network_aliases.json` | portado | semântica do `ipaddress` do Python (diferente da do daemon: `::1` vale como `/128`) |
+| `ui/opensnitch/utils/xdg.py` (`Autostart`, `get_run_opensnitch_dir`), `ui/opensnitch/utils/__init__.py` (`create_socket_dirs`, `check_versions`) | `ui/tray.c`, `ui/main.c`, `ui/service.c` | portado | |
+| `ui/opensnitch/utils/duration/duration.py` | `ui/service.c` (`ks_ui_duration_seconds`) | portado | |
+| `python-slugify` (`slugify`) | `ui/slug.c`, `ui/slug_tables.h` | portado | tabelas geradas por `tools/gen-slug-tables.py` (divergência 48) |
+| `json.dumps` (Python stdlib) | `ui/pyjson.c` | portado | divergência 49 |
+| `grpcio` (servidor) | `common/grpc/grpc.c`, `ui/server.c` | portado | só o que o protocolo usa; ver `docs/PROTOCOL.md` |
+| `ui/opensnitch/res/icon-*.png`, `ui/opensnitch/utils/network_aliases/network_aliases.json` | `ui/res/` | copiado | `tools/sync-ui-res.sh`; embutidos no binário por `tools/bin2c.c` |
 
 ## Divergências conhecidas
 
@@ -132,6 +146,19 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 45 | `daemon/stats.c` | se `Stats.MaxEvents` diminui em execução abaixo do número de eventos guardados, o teste `==` nunca mais dispara e a lista cresce sem limite | descarta os mais antigos até caber | memória limitada |
 | 46 | `daemon/protocol.c` | `Rule.Serialize()` de regra `list` também apaga `Operator.Data` da regra carregada em memória | só a mensagem vai com `data` vazio | a regra em memória não é gravada de novo a partir daí; mesmo resultado na rede |
 | 47 | `daemon/uiclient.c` | cada evento do fsnotify no arquivo de config recarrega o arquivo | vários eventos lidos de uma vez recarregam uma vez | a segunda recarga do upstream compara com o config já atualizado e não muda nada |
+| 48 | `ui/slug.c` | `slugify` translitera qualquer caractere com o `unidecode` (CJK vira pinyin, etc.) | tabelas geradas cobrem latim, grego, cirílico, pontuação geral, sobrescritos, moedas, símbolos de letra, formas numéricas, ligaturas e formas largas; fora delas o caractere vira separador | a tabela inteira do unidecode tem megabytes; só o nome da regra muda, e só para caminhos com esses caracteres |
+| 49 | `ui/pyjson.c` | `json.dumps` escreve inteiros de qualquer tamanho e floats como `1.0` | inteiros até 1e16 sem `.0`; acima disso, como float | o cJSON não guarda o literal; só afeta o config devolvido no `Subscribe`, do qual o daemon só lê `DefaultAction` |
+| 50 | `ui/settings.c` | o `QSettings` ordena grupos e chaves ao gravar e trava o arquivo (`QLockFile`) | mantém a ordem do arquivo, chave nova no fim do grupo; sem trava, gravação atômica (arquivo temporário + `rename`) | os dois leem o mesmo conteúdo; a UI só grava padrões ausentes |
+| 51 | `ui/prompt.c` | `saveGeometry()` grava `promptDialog/geometry` a cada resposta | não grava | é o formato binário do Qt; não serve ao GTK |
+| 52 | `ui/service.c` | perguntas que chegam com outra na tela esperam o lock; se o daemon desiste (prazo de 120 s), o popup aparece mesmo assim e a resposta se perde | pergunta na fila cujo daemon desistiu é descartada sem aparecer; a que já está na tela continua, como no upstream | não mostrar popup de conexão já decidida |
+| 53 | `ui/prompt_rule.c` | `whatCombo` sem seleção (`default_target` fora da faixa) ou caminho de snap com menos de 3 partes: exceção no `_send_rule`, que devolve uma regra pela metade (`user.choice`, operador vazio) | nenhuma regra: o daemon recebe erro e aplica a ação padrão | regra inválida |
+| 54 | `ui/prompt.c`, `ui/prompt_rule.c` | rótulos em rich text do Qt: nome de processo ou host com `<` vira marcação | marcação Pango com escape | sem injeção de marcação |
+| 55 | `ui/prompt_rule.c` | `str.isprintable()` (categorias Unicode) filtra rótulos | filtra controles C0/C1, separadores e caracteres de formatação conhecidos | basta para os rótulos; não afeta regras |
+| 56 | `ui/service.c`, `ui/main.c` | mensagens na bandeja ou notificações de desktop (`show_systray_msg`) | vão para o log, e o ícone da bandeja muda para o de alerta | o `GtkStatusIcon` não tem balão; notificações de desktop na fase 10 (`NOTIFY=1`) |
+| 57 | `ui/tray.c` | "Open main window" e o clique no ícone abrem a janela de estatísticas | entrada desabilitada; o clique limpa o alerta | janela principal na fase 7 |
+| 58 | `ui/desktop.c` | ícone padrão `res/terminal.svg` | ícone de tema `utilities-terminal` | mesmo significado, sem arquivo extra |
+| 59 | `ui/main.c` | `--socket-auth`/`auth/type` `tls-simple` e `tls-mutual` servem com TLS | a UI não sobe ("TLS is not supported yet") | TLS na fase 10 (`TLS=1`) |
+| 60 | `ui/nodes.c` | id de notificação `int(str(time.time()).replace(".", ""))` pode repetir | o mesmo cálculo, forçado a crescer | ids únicos |
 
 ## Bugs do upstream a relatar
 
@@ -234,6 +261,35 @@ comportamento, a não ser onde a tabela acima diz o contrário.
 - `unix-abstract:` nunca conecta (divergência 43).
 - UI: `Utils.check_versions` quebra com versão que não seja `x.y.z`, e o
   `Ping` dela descarta as estatísticas nesse caso (divergência 44).
+- UI, popup: o aviso de checksum busca as regras com `records.first()` e
+  depois `records.next()`, pulando a primeira; com uma só regra para o
+  caminho, o aviso nunca aparece. O port reproduz.
+- UI, popup: `get_rule_by_field` usa `LIKE '%caminho%'`, então `%` e `_` no
+  caminho são curingas e casa também regras de outros caminhos que contêm
+  este. O port reproduz.
+- UI: `DEFAULT_DURATION_IDX = 6` tem o comentário "until restart", mas o
+  índice 6 do combo é `12h`: a duração padrão de uma instalação nova é 12h.
+  O port reproduz.
+- UI: `duration.to_seconds` usa dia de 60 horas e semana de 60 dias. O port
+  reproduz (só afeta quando a regra é desativada na tabela da UI).
+- UI: `Nodes.get_addr` de um peer IPv6 (`ipv6:[::1]:1234`) dá `ipv6:[`:
+  todos os nós IPv6 viram o mesmo nó. O port reproduz.
+- UI: `AskRule` com duração filtrada (`default_ignore_rules`) apaga a regra
+  pelo peer cru (`unix:`) em vez do endereço do nó (`unix:/local`), e nada
+  é apagado. O port reproduz.
+- UI: no `desktop_parser`, o `IN_DELETE` do inotify procura o caminho do
+  arquivo no campo da descrição e nunca remove nada. O port reproduz.
+- UI: o sinal `_notification_callback` nunca é conectado: erros nas
+  respostas às notificações (ligar/desligar interceptação) não aparecem. O
+  port os registra no log.
+- UI, popup: "Update rule" (aviso de checksum) percorre a lista de regras a
+  partir da primeira e para depois de uma: atualiza a primeira, não a
+  selecionada. O port reproduz.
+- UI: `global/max_clients` do settings.conf só vale se `--max-clients`
+  também for passado. O port reproduz.
+- UI: com o grpc-go, o `:authority` das chamadas por socket Unix é o caminho
+  do socket (`///tmp/osui.sock`), inválido em HTTP/2; o grpc core aceita, o
+  nghttp2 com validação não (ver `docs/PROTOCOL.md`).
 
 ## Decisões do port
 
@@ -284,5 +340,14 @@ comportamento, a não ser onde a tabela acima diz o contrário.
   Mensagens montadas para envio usam uma arena (`common/arena.c`) e são
   liberadas de uma vez depois do `pack`. Notas do protocolo em
   `docs/PROTOCOL.md`.
+- **UI:** GTK 2 só nas janelas (`ui/prompt.c`, `ui/tray.c`, `ui/main.c`);
+  o resto da UI (`libui.a`: servidor, serviço, nós, regras, settings,
+  popup sem widgets, `.desktop`) usa só GLib e é testado sem display. O
+  servidor gRPC roda no loop do GLib (`g_unix_fd_add`), sem threads. Até a
+  fase 7 a tabela de regras da UI fica em memória (o upstream também usa
+  SQLite em memória por padrão). Os ícones e o `network_aliases.json` do
+  upstream são embutidos no binário. O `settings.conf` é gravado como o
+  Qt 6 (UI 1.8.0) grava: UTF-8; o que o Qt 5 (UI 1.6.x) gravou com `\x`
+  também é lido.
 - **Versão:** `0.0.1+os1.8.0` (`config.mk`). Betas usarão til
   (`1.0.0~beta1+os...`) para o dpkg ordenar antes da versão final.

@@ -1,0 +1,14 @@
+[General]
+statsDialog=0
+
+[global]
+default_action=2
+default_timeout=20
+server_address=unix:///tmp/osui.sock
+
+[promptDialog]
+geometry=@ByteArray(\x1\xd9\0\tG)
+
+[statsDialog]
+show_columns=0, 2, 3
+q="a,b"

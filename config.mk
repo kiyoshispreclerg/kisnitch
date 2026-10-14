@@ -55,6 +55,16 @@ PROTO_LIBS   := $(shell $(PKG_CONFIG) --libs $(PROTO_PKGS))
 CPPFLAGS += $(PROTO_CFLAGS)
 LDLIBS   += $(PROTO_LIBS)
 
+# UI (phase 6+): GLib for the library part (testable without a display),
+# GTK 2 for kisnitch-gtk. Their headers go in with -isystem: our warning
+# flags are not for them.
+UI_PKGS     = glib-2.0
+GTK_PKGS    = gtk+-2.0
+UI_CFLAGS  := $(patsubst -I%,-isystem %,$(shell $(PKG_CONFIG) --cflags $(UI_PKGS)))
+UI_LIBS    := $(shell $(PKG_CONFIG) --libs $(UI_PKGS)) -lm
+GTK_CFLAGS := $(patsubst -I%,-isystem %,$(shell $(PKG_CONFIG) --cflags $(GTK_PKGS)))
+GTK_LIBS   := $(shell $(PKG_CONFIG) --libs $(GTK_PKGS)) -lm
+
 # `make asan` sets SANITIZE=1.
 SANITIZE ?= 0
 ifeq ($(SANITIZE),1)

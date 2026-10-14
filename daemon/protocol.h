@@ -21,24 +21,12 @@
 #include <stdint.h>
 
 #include "common/arena.h"
+#include "common/pb_util.h"
 #include "common/pb/ui.pb-c.h"
 #include "daemon/conn.h"
 
 struct ks_rule;
 struct ks_proc;
-
-/* Packs `m` into a malloc'd buffer (`*len` bytes). NULL on OOM. Packing
- * fails like Go's proto.Marshal if a string is not valid UTF-8. */
-uint8_t *ks_pb_pack(const ProtobufCMessage *m, size_t *len);
-
-/* proto3 strings must be valid UTF-8: Go refuses to marshal or unmarshal a
- * message otherwise. Checks every string, recursively. */
-bool ks_pb_valid_utf8(const ProtobufCMessage *m);
-
-/* Unpacks `len` bytes as `desc`, and rejects invalid UTF-8 as Go does.
- * Free with protobuf_c_message_free_unpacked(). NULL on error. */
-ProtobufCMessage *ks_pb_unpack(const ProtobufCMessageDescriptor *desc,
-                               const uint8_t *data, size_t len);
 
 /* Rule.Serialize(). NULL `r` gives NULL, like upstream. */
 Protocol__Rule *ks_pb_rule(struct ks_arena *a, const struct ks_rule *r);

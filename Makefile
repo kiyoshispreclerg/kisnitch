@@ -12,7 +12,8 @@ COMMON_SRC = common/log.c \
              common/strset.c \
              common/hash.c \
              common/strmap.c \
-             common/grpc/grpc.c
+             common/grpc/grpc.c \
+             common/pb_util.c
 # Third-party and generated code: built with the base warnings only.
 VENDOR_SRC = common/vendor/cjson/cJSON.c \
              common/pb/ui.pb-c.c
@@ -43,20 +44,42 @@ DAEMON_LIB_SRC = daemon/config.c \
                  daemon/rules/regex.c \
                  daemon/rules/rule.c
 DAEMON_MAIN    = daemon/main.c
+# The UI without widgets (GLib only): what the unit tests link.
+UI_LIB_SRC = ui/desktop.c \
+             ui/nodes.c \
+             ui/prompt_rule.c \
+             ui/pyjson.c \
+             ui/rulesdb.c \
+             ui/server.c \
+             ui/service.c \
+             ui/settings.c \
+             ui/slug.c
+UI_GTK_SRC = ui/main.c \
+             ui/prompt.c \
+             ui/tray.c
+UI_RES     = ui/res/network_aliases.json \
+             ui/res/icon-off.png \
+             ui/res/icon-white.png \
+             ui/res/icon-pause.png \
+             ui/res/icon-red.png \
+             ui/res/icon-alert.png
 
-UNIT_TESTS = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(wildcard tests/unit/test_*.c))
+UNIT_TESTS = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(filter-out tests/unit/test_ui_%,$(wildcard tests/unit/test_*.c)))
+UI_TESTS   = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(wildcard tests/unit/test_ui_*.c))
 INTEGRATION_TESTS = $(patsubst tests/integration/%.c,$(BUILD)/itests/%,$(wildcard tests/integration/test_*.c))
 FUZZERS    = $(patsubst tests/fuzz/%.c,$(BUILD)/fuzz/%,$(wildcard tests/fuzz/fuzz_*.c))
+UI_FUZZERS = $(filter $(BUILD)/fuzz/fuzz_ui_%,$(FUZZERS))
 
 ALL_CFLAGS  = $(STDFLAGS) $(OPTFLAGS) $(SANFLAGS) $(CFLAGS)
 ALL_LDFLAGS = $(SANFLAGS) $(LDFLAGS)
 
 LIBCOMMON = $(BUILD)/libcommon.a
 LIBDAEMON = $(BUILD)/libdaemon.a
+LIBUI     = $(BUILD)/libui.a
 
-.PHONY: all test asan valgrind lint fuzz fuzz-run diff clean test-integration
+.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui clean test-integration
 
-all: $(BUILD)/kisnitchd
+all: $(BUILD)/kisnitchd $(BUILD)/kisnitch-gtk
 
 $(BUILD)/kisnitchd: $(BUILD)/$(DAEMON_MAIN:.c=.o) $(LIBDAEMON) $(LIBCOMMON)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
@@ -66,6 +89,35 @@ $(LIBCOMMON): $(patsubst %.c,$(BUILD)/%.o,$(COMMON_SRC) $(VENDOR_SRC))
 
 $(LIBDAEMON): $(patsubst %.c,$(BUILD)/%.o,$(DAEMON_LIB_SRC))
 	$(AR) rcs $@ $^
+
+# ---- UI -------------------------------------------------------------------
+
+$(BUILD)/kisnitch-gtk: $(patsubst %.c,$(BUILD)/%.o,$(UI_GTK_SRC)) $(LIBUI) $(LIBCOMMON)
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS) $(GTK_LIBS)
+
+$(LIBUI): $(patsubst %.c,$(BUILD)/%.o,$(UI_LIB_SRC)) $(BUILD)/ui/res.o
+	$(AR) rcs $@ $^
+
+$(BUILD)/ui/%.o: ui/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(UI_CFLAGS) $(GTK_CFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP -c -o $@ $<
+
+# The resources, as C arrays (ks_res_<file name>, see ui/res.h).
+$(BUILD)/tools/bin2c: tools/bin2c.c
+	@mkdir -p $(@D)
+	$(CC) -O1 -o $@ $<
+
+$(BUILD)/ui/res.c: $(UI_RES) $(BUILD)/tools/bin2c
+	@mkdir -p $(@D)
+	@rm -f $@.tmp
+	@for f in $(UI_RES); do \
+		n=ks_res_$$(basename $$f | tr '.-' '__'); \
+		$(BUILD)/tools/bin2c $$n $$f >> $@.tmp || exit 1; \
+	done
+	@mv $@.tmp $@
+
+$(BUILD)/ui/res.o: $(BUILD)/ui/res.c
+	$(CC) $(ALL_CFLAGS) -c -o $@ $<
 
 $(BUILD)/common/vendor/%.o: common/vendor/%.c
 	@mkdir -p $(@D)
@@ -88,8 +140,13 @@ $(BUILD)/tests/%: tests/unit/%.c tests/harness.h $(LIBDAEMON) $(LIBCOMMON)
 	$(CC) $(CPPFLAGS) $(TEST_CPPFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP \
 		$(ALL_LDFLAGS) -o $@ $< $(LIBDAEMON) $(LIBCOMMON) $(LDLIBS)
 
-test: all $(UNIT_TESTS)
-	@fail=0; for t in $(UNIT_TESTS); do \
+$(BUILD)/tests/test_ui_%: tests/unit/test_ui_%.c tests/harness.h $(LIBUI) $(LIBCOMMON)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(UI_CFLAGS) $(TEST_CPPFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP \
+		$(ALL_LDFLAGS) -o $@ $< $(LIBUI) $(LIBCOMMON) $(LDLIBS) $(UI_LIBS)
+
+test: all $(UNIT_TESTS) $(UI_TESTS)
+	@fail=0; for t in $(UNIT_TESTS) $(UI_TESTS); do \
 		$$t || fail=1; \
 	done; \
 	if [ $$fail -ne 0 ]; then echo "*** unit tests FAILED"; exit 1; fi; \
@@ -113,11 +170,13 @@ test-integration: all $(INTEGRATION_TESTS)
 		$$t || fail=1; \
 	done; \
 	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd tests/integration/run.sh || fail=1; \
+	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd KISNITCH_GTK=$(CURDIR)/$(BUILD)/kisnitch-gtk \
+		tests/integration/ui.sh || fail=1; \
 	if [ $$fail -ne 0 ]; then echo "*** integration tests FAILED"; exit 1; fi; \
 	echo "*** all integration tests passed"
 
-valgrind: $(UNIT_TESTS)
-	@fail=0; for t in $(UNIT_TESTS); do \
+valgrind: $(UNIT_TESTS) $(UI_TESTS)
+	@fail=0; for t in $(UNIT_TESTS) $(UI_TESTS); do \
 		KS_TEST_VALGRIND=1 valgrind -q --error-exitcode=1 --leak-check=full \
 			--errors-for-leak-kinds=definite,indirect $$t >/dev/null || fail=1; \
 	done; \
@@ -134,10 +193,20 @@ $(BUILD)/diff/ks_diff: tests/diff/ks_diff.c $(LIBDAEMON) $(LIBCOMMON)
 diff:
 	tests/diff/run.sh
 
+# The pop-up against upstream's Python code (needs the submodule and
+# python3 with protobuf, grpc_tools, slugify, unidecode; skips otherwise).
+$(BUILD)/diff/ks_prompt_diff: tests/diff/ks_prompt_diff.c $(LIBUI) $(LIBCOMMON)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(UI_CFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP $(ALL_LDFLAGS) \
+		-o $@ $< $(LIBUI) $(LIBCOMMON) $(LDLIBS) $(UI_LIBS)
+
+diff-ui: $(BUILD)/diff/ks_prompt_diff
+	KS_PROMPT_DIFF=$(CURDIR)/$(BUILD)/diff/ks_prompt_diff tests/diff/prompt/run.sh
+
 # ---- static checks --------------------------------------------------------
 
 OWN_SOURCES = common/*.c common/*.h common/grpc/*.c common/grpc/*.h daemon/*.c daemon/*.h daemon/*/*.c \
-              daemon/*/*.h tests/harness.h tests/diff/*.c \
+              daemon/*/*.h ui/*.c ui/*.h tools/*.c tests/harness.h tests/diff/*.c \
               tests/unit/*.c tests/fuzz/*.c tests/integration/*.c \
               tests/integration/*.h
 
@@ -150,7 +219,7 @@ lint:
 		--suppress='preprocessorErrorDirective:common/pb/*' \
 		-I. -Icommon -Icommon/vendor/cjson \
 		-D_POSIX_C_SOURCE=200809L -DKS_VERSION='"lint"' -DKS_UPSTREAM_VERSION='"lint"' -DKS_FIXTURES_DIR='"."' \
-		$(PCRE2_CFLAGS) common/*.c common/grpc daemon tests/unit tests/integration
+		$(PCRE2_CFLAGS) common/*.c common/grpc daemon ui tests/unit tests/integration
 
 # ---- fuzzing (clang + libFuzzer) ------------------------------------------
 
@@ -167,6 +236,13 @@ $(BUILD)/fuzz/%: tests/fuzz/%.c $(FUZZ_SOURCES)
 	@mkdir -p $(@D)
 	$(FUZZ_CC) $(CPPFLAGS) $(STDFLAGS) $(FUZZ_FLAGS) -o $@ $< $(FUZZ_SOURCES) \
 		$(FUZZ_LDFLAGS) $(LDLIBS)
+
+# The UI's parsers: the UI library (GLib) instead of the daemon's.
+FUZZ_UI_SOURCES = $(COMMON_SRC) $(VENDOR_SRC) $(UI_LIB_SRC) $(BUILD)/ui/res.c
+$(UI_FUZZERS): $(BUILD)/fuzz/%: tests/fuzz/%.c $(FUZZ_UI_SOURCES)
+	@mkdir -p $(@D)
+	$(FUZZ_CC) $(CPPFLAGS) $(UI_CFLAGS) $(STDFLAGS) $(FUZZ_FLAGS) -o $@ $< \
+		$(FUZZ_UI_SOURCES) $(FUZZ_LDFLAGS) $(LDLIBS) $(UI_LIBS)
 
 fuzz: $(FUZZERS)
 

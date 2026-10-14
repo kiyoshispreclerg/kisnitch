@@ -244,10 +244,12 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - Ícone de bandeja com estados (conectado, desconectado, interceptação desligada) e menu.
 
 **Aceite:**
-- [ ] **Daemon Go original + nossa UI**: fluxo completo de pergunta e criação de regra funciona.
-- [ ] **Nosso daemon + nossa UI**: idem.
-- [ ] Regra criada pela nossa UI é byte a byte compatível (após normalização do JSON) com a que a UI original criaria para a mesma resposta.
-- [ ] RSS da UI ociosa medido e registrado.
+- [x] **Daemon Go original + nossa UI**: fluxo completo de pergunta e criação de regra funciona.
+  `tests/integration/ui.sh` (netns + Xvfb): conexão, popup, timeout com `allow` e com `deny`, clique em "Allow", regra gravada pelo daemon e aplicada sem perguntar de novo. Verificado em 2026-10-14 com o `opensnitchd` 1.6.5 instalado na máquina de desenvolvimento (16/16). Com o daemon da tag fixada (1.8.0, compilado do submódulo): job `interop-ui` do CI, que precisa de Go (não há Go nesta máquina).
+- [x] **Nosso daemon + nossa UI**: idem (`tests/integration/ui.sh`, dentro de `make test-integration`).
+- [x] Regra criada pela nossa UI é byte a byte compatível (após normalização do JSON) com a que a UI original criaria para a mesma resposta.
+  `make diff-ui` (`tests/diff/prompt/`): 2584 casos (15 tipos de conexão, cada entrada dos combos, ações, durações, padrões do settings, opções avançadas, nomes já usados) passam pelo próprio código Python do popup do upstream 1.8.0 (com o Qt substituído) e pelo nosso; combos e regra (nome, ação, duração, operador, lista) idênticos. O daemon recebe a mesma mensagem `Rule`, então grava o mesmo arquivo (a não ser `created`).
+- [x] RSS da UI ociosa medido e registrado: `docs/BENCH.md`, fase 6. 27,6 MB ocioso (5 MB próprios); a meta de 20 MB da seção 1 não é atingível com GTK 2 nesta máquina (um programa GTK 2 vazio com ícone de bandeja já ocupa 27–30 MB). A UI original ocupa 140–220 MB.
 
 ### Fase 7 — UI completa
 
