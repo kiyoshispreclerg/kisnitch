@@ -87,11 +87,15 @@ struct ks_stats_win {
 
     /* the rules editor (rules_editor.c), made on first use */
     struct ks_ruleed *ruleed;
+    /* the preferences dialog (prefs.c), made on first use */
+    struct ks_prefs *prefs;
+    gint64 last_update; /* _last_update, monotonic microseconds */
     GtkWidget *rule_edit, *rule_delete; /* the buttons of a rule's detail view */
 };
 
 struct ks_procdlg;
 struct ks_ruleed;
+struct ks_prefs;
 
 /* stats_win.c */
 struct tabview *ks_sw_cur_tab(struct ks_stats_win *w);
@@ -108,6 +112,7 @@ bool ks_sw_del_by_field(struct ks_stats_win *w, enum ks_tab tab, const char *val
 
 /* the rules editor of the window (created on first use) */
 struct ks_ruleed *ks_sw_ruleed(struct ks_stats_win *w);
+struct ks_prefs *ks_sw_prefs(struct ks_stats_win *w);
 
 /* stats_menu.c */
 void ks_sw_menu_attach(struct ks_stats_win *w, struct tabview *tv);

@@ -11,6 +11,7 @@
 
 #include "common/pb_util.h"
 #include "ui/db.h"
+#include "ui/prefs.h"
 #include "ui/rules_editor.h"
 #include "ui/rulesdb.h"
 #include "ui/stats_win_priv.h"
@@ -440,6 +441,57 @@ TEST(rules_editor_from_event_and_edit)
     CHECK(on_screen("Rule not found by that name and node"));
 }
 
+TEST(preferences_save)
+{
+    clear_queue();
+    struct ks_node *n = ks_nodes_get(ks_service_nodes(svc), "unix:/local");
+    CHECK(n != NULL);
+    if (n->config->config[0] != '\0')
+        free(n->config->config);
+    n->config->config = strdup(
+        "{\"Server\":{\"Address\":\"unix:///tmp/osui.sock\",\"LogFile\":\"/var/log/opensnitchd.log\"},"
+        "\"DefaultAction\":\"allow\",\"DefaultDuration\":\"once\",\"InterceptUnknown\":false,"
+        "\"ProcMonitorMethod\":\"proc\",\"LogLevel\":1,\"Firewall\":\"nftables\","
+        "\"Stats\":{\"MaxEvents\":150,\"MaxStats\":25}}");
+    struct ks_prefs *p = ks_sw_prefs(w);
+    ks_prefs_show(p);
+    spin();
+    GtkWidget *win = ks_prefs_window(p);
+    CHECK(gtk_widget_get_visible(win));
+    CHECK(on_screen("Default timeout"));
+    GtkWidget *adv = find_labeled(win, "Show advanced view by default");
+    CHECK(adv != NULL);
+    CHECK(!ks_settings_get_bool(&settings, KS_CFG_DEFAULT_POPUP_ADVANCED, false));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(adv), TRUE);
+    gtk_toggle_button_set_active(
+        GTK_TOGGLE_BUTTON(find_labeled(win, "Disable pop-ups, only display a notification")), TRUE);
+    GtkWidget *dbg = find_labeled(win, "Debug invalid connections");
+    CHECK(dbg != NULL);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(dbg), TRUE);
+    gtk_button_clicked(GTK_BUTTON(find_labeled(win, "gtk-apply")));
+    spin();
+    CHECK(ks_settings_get_bool(&settings, KS_CFG_DEFAULT_POPUP_ADVANCED, false));
+    CHECK(ks_settings_get_bool(&settings, KS_CFG_DEFAULT_DISABLE_POPUPS, false));
+    CHECK_INT_EQ(ks_settings_get_int(&settings, KS_CFG_DEFAULT_TIMEOUT_KEY, -1), 0);
+    /* the node got its new configuration */
+    uint64_t id = 0;
+    for (size_t i = 0;; i++) {
+        Protocol__Notification *m = queued("unix:/local", i);
+        if (m == NULL)
+            break;
+        if (m->type == PROTOCOL__ACTION__CHANGE_CONFIG) {
+            id = m->id;
+            CHECK_STR_HAS(m->data, "\"InterceptUnknown\": true");
+        }
+        protobuf_c_message_free_unpacked(&m->base, NULL);
+    }
+    CHECK(id != 0);
+    reply("unix:/local", id, false, "");
+    spin();
+    CHECK(on_screen("Configuration applied."));
+    gtk_widget_hide(win);
+}
+
 int main(int argc, char **argv)
 {
     if (!gtk_init_check(&argc, &argv)) {
@@ -468,6 +520,7 @@ int main(int argc, char **argv)
     RUN(node_panel);
     RUN(rules_editor_new_and_save);
     RUN(rules_editor_from_event_and_edit);
+    RUN(preferences_save);
 
     ks_stats_win_free(w);
     ks_service_free(svc);

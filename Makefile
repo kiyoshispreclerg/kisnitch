@@ -52,6 +52,7 @@ UI_LIB_SRC = ui/db.c \
              ui/netstat.c \
              ui/nodes.c \
              ui/procinfo.c \
+             ui/prefs_node.c \
              ui/prompt_rule.c \
              ui/qmodel.c \
              ui/pycsv.c \
@@ -68,6 +69,7 @@ UI_LIB_SRC = ui/db.c \
 UI_GTK_SRC = ui/main.c \
              ui/prompt.c \
              ui/rules_editor.c \
+             ui/prefs.c \
              ui/qstore.c \
              ui/stats_menu.c \
              ui/stats_netstat.c \
@@ -270,9 +272,15 @@ $(BUILD)/diff/ks_rules_diff: tests/diff/ks_rules_diff.c $(LIBUI) $(LIBCOMMON)
 	$(CC) $(CPPFLAGS) $(UI_CFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP $(ALL_LDFLAGS) \
 		-o $@ $< $(LIBUI) $(LIBCOMMON) $(LDLIBS) $(UI_LIBS)
 
-diff-ui: $(BUILD)/diff/ks_prompt_diff $(BUILD)/diff/ks_rules_diff
+$(BUILD)/diff/ks_prefs_diff: tests/diff/ks_prefs_diff.c $(LIBUI) $(LIBCOMMON)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(UI_CFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP $(ALL_LDFLAGS) \
+		-o $@ $< $(LIBUI) $(LIBCOMMON) $(LDLIBS) $(UI_LIBS)
+
+diff-ui: $(BUILD)/diff/ks_prompt_diff $(BUILD)/diff/ks_rules_diff $(BUILD)/diff/ks_prefs_diff
 	KS_PROMPT_DIFF=$(CURDIR)/$(BUILD)/diff/ks_prompt_diff tests/diff/prompt/run.sh
 	KS_RULES_DIFF=$(CURDIR)/$(BUILD)/diff/ks_rules_diff tests/diff/ruleseditor/run.sh
+	KS_PREFS_DIFF=$(CURDIR)/$(BUILD)/diff/ks_prefs_diff tests/diff/prefs/run.sh
 
 # ---- static checks --------------------------------------------------------
 

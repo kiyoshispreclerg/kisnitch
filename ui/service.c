@@ -55,7 +55,39 @@ struct ks_service {
     struct ks_ask *active;        /* on screen */
     struct ks_ask *queue, *tail;  /* waiting */
     struct temp_rule *temp_rules; /* _sched_tasks */
+    guint cleaner;                /* timeout of the database cleaner, 0 if none */
 };
+
+/* CleanerTask: every `interval` minutes, purge_oldest(max_days) */
+static gboolean cleaner_tick(gpointer data)
+{
+    struct ks_service *svc = data;
+    int days = ks_settings_get_int(svc->settings, KS_CFG_DB_MAX_DAYS, 1);
+    ks_db_purge_oldest(svc->db, days);
+    return G_SOURCE_CONTINUE;
+}
+
+static void stop_cleaner(struct ks_service *svc)
+{
+    if (svc->cleaner != 0)
+        g_source_remove(svc->cleaner);
+    svc->cleaner = 0;
+}
+
+static void start_cleaner(struct ks_service *svc)
+{
+    int interval = ks_settings_get_int(svc->settings, KS_CFG_DB_PURGE_INTERVAL, 5);
+    if (interval < 1)
+        interval = 1;
+    svc->cleaner = g_timeout_add_seconds((guint)interval * 60, cleaner_tick, svc);
+}
+
+void ks_service_settings_saved(struct ks_service *svc)
+{
+    stop_cleaner(svc);
+    if (ks_settings_get_bool(svc->settings, KS_CFG_DB_PURGE_OLDEST, false))
+        start_cleaner(svc);
+}
 
 static const char *nz(const char *s)
 {
@@ -196,6 +228,8 @@ struct ks_service *ks_service_new(struct ks_settings *settings, const struct ks_
         ks_settings_get_int(settings, KS_CFG_DEFAULT_IGNORE_TEMPORARY_RULES, 0));
     if (ignore)
         ks_rulesdb_delete_filtered(&svc->rules);
+    if (ks_settings_get_bool(settings, KS_CFG_DB_PURGE_OLDEST, false))
+        start_cleaner(svc);
     return svc;
 }
 
@@ -229,6 +263,7 @@ void ks_service_free(struct ks_service *svc)
     if (svc->active)
         free_ask(svc->active);
     ks_nodes_free(&svc->nodes);
+    stop_cleaner(svc);
     ks_statsdb_free(&svc->stats);
     ks_rulesdb_free(&svc->rules);
     /* _on_close(): vacuum, optimize, close */

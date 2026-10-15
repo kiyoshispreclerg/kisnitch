@@ -48,6 +48,9 @@
 #define KS_CFG_DEFAULT_DB_TYPE_KEY  "database/type"
 #define KS_CFG_DEFAULT_DB_FILE_KEY  "database/file"
 #define KS_CFG_DEFAULT_DB_JRNL_WAL  "database/jrnl_wal"
+#define KS_CFG_DB_PURGE_OLDEST      "database/purge_oldest"
+#define KS_CFG_DB_MAX_DAYS          "database/max_days"
+#define KS_CFG_DB_PURGE_INTERVAL    "database/purge_interval"
 #define KS_CFG_AUTH_TYPE            "auth/type"
 
 /* Defaults (config.py, database/__init__.py). */

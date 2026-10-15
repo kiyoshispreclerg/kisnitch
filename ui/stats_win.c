@@ -19,6 +19,7 @@
 #include "ui/highlight.h"
 #include "ui/netstat.h"
 #include "ui/rules_editor.h"
+#include "ui/prefs.h"
 #include "ui/rulesops.h"
 #include "ui/statsdb.h"
 
@@ -90,6 +91,7 @@ static char *tab_sql(struct ks_stats_win *w, struct tabview *tv)
 /* ---- columns ------------------------------------------------------------- */
 
 static void on_header_clicked(GtkTreeViewColumn *col, gpointer ud);
+static void apply_columns_visibility(struct ks_stats_win *w, struct tabview *tv);
 static void apply_columns_visibility(struct ks_stats_win *w, struct tabview *tv);
 
 static int default_width(const char *name)
@@ -305,6 +307,28 @@ struct ks_ruleed *ks_sw_ruleed(struct ks_stats_win *w)
     if (w->ruleed == NULL)
         w->ruleed = ks_ruleed_new(w->svc, GTK_WINDOW(w->win), on_rule_saved, w);
     return w->ruleed;
+}
+
+/* _on_settings_saved() */
+static void on_prefs_saved(void *ud)
+{
+    struct ks_stats_win *w = ud;
+    for (int i = 0; i < NTABS; i++)
+        apply_columns_visibility(w, &w->tv[i]);
+}
+
+struct ks_prefs *ks_sw_prefs(struct ks_stats_win *w)
+{
+    if (w->prefs == NULL)
+        w->prefs = ks_prefs_new(w->svc, w->settings, GTK_WINDOW(w->win), on_prefs_saved, w);
+    return w->prefs;
+}
+
+/* _cb_prefs_clicked() */
+static void on_prefs_button(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    ks_prefs_show(ks_sw_prefs(ud));
 }
 
 struct tabview *ks_sw_tab(struct ks_stats_win *w, enum ks_tab tab)
@@ -779,6 +803,10 @@ struct ks_stats_win *ks_stats_win_new(struct ks_service *svc, struct ks_settings
     gtk_widget_set_tooltip_text(newrule, "Create a new rule");
     g_signal_connect(newrule, "clicked", G_CALLBACK(on_new_rule), w);
     gtk_box_pack_start(GTK_BOX(hdr), newrule, FALSE, FALSE, 4);
+    GtkWidget *prefs_btn = gtk_button_new_from_stock(GTK_STOCK_PREFERENCES);
+    gtk_widget_set_tooltip_text(prefs_btn, "Preferences");
+    g_signal_connect(prefs_btn, "clicked", G_CALLBACK(on_prefs_button), w);
+    gtk_box_pack_start(GTK_BOX(hdr), prefs_btn, FALSE, FALSE, 4);
     GtkWidget *l;
     l = label_pair(hdr, "Status", &w->status_label);
     (void)l;
@@ -854,6 +882,7 @@ void ks_stats_win_free(struct ks_stats_win *w)
         return;
     ks_procdlg_free(w->proc);
     ks_ruleed_free(w->ruleed);
+    ks_prefs_free(w->prefs);
     gtk_widget_destroy(w->win);
     for (int i = 0; i < NTABS; i++) {
         g_object_unref(w->tv[i].store);
@@ -877,6 +906,13 @@ void ks_stats_win_update(struct ks_stats_win *w, const Protocol__Statistics *st,
     /* do not update any tab if the window is not visible */
     if (!gtk_widget_get_visible(w->win))
         return;
+    /* _needs_refresh(): diff.seconds < statsDialog/refresh_interval */
+    gint64 now = g_get_monotonic_time();
+    if (w->last_update != 0 &&
+        (now - w->last_update) / G_USEC_PER_SEC <
+            ks_settings_get_int(w->settings, "statsDialog/refresh_interval", 0))
+        return;
+    w->last_update = now;
     if (st == NULL) {
         gtk_label_set_text(GTK_LABEL(w->l_ver), "");
         gtk_label_set_text(GTK_LABEL(w->l_uptime), "");

@@ -89,6 +89,10 @@ void ks_service_toggle_interception(struct ks_service *svc);
  * stream (the daemon reconnects, if it is still there). */
 void ks_service_node_delete(struct ks_service *svc, const char *addr);
 
+/* Service._on_settings_saved(): the database cleaner follows the settings
+ * (started, restarted or stopped). */
+void ks_service_settings_saved(struct ks_service *svc);
+
 /* Stop accepting nodes (_on_close: exit mark). */
 void ks_service_closing(struct ks_service *svc);
 

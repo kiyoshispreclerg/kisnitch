@@ -19,6 +19,7 @@
 #include "common/log.h"
 #include "ui/nodeinfo.h"
 #include "ui/rulesops.h"
+#include "ui/prefs.h"
 #include "ui/stats_win_priv.h"
 
 static const char *nz(const char *s)
@@ -187,6 +188,14 @@ static const char *detail_addr(struct ks_stats_win *w)
     return tv->detail ? tv->data : "";
 }
 
+/* _cb_node_prefs_clicked() */
+static void on_node_prefs(GtkButton *b, gpointer ud)
+{
+    struct ks_stats_win *w = ud;
+    (void)b;
+    ks_prefs_show_node(ks_sw_prefs(w), detail_addr(w));
+}
+
 /* _update_nodes_interception_status() */
 void ks_sw_node_update_buttons(struct ks_stats_win *w)
 {
@@ -311,8 +320,7 @@ GtkWidget *ks_sw_node_build(struct ks_stats_win *w, struct tabview *tv, GtkWidge
     gtk_widget_set_tooltip_text(w->node_start, "Start or stop interception of this node");
     w->node_prefs = gtk_button_new_from_stock(GTK_STOCK_PREFERENCES);
     gtk_widget_set_tooltip_text(w->node_prefs, "Show the preferences of this node");
-    /* the preferences dialog is a later step */
-    gtk_widget_set_sensitive(w->node_prefs, FALSE);
+    g_signal_connect(w->node_prefs, "clicked", G_CALLBACK(on_node_prefs), w);
     w->node_delete = gtk_button_new_from_stock(GTK_STOCK_DELETE);
     gtk_widget_set_tooltip_text(w->node_delete, "Delete this node");
     w->node_actions = gtk_button_new_with_label("Actions");
