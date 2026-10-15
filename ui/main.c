@@ -26,9 +26,11 @@
 #include "common/log.h"
 #include "ui/desktop.h"
 #include "ui/prompt.h"
+#include "ui/res.h"
 #include "ui/server.h"
 #include "ui/service.h"
 #include "ui/settings.h"
+#include "ui/stats_win.h"
 #include "ui/tray.h"
 
 #define APP_ID "io.github.evilsocket.opensnitch"
@@ -40,6 +42,7 @@ struct app {
     struct ks_ui_server *server;
     struct ks_tray *tray;
     struct ks_prompt *prompt;
+    struct ks_stats_win *stats;
     struct ks_desktop desktop;
     int instance_fd;
     char instance_path[PATH_MAX];
@@ -61,6 +64,22 @@ static void on_status(void *ud)
     struct app *a = ud;
     if (a->tray)
         ks_tray_status_changed(a->tray);
+    if (a->stats)
+        ks_stats_win_status_changed(a->stats);
+}
+
+static void on_stats(void *ud, const Protocol__Statistics *st, bool refresh)
+{
+    struct app *a = ud;
+    if (a->stats)
+        ks_stats_win_update(a->stats, st, refresh);
+}
+
+static void on_open_window(void *ud)
+{
+    struct app *a = ud;
+    if (a->stats)
+        ks_stats_win_show(a->stats);
 }
 
 static void on_message(void *ud, const char *title, const char *body)
@@ -114,11 +133,13 @@ static void run_dir(char *buf, size_t len)
 static gboolean on_instance(gint fd, GIOCondition cond, gpointer data)
 {
     (void)cond;
-    (void)data;
+    struct app *a = data;
     int c = accept(fd, NULL, NULL);
     if (c >= 0) {
-        /* OpenWindow(): the main window comes with phase 7 */
+        /* OpenWindow() */
         ks_info("another instance asked to open the main window");
+        if (a->stats != NULL)
+            ks_stats_win_show(a->stats);
         close(c);
     }
     return G_SOURCE_CONTINUE;
@@ -264,6 +285,19 @@ int main(int argc, char **argv)
     }
     ks_settings_init_defaults(&app.settings);
 
+    /* the windows' icon: the theme's "kisnitch" if installed, else ours */
+    gtk_window_set_default_icon_name("kisnitch");
+    if (!gtk_icon_theme_has_icon(gtk_icon_theme_get_default(), "kisnitch")) {
+        GInputStream *in = g_memory_input_stream_new_from_data(ks_res_kisnitch_png,
+                                                               (gssize)ks_res_kisnitch_png_len, NULL);
+        GdkPixbuf *pb = gdk_pixbuf_new_from_stream(in, NULL, NULL);
+        g_object_unref(in);
+        if (pb != NULL) {
+            gtk_window_set_default_icon(pb);
+            g_object_unref(pb);
+        }
+    }
+
     if (auth == NULL)
         auth = ks_settings_raw(&app.settings, KS_CFG_AUTH_TYPE);
     if (auth != NULL && auth[0] != '\0' && strcmp(auth, "simple") != 0) {
@@ -312,14 +346,20 @@ int main(int argc, char **argv)
         .status_changed = on_status,
         .message = on_message,
         .version_warning = on_version_warning,
+        .stats_updated = on_stats,
     };
     app.svc = ks_service_new(&app.settings, &ops, &app);
+    if (app.svc == NULL) {
+        fprintf(stderr, "cannot start: the UI database could not be opened\n");
+        return 1;
+    }
     ks_desktop_init(&app.desktop, NULL, NULL);
     int dfd = ks_desktop_watch(&app.desktop);
     if (dfd >= 0)
         g_unix_fd_add(dfd, G_IO_IN, on_desktop_inotify, &app.desktop);
     app.prompt = ks_prompt_new(app.svc, &app.desktop);
-    app.tray = ks_tray_new(app.svc, on_close, &app);
+    app.stats = ks_stats_win_new(app.svc, &app.settings, &app.desktop);
+    app.tray = ks_tray_new(app.svc, on_open_window, on_close, &app);
 
     printf("[server] addr: %s\n", addr);
     char err[512];
@@ -336,6 +376,8 @@ int main(int argc, char **argv)
     ks_ui_server_free(app.server);
     ks_prompt_free(app.prompt);
     ks_tray_free(app.tray);
+    ks_stats_win_free(app.stats);
+    app.stats = NULL;
     ks_service_free(app.svc);
     ks_desktop_free(&app.desktop);
     if (app.version_dialog)

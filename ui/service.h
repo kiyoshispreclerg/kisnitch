@@ -54,6 +54,9 @@ struct ks_service_ops {
     void (*message)(void *ud, const char *title, const char *body);
     /* The daemon's version differs from ours (once). */
     void (*version_warning)(void *ud, const char *daemon_version, const char *ui_version);
+    /* A Ping's statistics were stored (_on_update_stats); `refresh` says
+     * the events or counters changed. NULL stats: a node left. */
+    void (*stats_updated)(void *ud, const Protocol__Statistics *stats, bool refresh);
 };
 
 struct ks_service_state {
@@ -65,6 +68,8 @@ struct ks_service_state {
 struct ks_service *ks_service_new(struct ks_settings *settings, const struct ks_service_ops *ops,
                                   void *ud);
 void ks_service_free(struct ks_service *svc);
+/* The UI database (owned by the service); NULL only if creation failed. */
+struct ks_db *ks_service_db(struct ks_service *svc);
 
 /* The gRPC server's on_call: sets up the call for `path` coming from
  * `peer` ("unix:", "ipv4:127.0.0.1:4321"). 0 or a status to reject it. */
@@ -79,6 +84,10 @@ void ks_service_answer(struct ks_service *svc, struct ks_ask *ask, Protocol__Rul
 
 /* The tray's "Enable"/"Disable": _enable_interception(). */
 void ks_service_toggle_interception(struct ks_service *svc);
+
+/* Nodes.delete() from the statistics window: ends the node's Notifications
+ * stream (the daemon reconnects, if it is still there). */
+void ks_service_node_delete(struct ks_service *svc, const char *addr);
 
 /* Stop accepting nodes (_on_close: exit mark). */
 void ks_service_closing(struct ks_service *svc);

@@ -45,19 +45,36 @@ DAEMON_LIB_SRC = daemon/config.c \
                  daemon/rules/rule.c
 DAEMON_MAIN    = daemon/main.c
 # The UI without widgets (GLib only): what the unit tests link.
-UI_LIB_SRC = ui/desktop.c \
+UI_LIB_SRC = ui/db.c \
+             ui/highlight.c \
+             ui/desktop.c \
+             ui/nodeinfo.c \
+             ui/netstat.c \
              ui/nodes.c \
+             ui/procinfo.c \
              ui/prompt_rule.c \
+             ui/qmodel.c \
+             ui/pycsv.c \
              ui/pyjson.c \
              ui/rulesdb.c \
+             ui/rulesops.c \
              ui/server.c \
              ui/service.c \
+             ui/statsdb.c \
              ui/settings.c \
-             ui/slug.c
+             ui/slug.c \
+             ui/statsq.c
 UI_GTK_SRC = ui/main.c \
              ui/prompt.c \
+             ui/qstore.c \
+             ui/stats_menu.c \
+             ui/stats_netstat.c \
+             ui/stats_proc.c \
+             ui/stats_node.c \
+             ui/stats_win.c \
              ui/tray.c
 UI_RES     = ui/res/network_aliases.json \
+             data/icons/hicolor/128x128/apps/kisnitch.png \
              ui/res/icon-off.png \
              ui/res/icon-white.png \
              ui/res/icon-pause.png \
@@ -77,7 +94,7 @@ LIBCOMMON = $(BUILD)/libcommon.a
 LIBDAEMON = $(BUILD)/libdaemon.a
 LIBUI     = $(BUILD)/libui.a
 
-.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui clean test-integration
+.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui clean test-integration install install-data uninstall
 
 all: $(BUILD)/kisnitchd $(BUILD)/kisnitch-gtk
 
@@ -93,7 +110,7 @@ $(LIBDAEMON): $(patsubst %.c,$(BUILD)/%.o,$(DAEMON_LIB_SRC))
 # ---- UI -------------------------------------------------------------------
 
 $(BUILD)/kisnitch-gtk: $(patsubst %.c,$(BUILD)/%.o,$(UI_GTK_SRC)) $(LIBUI) $(LIBCOMMON)
-	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS) $(GTK_LIBS)
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS) $(UI_LIBS) $(GTK_LIBS)
 
 $(LIBUI): $(patsubst %.c,$(BUILD)/%.o,$(UI_LIB_SRC)) $(BUILD)/ui/res.o
 	$(AR) rcs $@ $^
@@ -155,6 +172,50 @@ test: all $(UNIT_TESTS) $(UI_TESTS)
 asan:
 	$(MAKE) BUILD=$(BUILD)/asan SANITIZE=1 test
 
+# ---- installation (PREFIX and DESTDIR are respected) ------------------------
+# `install-data` is what makes the UI show up in the launchers of the desktops:
+# the .desktop file, the icon in the hicolor theme and the AppStream metadata.
+
+ICON_SIZES = 16x16 22x22 24x24 32x32 48x48 64x64 128x128 256x256
+DATADIR   ?= $(PREFIX)/share
+
+install-data:
+	install -Dm644 data/kisnitch.desktop $(DESTDIR)$(DATADIR)/applications/kisnitch.desktop
+	install -Dm644 data/io.github.kisnitch.metainfo.xml \
+		$(DESTDIR)$(DATADIR)/metainfo/io.github.kisnitch.metainfo.xml
+	install -Dm644 data/icons/hicolor/scalable/apps/kisnitch.svg \
+		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kisnitch.svg
+	@for s in $(ICON_SIZES); do \
+		[ -f data/icons/hicolor/$$s/apps/kisnitch.png ] || continue; \
+		install -Dm644 data/icons/hicolor/$$s/apps/kisnitch.png \
+			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/kisnitch.png || exit 1; \
+	done
+	@if [ -z "$(DESTDIR)" ]; then \
+		gtk-update-icon-cache -q -t -f $(DATADIR)/icons/hicolor 2>/dev/null || true; \
+		update-desktop-database -q $(DATADIR)/applications 2>/dev/null || true; \
+	fi
+
+install: all install-data
+	install -Dm755 $(BUILD)/kisnitchd $(DESTDIR)$(SBINDIR)/kisnitchd
+	install -Dm755 $(BUILD)/kisnitch-gtk $(DESTDIR)$(BINDIR)/kisnitch-gtk
+
+uninstall:
+	rm -f $(DESTDIR)$(SBINDIR)/kisnitchd $(DESTDIR)$(BINDIR)/kisnitch-gtk
+	rm -f $(DESTDIR)$(DATADIR)/applications/kisnitch.desktop
+	rm -f $(DESTDIR)$(DATADIR)/metainfo/io.github.kisnitch.metainfo.xml
+	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kisnitch.svg
+	@for s in $(ICON_SIZES); do rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/kisnitch.png; done
+
+# ---- tests of the windows (they need a display: tests/integration/stats_gui.sh) ---
+
+GUI_OBJS = $(patsubst %.c,$(BUILD)/%.o,$(filter-out ui/main.c,$(UI_GTK_SRC)))
+
+$(BUILD)/tests/test_stats_gui: tests/gui/test_stats_gui.c tests/harness.h $(GUI_OBJS) $(LIBUI) $(LIBCOMMON)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(UI_CFLAGS) $(GTK_CFLAGS) $(TEST_CPPFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) \
+		-MMD -MP $(ALL_LDFLAGS) -o $@ $< $(GUI_OBJS) $(LIBUI) $(LIBCOMMON) $(LDLIBS) $(UI_LIBS) \
+		$(GTK_LIBS)
+
 # ---- integration tests (network namespaces; see tests/integration/) ------
 # As root they use a new network namespace; otherwise an unprivileged user
 # namespace, where the kernel allows it. Never the host's network.
@@ -165,13 +226,15 @@ $(BUILD)/itests/%: tests/integration/%.c tests/integration/netns.h tests/harness
 	$(CC) $(CPPFLAGS) $(TEST_CPPFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP \
 		$(ALL_LDFLAGS) -o $@ $< $(LIBDAEMON) $(LIBCOMMON) $(LDLIBS)
 
-test-integration: all $(INTEGRATION_TESTS)
+test-integration: all $(INTEGRATION_TESTS) $(BUILD)/tests/test_stats_gui
 	@fail=0; for t in $(INTEGRATION_TESTS); do \
 		$$t || fail=1; \
 	done; \
 	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd tests/integration/run.sh || fail=1; \
 	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd KISNITCH_GTK=$(CURDIR)/$(BUILD)/kisnitch-gtk \
 		tests/integration/ui.sh || fail=1; \
+	KISNITCH_GTK=$(CURDIR)/$(BUILD)/kisnitch-gtk tests/integration/stats_win.sh || fail=1; \
+	STATS_GUI_TEST=$(CURDIR)/$(BUILD)/tests/test_stats_gui tests/integration/stats_gui.sh || fail=1; \
 	if [ $$fail -ne 0 ]; then echo "*** integration tests FAILED"; exit 1; fi; \
 	echo "*** all integration tests passed"
 

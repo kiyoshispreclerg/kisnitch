@@ -6,8 +6,9 @@
  * naming new rules (exists, new_unique_name), the checksum warning
  * (get_by_field) and temporary rules expiring (disable).
  *
- * Phase 6 keeps it in memory; phase 7 moves it to SQLite (ui/db.c) with
- * the same schema. Values are strings, as in the table: booleans are
+ * The rows live in memory; when a database is attached
+ * (ks_rulesdb_attach) every change is written through to its `rules`
+ * table, which has the schema of the original UI (ui/db.c). Values are strings, as in the table: booleans are
  * Python's str(bool) ("True"/"False"), dates "%Y-%m-%d %H:%M:%S" (local
  * time), and the operator list of a "list" rule is a JSON string in
  * operator_data.
@@ -28,6 +29,7 @@
 
 #include "common/arena.h"
 #include "common/pb/ui.pb-c.h"
+#include "ui/db.h"
 
 /* Columns, in the table's order (database/enums.py RuleFields). */
 enum ks_rule_field {
@@ -59,7 +61,13 @@ struct ks_rulesdb {
      * stored. */
     char *dur_filter[8];
     size_t ndur_filter;
+    struct ks_db *sql; /* borrowed; NULL = memory only */
 };
+
+/* Loads the `rules` table into the rows (replacing them) and writes every
+ * later change through to it. `sql` must outlive `db`. false on a
+ * database error (the rows are then unchanged). */
+bool ks_rulesdb_attach(struct ks_rulesdb *db, struct ks_db *sql);
 
 /* Config.RULES_TEMPORARY_LIST */
 extern const char *const ks_rules_temporary_list[8];
@@ -103,6 +111,15 @@ size_t ks_rulesdb_find_like(const struct ks_rulesdb *db, const char *node,
 
 /* Rules.disable(): enabled = 'False'. */
 void ks_rulesdb_disable(struct ks_rulesdb *db, const char *node, const char *name);
+/* The SQL column of a field ("operator_type" ...). */
+const char *ks_rule_field_column(enum ks_rule_field f);
+/* Database.update("rules", "<field>=?", ..., "name=? AND node=?"): sets one
+ * column of the rule (memory and table). false if there is no such rule. */
+bool ks_rulesdb_set_field(struct ks_rulesdb *db, const char *node, const char *name,
+                          enum ks_rule_field f, const char *value);
+/* Rules.update_time(): the time of the rule that matched a connection. */
+void ks_rulesdb_update_time(struct ks_rulesdb *db, const char *time_s, const char *name,
+                            const char *node);
 /* Database.delete_rule(); NULL `node` deletes the name on every node. */
 void ks_rulesdb_delete(struct ks_rulesdb *db, const char *name, const char *node);
 /* Database.delete_rules_by_field(KS_RF_DURATION, filter): what the UI does

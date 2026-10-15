@@ -24,8 +24,10 @@
 
 struct ks_tray;
 
-/* `on_close` runs for the menu's "Close". */
-struct ks_tray *ks_tray_new(struct ks_service *svc, void (*on_close)(void *), void *ud);
+/* `on_open` runs for the icon's click and the menu's "Open main window",
+ * `on_close` for the menu's "Close". */
+struct ks_tray *ks_tray_new(struct ks_service *svc, void (*on_open)(void *),
+                            void (*on_close)(void *), void *ud);
 void ks_tray_free(struct ks_tray *t);
 
 /* Updates the icon and the menu from the service state. */
@@ -37,8 +39,8 @@ void ks_tray_status_changed(struct ks_tray *t);
 void ks_tray_alert(struct ks_tray *t);
 bool ks_tray_available(struct ks_tray *t);
 
-/* utils/xdg.py Autostart, for opensnitch_ui.desktop (the file the
- * upstream UI installs; ours uses the same name so both agree on it). */
+/* utils/xdg.py Autostart, for kisnitch.desktop (upstream's is
+ * opensnitch_ui.desktop, which would start the original UI: divergence 71). */
 bool ks_autostart_enabled(const char *config_home);
 int ks_autostart_enable(const char *config_home, bool on);
 

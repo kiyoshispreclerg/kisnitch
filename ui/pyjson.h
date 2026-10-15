@@ -37,5 +37,7 @@ char *ks_pybuf_finish(struct ks_pybuf *b);
 
 /* json.dumps(v). NULL on OOM. */
 char *ks_pyjson_dumps(const cJSON *v);
+/* json.dumps(v, indent=" " * indent) (what the rules export writes). */
+char *ks_pyjson_dumps_indent(const cJSON *v, int indent);
 
 #endif

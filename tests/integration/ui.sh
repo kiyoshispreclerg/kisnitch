@@ -123,6 +123,11 @@ default_duration=$2
 default_target=0
 default_timeout=$3
 EOF
+    if [ -n "${UI_DB:-}" ]; then
+        rm -f "$UI_DB"
+        printf '\n[database]\ntype=1\nfile=%s\njrnl_wal=false\n' "$UI_DB" \
+            >> "$work/home/.config/opensnitch/settings.conf"
+    fi
     HOME=$work/home XDG_CONFIG_HOME=$work/home/.config XDG_RUNTIME_DIR=$work/run \
         "$KISNITCH_GTK" --socket "unix://$sock" --debug > "$work/ui.log" 2>&1 &
     ui_pid=$!
@@ -280,9 +285,62 @@ run_daemon() { # <label> <binary>
     fi
 }
 
+# the statistics window and the database with a daemon connected
+stats_checks() { # <label> <binary>
+    label=$1
+    bin=$2
+    UI_DB=$work/ui.db
+    if ui_start 1 0 2 && daemon_start "$bin"; then
+        fetch 15 >/dev/null
+        sleep 3
+        q() { python3 -c "
+import sqlite3
+print(sqlite3.connect('$UI_DB').execute(\"$1\").fetchone()[0])" 2>/dev/null; }
+        n=$(q "select count(*) from connections where process like '%curl%' and action='allow'")
+        if [ "${n:-0}" -ge 1 ] 2>/dev/null; then
+            ok "$label: the events of the daemon's Pings are in the UI database ($n)"
+        else
+            fail "$label: the events of the daemon's Pings are in the UI database"
+        fi
+        st=$(q "select status from nodes limit 1")
+        case "$st" in
+            *online*) ok "$label: the node is online in the nodes table" ;;
+            *) fail "$label: the node is online in the nodes table ('$st')" ;;
+        esac
+        # the window opens, and the nodes tab selects the node
+        HOME=$work/home XDG_CONFIG_HOME=$work/home/.config XDG_RUNTIME_DIR=$work/run \
+            "$KISNITCH_GTK" --socket "unix://$sock" >/dev/null 2>&1
+        win=$(xdotool search --sync --onlyvisible --name "Kisnitch Network Statistics" 2>/dev/null | head -1)
+        if [ -n "$win" ]; then
+            ok "$label: the statistics window opens with a daemon connected"
+            xdotool mousemove 83 48 click 1 2>/dev/null   # Nodes
+            sleep 1
+            xdotool mousemove 300 106 click 1 2>/dev/null # the node
+            sleep 2
+            if [ -n "${KS_SHOT_DIR:-}" ] && command -v import >/dev/null 2>&1; then
+                import -window root "$KS_SHOT_DIR/stats-node-$(echo "$label" | tr ' ' '_').png" 2>/dev/null
+            fi
+            if kill -0 "$ui_pid" 2>/dev/null; then
+                ok "$label: selecting the node (node-monitor task) leaves the UI running"
+            else
+                fail "$label: the UI died selecting the node"
+            fi
+        else
+            fail "$label: the statistics window opens with a daemon connected"
+        fi
+    else
+        fail "$label: the daemon connects to the UI (statistics)"
+    fi
+    UI_DB=
+    daemon_stop; ui_stop
+}
+
 run_daemon kisnitchd "$KISNITCHD"
+command -v xdotool >/dev/null 2>&1 && stats_checks kisnitchd "$KISNITCHD"
 if [ -n "$OPENSNITCHD" ] && [ -x "$OPENSNITCHD" ]; then
     run_daemon "opensnitchd $("$OPENSNITCHD" -version 2>/dev/null | tail -n 1)" "$OPENSNITCHD"
+    command -v xdotool >/dev/null 2>&1 && \
+        stats_checks "opensnitchd $("$OPENSNITCHD" -version 2>/dev/null | tail -n 1)" "$OPENSNITCHD"
 else
     echo "  skip the original daemon: OPENSNITCHD not found"
 fi

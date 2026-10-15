@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.kisnitch</id>
+  <name>Kisnitch</name>
+  <summary>Interactive application firewall (lightweight OpenSnitch port)</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <description>
+    <p>
+      Whenever a program tries to open a new connection, Kisnitch asks whether to allow or deny
+      it, and remembers the answer as a rule. It is a port of OpenSnitch to C and GTK 2: the
+      daemon and the interface are compatible with the originals.
+    </p>
+  </description>
+  <launchable type="desktop-id">kisnitch.desktop</launchable>
+  <icon type="stock">kisnitch</icon>
+  <categories>
+    <category>System</category>
+    <category>Security</category>
+    <category>Monitor</category>
+    <category>Network</category>
+  </categories>
+  <provides>
+    <binary>kisnitch-gtk</binary>
+    <binary>kisnitchd</binary>
+  </provides>
+</component>

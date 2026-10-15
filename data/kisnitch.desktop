@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Name=Kisnitch
+Exec=kisnitch-gtk
+Icon=kisnitch
+GenericName=Application Firewall
+GenericName[pt_BR]=Firewall de aplicativos
+Comment=Interactive application firewall
+Comment[pt_BR]=Firewall interativo de aplicativos
+Terminal=false
+NoDisplay=false
+StartupNotify=false
+StartupWMClass=Kisnitch-gtk
+Categories=System;Security;Monitor;GTK;
+Keywords=system;firewall;network;security;connections;opensnitch;
+X-GNOME-Autostart-Delay=3
+X-GNOME-Autostart-enabled=true

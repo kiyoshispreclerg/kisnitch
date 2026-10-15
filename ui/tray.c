@@ -25,7 +25,7 @@
 
 #define HELP_CONFIG_URL "https://github.com/evilsocket/opensnitch/wiki/Configurations"
 #define ICON_PX 64
-#define DESKTOP_FILE "opensnitch_ui.desktop"
+#define DESKTOP_FILE "kisnitch.desktop"
 #define SYSTEM_DESKTOP "/usr/share/applications/" DESKTOP_FILE
 #define SYSTEM_AUTOSTART "/etc/xdg/autostart/" DESKTOP_FILE
 
@@ -33,6 +33,7 @@ enum { ICON_OFF, ICON_WHITE, ICON_PAUSE, ICON_ALERT, NICONS };
 
 struct ks_tray {
     struct ks_service *svc;
+    void (*on_open)(void *);
     void (*on_close)(void *);
     void *ud;
     GtkStatusIcon *icon;
@@ -242,21 +243,33 @@ static void on_popup(GtkStatusIcon *icon, guint button, guint time, gpointer dat
                    time);
 }
 
+static void on_stats_item(GtkMenuItem *item, gpointer data)
+{
+    (void)item;
+    struct ks_tray *t = data;
+    if (t->on_open)
+        t->on_open(t->ud);
+}
+
 static void on_activate(GtkStatusIcon *icon, gpointer data)
 {
     (void)icon;
     struct ks_tray *t = data;
-    /* the main window comes with phase 7; a click clears the alert */
+    /* _on_tray_icon_activated(): the window; the click clears the alert */
     t->alert = false;
     ks_tray_update(t);
+    if (t->on_open)
+        t->on_open(t->ud);
 }
 
-struct ks_tray *ks_tray_new(struct ks_service *svc, void (*on_close)(void *), void *ud)
+struct ks_tray *ks_tray_new(struct ks_service *svc, void (*on_open)(void *),
+                            void (*on_close)(void *), void *ud)
 {
     struct ks_tray *t = calloc(1, sizeof(*t));
     if (t == NULL)
         return NULL;
     t->svc = svc;
+    t->on_open = on_open;
     t->on_close = on_close;
     t->ud = ud;
     t->pix[ICON_OFF] = load_png(ks_res_icon_off_png, ks_res_icon_off_png_len);
@@ -269,7 +282,7 @@ struct ks_tray *ks_tray_new(struct ks_service *svc, void (*on_close)(void *), vo
 
     t->menu = gtk_menu_new();
     t->stats_item = gtk_menu_item_new_with_label("Open main window");
-    gtk_widget_set_sensitive(t->stats_item, FALSE); /* phase 7 */
+    g_signal_connect(t->stats_item, "activate", G_CALLBACK(on_stats_item), t);
     t->fw_item = gtk_menu_item_new_with_label("Disable");
     gtk_widget_set_sensitive(t->fw_item, FALSE);
     t->autostart_item = gtk_check_menu_item_new_with_label("Autostart");

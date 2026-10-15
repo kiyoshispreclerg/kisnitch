@@ -256,7 +256,7 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - `stats_win.c`: todas as abas do original (eventos, nós, regras, hosts, aplicações, endereços, portas, usuários e demais que existirem na versão fixada), filtros, busca, menu de contexto, exportação.
 - `rules_editor.c`: criar/editar todos os tipos de operador, inclusive listas e regras compostas.
 - `prefs.c`: todas as opções da UI e do daemon (por nó).
-- `db.c`: esquema SQLite compatível com o do original, limpeza por limite de eventos.
+- `db.c`: esquema SQLite compatível com o do original, limpeza por dias (`max_days`; o original não limita por contagem, divergência 62).
 
 **Aceite:**
 - [ ] Checklist gerado a partir dos arquivos `.ui` do upstream (cada widget/opção existente lá tem equivalente aqui). Gerar com script e manter em `docs/UI-CHECKLIST.md`.

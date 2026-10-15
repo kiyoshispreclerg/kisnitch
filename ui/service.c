@@ -20,6 +20,7 @@
 #include "common/log.h"
 #include "common/pb_util.h"
 #include "ui/pyjson.h"
+#include "ui/statsdb.h"
 #include "ui/res.h"
 
 enum method { M_PING, M_ASK, M_SUBSCRIBE, M_NOTIFICATIONS, M_ALERT };
@@ -44,7 +45,9 @@ struct ks_service {
     struct ks_service_ops ops;
     void *ud;
     struct ks_nodes nodes;
+    struct ks_db *db;
     struct ks_rulesdb rules;
+    struct ks_statsdb stats;
     struct ks_py_aliases aliases;
     struct ks_service_state st;
     bool version_warning_shown;
@@ -159,6 +162,31 @@ struct ks_service *ks_service_new(struct ks_settings *settings, const struct ks_
     svc->ud = ud;
     ks_nodes_init(&svc->nodes);
     ks_rulesdb_init(&svc->rules);
+
+    /* Database.initialize() with the [database] settings */
+    {
+        char *file = ks_settings_get_string(settings, KS_CFG_DEFAULT_DB_FILE_KEY);
+        bool mem = ks_settings_get_int(settings, KS_CFG_DEFAULT_DB_TYPE_KEY,
+                                       KS_CFG_DB_TYPE_MEMORY) == KS_CFG_DB_TYPE_MEMORY;
+        char err[256] = "";
+        svc->db = ks_db_open(mem ? NULL : file,
+                             ks_settings_get_bool(settings, KS_CFG_DEFAULT_DB_JRNL_WAL, false),
+                             err, sizeof(err));
+        if (svc->db == NULL) {
+            ks_error("The DB is corrupted and it's not safe to continue. Remove, backup or "
+                     "recover the file before continuing. %s",
+                     err);
+            free(file);
+            ks_nodes_free(&svc->nodes);
+            free(svc);
+            return NULL;
+        }
+        free(file);
+        if (!ks_rulesdb_attach(&svc->rules, svc->db))
+            ks_warning("db: could not load the rules table");
+        ks_statsdb_init(&svc->stats, svc->db, &svc->rules);
+        ks_statsdb_reset_status(&svc->stats);
+    }
     if (ks_py_aliases_parse(&svc->aliases, (const char *)ks_res_network_aliases_json,
                             ks_res_network_aliases_json_len) < 0)
         ks_warning("network aliases: invalid built-in network_aliases.json");
@@ -201,7 +229,12 @@ void ks_service_free(struct ks_service *svc)
     if (svc->active)
         free_ask(svc->active);
     ks_nodes_free(&svc->nodes);
+    ks_statsdb_free(&svc->stats);
     ks_rulesdb_free(&svc->rules);
+    /* _on_close(): vacuum, optimize, close */
+    ks_db_vacuum(svc->db);
+    ks_db_optimize(svc->db);
+    ks_db_close(svc->db);
     ks_py_aliases_free(&svc->aliases);
     free(svc);
 }
@@ -214,6 +247,11 @@ struct ks_service_state ks_service_state(const struct ks_service *svc)
 struct ks_nodes *ks_service_nodes(struct ks_service *svc)
 {
     return &svc->nodes;
+}
+
+struct ks_db *ks_service_db(struct ks_service *svc)
+{
+    return svc->db;
 }
 
 struct ks_rulesdb *ks_service_rules(struct ks_service *svc)
@@ -360,6 +398,16 @@ void ks_service_answer(struct ks_service *svc, struct ks_ask *ask, Protocol__Rul
 
 /* ---- RPCs -------------------------------------------------------------- */
 
+static const char *node_name(const struct ks_node *n)
+{
+    return n != NULL && n->config != NULL ? nz(n->config->name) : "";
+}
+
+static const char *node_version(const struct ks_node *n)
+{
+    return n != NULL && n->config != NULL ? nz(n->config->version) : "";
+}
+
 static void on_subscribe(struct callctx *cc, struct ks_grpc_call *call, const uint8_t *msg,
                          size_t len)
 {
@@ -409,6 +457,8 @@ static void on_subscribe(struct callctx *cc, struct ks_grpc_call *call, const ui
     if (node == NULL)
         return;
     ks_rulesdb_add_pb(&svc->rules, node->addr, node->config->rules, node->config->n_rules);
+    ks_statsdb_node_insert(&svc->stats, node->addr, node_name(node), node_version(node),
+                           KS_NODE_ONLINE);
     set_daemon_connected(svc, true);
     if (ks_nodes_count(&svc->nodes) <= 1)
         update_fw_status(svc, node->config->isfirewallrunning);
@@ -442,6 +492,13 @@ static void on_ping(struct callctx *cc, struct ks_grpc_call *call, const uint8_t
     struct ks_node *n = ks_nodes_get(&svc->nodes, node);
     if (n != NULL)
         n->last_seen = time(NULL);
+    if (p->stats != NULL && n != NULL) {
+        /* _on_update_stats() -> _populate_stats() */
+        struct ks_stats_refresh r = ks_statsdb_populate(&svc->stats, n->addr, node_name(n),
+                                                         node_version(n), p->stats);
+        if (svc->ops.stats_updated)
+            svc->ops.stats_updated(svc->ud, p->stats, r.main || r.details);
+    }
     if (p->stats)
         ks_debug("[Ping] %s: %llu connections, %llu rules, %zu events", node,
                  (unsigned long long)p->stats->connections, (unsigned long long)p->stats->rules,
@@ -481,6 +538,15 @@ static void on_alert(struct callctx *cc, struct ks_grpc_call *call, const uint8_
         if (a->type == PROTOCOL__ALERT__TYPE__WARNING)
             title = "Warning";
         message(svc, title, body);
+        char node[KS_NODE_ADDR_MAX];
+        ks_nodes_peer_addr(cc->peer, node, sizeof(node));
+        ks_statsdb_alert(&svc->stats, node,
+                         a->type == PROTOCOL__ALERT__TYPE__ERROR     ? "ERROR"
+                         : a->type == PROTOCOL__ALERT__TYPE__WARNING ? "WARNING"
+                                                                     : "INFO",
+                         a->what == PROTOCOL__ALERT__WHAT__KERNEL_EVENT ? "KERNEL EVENT"
+                                                                         : "GENERIC",
+                         body);
     } else {
         ks_info("PostAlert() unknown alert action: %d", (int)a->action);
     }
@@ -599,7 +665,13 @@ static void on_ntf_close(struct ks_grpc_call *call, int status, const char *msg,
         /* _on_client_closed() */
         ks_info("[Notifications] client closed %s", cc->peer);
         n->stream = NULL;
+        /* _delete_node() */
+        ks_statsdb_node_forget(&svc->stats, n->addr);
+        ks_statsdb_node_update(&svc->stats, n->addr, node_name(n), node_version(n),
+                               KS_NODE_OFFLINE);
         ks_nodes_delete(&svc->nodes, cc->peer);
+        if (svc->ops.stats_updated)
+            svc->ops.stats_updated(svc->ud, NULL, true); /* _stats_dialog.update(True, None, True) */
         set_daemon_connected(svc, false);
         if (!ks_nodes_peer_is_unix(cc->peer)) {
             char body[KS_NODE_ADDR_MAX + 4];
@@ -688,6 +760,19 @@ void ks_service_toggle_interception(struct ks_service *svc)
     update_fw_status(svc, !enable);
 }
 
+void ks_service_node_delete(struct ks_service *svc, const char *addr)
+{
+    struct ks_node *n = ks_nodes_get(&svc->nodes, addr);
+    if (n == NULL)
+        return;
+    /* the generator of its notifications ends, and with it the call; the
+     * close path does the rest (_delete_node) */
+    if (n->stream != NULL)
+        ks_grpc_call_finish(n->stream, KS_GRPC_OK, NULL);
+    else
+        ks_nodes_delete(&svc->nodes, addr);
+}
+
 void ks_service_closing(struct ks_service *svc)
 {
     svc->exiting = true;
@@ -709,5 +794,11 @@ void ks_service_closing(struct ks_service *svc)
             n->stream = NULL;
             ks_grpc_call_cancel(c);
         }
+    }
+    /* update_all(Nodes.OFFLINE) */
+    for (size_t i = 0; i < svc->nodes.len; i++) {
+        const struct ks_node *n = svc->nodes.items[i];
+        ks_statsdb_node_update(&svc->stats, n->addr, node_name(n), node_version(n),
+                               KS_NODE_OFFLINE);
     }
 }

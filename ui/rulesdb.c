@@ -15,6 +15,7 @@
 #include <time.h>
 
 #include "common/json_util.h"
+#include "common/log.h"
 #include "ui/pyjson.h"
 
 const char *const ks_rules_temporary_list[8] = {"once", "30s", "5m",  "15m",
@@ -77,6 +78,83 @@ static void remove_at(struct ks_rulesdb *db, size_t i)
     db->len--;
 }
 
+static void sql_run(struct ks_rulesdb *db, const char *sql, const char *const *args,
+                    int nargs)
+{
+    ks_db_run(db->sql, sql, args, nargs, NULL);
+}
+
+static void sql_write_row(struct ks_rulesdb *db, char *const f[KS_RF_COUNT])
+{
+    if (db->sql == NULL)
+        return;
+    /* Database.insert(..., "REPLACE"); columns by name, as upstream */
+    sql_run(db,
+            "INSERT OR REPLACE INTO rules (time, node, name, enabled, precedence, action, "
+            "duration, operator_type, operator_sensitive, operator_operand, operator_data, "
+            "description, nolog, created) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (const char *const *)f, KS_RF_COUNT);
+}
+
+bool ks_rulesdb_attach(struct ks_rulesdb *db, struct ks_db *sql)
+{
+    sqlite3_stmt *st;
+    sqlite3 *h = ks_db_handle(sql);
+    /* NULL (columns added by a migration on old rows) reads as "" */
+    if (sqlite3_prepare_v2(h,
+                           "SELECT time, node, name, enabled, precedence, action, duration, "
+                           "operator_type, operator_sensitive, operator_operand, "
+                           "operator_data, description, nolog, created FROM rules "
+                           "ORDER BY rowid",
+                           -1, &st, NULL) != SQLITE_OK) {
+        ks_error("rulesdb: %s", sqlite3_errmsg(h));
+        return false;
+    }
+    struct ks_rulesdb tmp;
+    ks_rulesdb_init(&tmp);
+    bool ok = true;
+    while (ok && sqlite3_step(st) == SQLITE_ROW) {
+        const char *v[KS_RF_COUNT];
+        for (int i = 0; i < KS_RF_COUNT; i++)
+            v[i] = (const char *)sqlite3_column_text(st, i);
+        if (tmp.len == tmp.cap) {
+            size_t ncap = tmp.cap ? tmp.cap * 2 : 64;
+            struct ks_ui_rule *nr = realloc(tmp.rows, ncap * sizeof(*nr));
+            if (nr == NULL) {
+                ok = false;
+                break;
+            }
+            tmp.rows = nr;
+            tmp.cap = ncap;
+        }
+        struct ks_ui_rule *row = &tmp.rows[tmp.len];
+        for (int i = 0; i < KS_RF_COUNT; i++) {
+            row->f[i] = strdup(nz(v[i]));
+            if (row->f[i] == NULL) {
+                for (int j = 0; j < i; j++)
+                    free(row->f[j]);
+                ok = false;
+                break;
+            }
+        }
+        if (ok)
+            tmp.len++;
+    }
+    sqlite3_finalize(st);
+    if (!ok) {
+        ks_rulesdb_free(&tmp);
+        return false;
+    }
+    for (size_t i = 0; i < db->len; i++)
+        free_row(&db->rows[i]);
+    free(db->rows);
+    db->rows = tmp.rows;
+    db->len = tmp.len;
+    db->cap = tmp.cap;
+    db->sql = sql;
+    return true;
+}
+
 int ks_rulesdb_add_row(struct ks_rulesdb *db, const char *const v[KS_RF_COUNT])
 {
     if (ks_rulesdb_duration_filtered(db, v[KS_RF_DURATION]))
@@ -109,6 +187,7 @@ int ks_rulesdb_add_row(struct ks_rulesdb *db, const char *const v[KS_RF_COUNT])
         db->cap = ncap;
     }
     db->rows[db->len++] = row;
+    sql_write_row(db, row.f);
     return 0;
 }
 
@@ -329,6 +408,10 @@ size_t ks_rulesdb_find_like(const struct ks_rulesdb *db, const char *node,
 
 void ks_rulesdb_disable(struct ks_rulesdb *db, const char *node, const char *name)
 {
+    if (db->sql != NULL) {
+        const char *a[2] = {name, node};
+        sql_run(db, "UPDATE OR REPLACE rules SET enabled='False' WHERE name=? AND node=?", a, 2);
+    }
     for (size_t i = 0; i < db->len; i++) {
         struct ks_ui_rule *r = &db->rows[i];
         if (strcmp(r->f[KS_RF_NAME], nz(name)) == 0 && strcmp(r->f[KS_RF_NODE], nz(node)) == 0) {
@@ -343,6 +426,12 @@ void ks_rulesdb_disable(struct ks_rulesdb *db, const char *node, const char *nam
 
 void ks_rulesdb_delete(struct ks_rulesdb *db, const char *name, const char *node)
 {
+    if (db->sql != NULL) {
+        const char *a[2] = {name, node};
+        sql_run(db, node != NULL ? "DELETE FROM rules WHERE name=? AND node=?"
+                                 : "DELETE FROM rules WHERE name=?",
+                a, node != NULL ? 2 : 1);
+    }
     for (size_t i = db->len; i > 0; i--) {
         struct ks_ui_rule *r = &db->rows[i - 1];
         if (strcmp(r->f[KS_RF_NAME], nz(name)) == 0 &&
@@ -351,8 +440,79 @@ void ks_rulesdb_delete(struct ks_rulesdb *db, const char *name, const char *node
     }
 }
 
+static const char *const field_columns[KS_RF_COUNT] = {
+    [KS_RF_TIME] = "time",
+    [KS_RF_NODE] = "node",
+    [KS_RF_NAME] = "name",
+    [KS_RF_ENABLED] = "enabled",
+    [KS_RF_PRECEDENCE] = "precedence",
+    [KS_RF_ACTION] = "action",
+    [KS_RF_DURATION] = "duration",
+    [KS_RF_OP_TYPE] = "operator_type",
+    [KS_RF_OP_SENSITIVE] = "operator_sensitive",
+    [KS_RF_OP_OPERAND] = "operator_operand",
+    [KS_RF_OP_DATA] = "operator_data",
+    [KS_RF_DESCRIPTION] = "description",
+    [KS_RF_NOLOG] = "nolog",
+    [KS_RF_CREATED] = "created",
+};
+
+const char *ks_rule_field_column(enum ks_rule_field f)
+{
+    return f >= 0 && f < KS_RF_COUNT ? field_columns[f] : "";
+}
+
+bool ks_rulesdb_set_field(struct ks_rulesdb *db, const char *node, const char *name,
+                          enum ks_rule_field f, const char *value)
+{
+    if (f < 0 || f >= KS_RF_COUNT)
+        return false;
+    bool found = false;
+    for (size_t i = 0; i < db->len; i++) {
+        struct ks_ui_rule *r = &db->rows[i];
+        if (strcmp(r->f[KS_RF_NAME], nz(name)) == 0 && strcmp(r->f[KS_RF_NODE], nz(node)) == 0) {
+            char *v = strdup(nz(value));
+            if (v == NULL)
+                return false;
+            free(r->f[f]);
+            r->f[f] = v;
+            found = true;
+        }
+    }
+    if (found && db->sql != NULL) {
+        char sql[128];
+        snprintf(sql, sizeof(sql), "UPDATE rules SET %s=? WHERE name=? AND node=?",
+                 field_columns[f]);
+        const char *a[3] = {value, name, node};
+        sql_run(db, sql, a, 3);
+    }
+    return found;
+}
+
+void ks_rulesdb_update_time(struct ks_rulesdb *db, const char *time_s, const char *name,
+                            const char *node)
+{
+    if (db->sql != NULL) {
+        const char *a[3] = {time_s, name, node};
+        sql_run(db, "UPDATE OR REPLACE rules SET time=? WHERE name=? AND node=?", a, 3);
+    }
+    for (size_t i = 0; i < db->len; i++) {
+        struct ks_ui_rule *r = &db->rows[i];
+        if (strcmp(r->f[KS_RF_NAME], nz(name)) == 0 && strcmp(r->f[KS_RF_NODE], nz(node)) == 0) {
+            char *f = strdup(nz(time_s));
+            if (f != NULL) {
+                free(r->f[KS_RF_TIME]);
+                r->f[KS_RF_TIME] = f;
+            }
+        }
+    }
+}
+
 void ks_rulesdb_delete_filtered(struct ks_rulesdb *db)
 {
+    for (size_t i = 0; db->sql != NULL && i < db->ndur_filter; i++)
+        sql_run(db, "DELETE FROM rules WHERE duration=?", (const char *const *)&db->dur_filter[i],
+                1);
     for (size_t i = db->len; i > 0; i--) {
         if (ks_rulesdb_duration_filtered(db, db->rows[i - 1].f[KS_RF_DURATION]))
             remove_at(db, i - 1);

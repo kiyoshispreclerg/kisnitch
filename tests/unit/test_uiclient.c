@@ -425,11 +425,22 @@ TEST(subscribe_and_notifications)
     CHECK_INT_EQ(ui.last_reply_id, 1004);
     CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR);
 
+    /* the UI sends its task JSON with lower case keys; Go's decoder matches
+     * "Name" and "Data" without regard to case, so this is the same task */
+    t.id = 1004 + 100;
+    t.data = "{\"name\": \"node-monitor\", \"data\": {\"node\": \"unix:/local\", "
+             "\"interval\": \"5s\"}}";
+    want_replies = 6;
+    send_notification(&t);
+    CHECK(run_until(replies_reached, 2000));
+    CHECK_INT_EQ(ui.last_reply_id, 1104);
+    CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR);
+
     /* RELOAD_FW_RULES: phase 8 -> ERROR */
     t.id = 1005;
     t.type = PROTOCOL__ACTION__RELOAD_FW_RULES;
     t.data = "";
-    want_replies = 6;
+    want_replies = 7;
     send_notification(&t);
     CHECK(run_until(replies_reached, 2000));
     CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR);
@@ -444,7 +455,7 @@ TEST(subscribe_and_notifications)
     t.id = 1006;
     t.type = PROTOCOL__ACTION__CHANGE_CONFIG;
     t.data = newcfg;
-    want_replies = 7;
+    want_replies = 8;
     send_notification(&t);
     CHECK(run_until(replies_reached, 2000));
     CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__OK);
@@ -462,7 +473,7 @@ TEST(subscribe_and_notifications)
     /* An invalid configuration is refused */
     t.id = 1007;
     t.data = "{not json";
-    want_replies = 8;
+    want_replies = 9;
     send_notification(&t);
     CHECK(run_until(replies_reached, 2000));
     CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR);

@@ -124,7 +124,16 @@ static void add_number(struct ks_pybuf *b, double d)
     ks_pybuf_adds(b, tmp);
 }
 
-static void dump(struct ks_pybuf *b, const cJSON *v)
+static void newline(struct ks_pybuf *b, int indent, int level)
+{
+    ks_pybuf_adds(b, "\n");
+    for (int i = 0; i < indent * level; i++)
+        ks_pybuf_adds(b, " ");
+}
+
+/* indent < 0: json.dumps(v); otherwise json.dumps(v, indent=" " * indent),
+ * whose item separator is "," at the end of a line. */
+static void dump(struct ks_pybuf *b, const cJSON *v, int indent, int level)
 {
     if (cJSON_IsNull(v)) {
         ks_pybuf_adds(b, "null");
@@ -136,24 +145,23 @@ static void dump(struct ks_pybuf *b, const cJSON *v)
         add_number(b, v->valuedouble);
     } else if (cJSON_IsString(v)) {
         ks_pybuf_add_json_str(b, v->valuestring);
-    } else if (cJSON_IsArray(v)) {
-        ks_pybuf_adds(b, "[");
+    } else if (cJSON_IsArray(v) || cJSON_IsObject(v)) {
+        bool obj = cJSON_IsObject(v);
+        ks_pybuf_adds(b, obj ? "{" : "[");
         for (const cJSON *c = v->child; c != NULL; c = c->next) {
-            dump(b, c);
+            if (indent >= 0)
+                newline(b, indent, level + 1);
+            if (obj) {
+                ks_pybuf_add_json_str(b, c->string);
+                ks_pybuf_adds(b, ": ");
+            }
+            dump(b, c, indent, level + 1);
             if (c->next != NULL)
-                ks_pybuf_adds(b, ", ");
+                ks_pybuf_adds(b, indent >= 0 ? "," : ", ");
         }
-        ks_pybuf_adds(b, "]");
-    } else if (cJSON_IsObject(v)) {
-        ks_pybuf_adds(b, "{");
-        for (const cJSON *c = v->child; c != NULL; c = c->next) {
-            ks_pybuf_add_json_str(b, c->string);
-            ks_pybuf_adds(b, ": ");
-            dump(b, c);
-            if (c->next != NULL)
-                ks_pybuf_adds(b, ", ");
-        }
-        ks_pybuf_adds(b, "}");
+        if (indent >= 0 && v->child != NULL)
+            newline(b, indent, level);
+        ks_pybuf_adds(b, obj ? "}" : "]");
     } else {
         ks_pybuf_adds(b, "null");
     }
@@ -162,6 +170,13 @@ static void dump(struct ks_pybuf *b, const cJSON *v)
 char *ks_pyjson_dumps(const cJSON *v)
 {
     struct ks_pybuf b = {0};
-    dump(&b, v);
+    dump(&b, v, -1, 0);
+    return ks_pybuf_finish(&b);
+}
+
+char *ks_pyjson_dumps_indent(const cJSON *v, int indent)
+{
+    struct ks_pybuf b = {0};
+    dump(&b, v, indent, 0);
     return ks_pybuf_finish(&b);
 }

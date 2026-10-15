@@ -287,6 +287,8 @@ TEST(subscribe_and_ping)
     }
     CHECK_INT_EQ(gui.version_warnings, 1);
     CHECK_STR_EQ(gui.daemon_version, "1.6.5");
+    /* the node and its Ping are in the database */
+    CHECK_INT_EQ(ks_db_count(ks_service_db(svc), "nodes"), 1);
 
     /* PostAlert */
     Protocol__Alert alert = PROTOCOL__ALERT__INIT;
@@ -300,6 +302,7 @@ TEST(subscribe_and_ping)
     CHECK_INT_EQ(r.status, KS_GRPC_OK);
     CHECK_STR_EQ(gui.last_title, "Warning");
     CHECK_STR_EQ(gui.last_body, "something happened");
+    CHECK_INT_EQ(ks_db_count(ks_service_db(svc), "alerts"), 1);
 
     /* unknown method */
     res_reset(&r);
@@ -309,6 +312,8 @@ TEST(subscribe_and_ping)
     res_reset(&r);
     cli_disconnect();
     spin(50);
+    /* _delete_node(): the node row stays, offline */
+    CHECK_INT_EQ(ks_db_count(ks_service_db(svc), "nodes"), 1);
 }
 
 static struct result ntf_res;
@@ -362,7 +367,8 @@ TEST(notifications)
         &protocol__notification__descriptor, ntf_last, ntf_last_len);
     CHECK(n != NULL);
     CHECK_INT_EQ(n->type, PROTOCOL__ACTION__ENABLE_INTERCEPTION);
-    CHECK(n->id > 1000000000000000ULL); /* time.time() without the dot */
+    /* time.time() without the dot: str() drops trailing zeros, so 11 to 17 digits */
+    CHECK(n->id > 10000000000ULL);
     /* the reply is matched by id */
     Protocol__NotificationReply rep = PROTOCOL__NOTIFICATION_REPLY__INIT;
     rep.id = n->id;

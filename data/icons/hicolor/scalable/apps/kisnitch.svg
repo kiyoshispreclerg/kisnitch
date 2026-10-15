@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Kisnitch icon. Original artwork for this project (GPL-3.0-or-later). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#26385f"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f1f5f9"/>
+      <stop offset="1" stop-color="#b6c4d6"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="52" fill="url(#bg)"/>
+  <path d="M128 40 L200 66 V122 C200 166 170 198 128 216 C86 198 56 166 56 122 V66 Z"
+        fill="url(#shield)" stroke="#38bdf8" stroke-width="6" stroke-linejoin="round"/>
+  <g fill="none" stroke="#0f172a" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M106 92 V168"/>
+    <path d="M152 94 L110 130"/>
+    <path d="M114 126 L156 168"/>
+  </g>
+  <circle cx="190" cy="70" r="20" fill="#f59e0b" stroke="#0f172a" stroke-width="5"/>
+  <rect x="187" y="59" width="6" height="14" rx="3" fill="#0f172a"/>
+  <circle cx="190" cy="80" r="3.4" fill="#0f172a"/>
+</svg>

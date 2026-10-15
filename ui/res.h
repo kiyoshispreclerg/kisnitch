@@ -16,6 +16,7 @@
     extern const size_t name##_len
 
 KS_RES(ks_res_network_aliases_json);
+KS_RES(ks_res_kisnitch_png); /* data/icons/hicolor/128x128/apps/kisnitch.png */
 KS_RES(ks_res_icon_off_png);
 KS_RES(ks_res_icon_white_png);
 KS_RES(ks_res_icon_pause_png);

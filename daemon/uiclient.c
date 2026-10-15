@@ -895,7 +895,9 @@ static void handle_delete_rules(struct ks_uiclient *c, const Protocol__Notificat
 static void handle_task(struct ks_uiclient *c, const Protocol__Notification *ntf, bool start)
 {
     cJSON *j = cJSON_Parse(ntf->data);
-    const cJSON *name = j ? cJSON_GetObjectItemCaseSensitive(j, "Name") : NULL;
+    /* TaskNotification{Name, Data}: Go's decoder takes "name" (what the UI
+     * sends) as well as "Name"; cJSON's non-case-sensitive lookup does the same */
+    const cJSON *name = j ? cJSON_GetObjectItem(j, "Name") : NULL;
     if (j == NULL || (name != NULL && !cJSON_IsString(name) && !cJSON_IsNull(name))) {
         if (start) {
             ks_error("parsing TaskStart, err: invalid JSON, %s", ntf->data);
