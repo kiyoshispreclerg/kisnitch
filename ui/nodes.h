@@ -69,6 +69,15 @@ void ks_nodes_free(struct ks_nodes *n);
  * ("ipv4", "1.2.3.4"), and so on (split on ":"; an IPv6 peer
  * "ipv6:[::1]:5" gives "[", as upstream). Writes "proto:addr". */
 void ks_nodes_peer_addr(const char *peer, char *out, size_t len);
+/* NetworkInterfaces.list(): name and IPv4 address of the interfaces. */
+struct ks_iface {
+    char name[16];
+    char ip[16];
+};
+size_t ks_net_ifaces(struct ks_iface *out, size_t max);
+/* Nodes.is_local(addr): "unix..." or an ipv4/ipv6 address of this host
+ * (the IPv4 of an interface, as NetworkInterfaces.list() finds them). */
+bool ks_nodes_is_local(const char *addr);
 /* The proto part of a peer, for _is_local_request(). */
 bool ks_nodes_peer_is_unix(const char *peer);
 

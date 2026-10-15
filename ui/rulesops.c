@@ -142,8 +142,9 @@ bool ks_rops_apply_to_node(struct ks_rulesdb *rules, struct ks_nodes *nodes, con
 bool ks_rops_delete(struct ks_rulesdb *rules, struct ks_nodes *nodes, const char *name,
                     const char *node, ks_ntf_reply_cb cb, void *ud)
 {
-    if (name == NULL || node == NULL)
+    if (name == NULL)
         return false;
+    /* a NULL node: the rule of that name on every node (Nodes.delete_rule(addr=None)) */
     ks_rulesdb_delete(rules, name, node);
     Protocol__Rule r = PROTOCOL__RULE__INIT;
     Protocol__Operator op = PROTOCOL__OPERATOR__INIT;
@@ -154,7 +155,19 @@ bool ks_rops_delete(struct ks_rulesdb *rules, struct ks_nodes *nodes, const char
     op.type = (char *)(uintptr_t) "";
     op.operand = (char *)(uintptr_t) "";
     op.data = (char *)(uintptr_t) "";
-    send_rule(nodes, node, PROTOCOL__ACTION__DELETE_RULE, &r, cb, ud);
+    if (node != NULL) {
+        send_rule(nodes, node, PROTOCOL__ACTION__DELETE_RULE, &r, cb, ud);
+    } else {
+        Protocol__Notification n = PROTOCOL__NOTIFICATION__INIT;
+        Protocol__Rule *rules_arr[1] = {&r};
+        n.clientname = (char *)(uintptr_t) "";
+        n.servername = (char *)(uintptr_t) "";
+        n.data = (char *)(uintptr_t) "";
+        n.type = PROTOCOL__ACTION__DELETE_RULE;
+        n.rules = rules_arr;
+        n.n_rules = 1;
+        ks_nodes_send_all(nodes, &n, cb, ud);
+    }
     return true;
 }
 

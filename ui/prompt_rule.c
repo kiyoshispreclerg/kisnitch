@@ -315,6 +315,28 @@ static bool py_ip(const char *s, struct ks_ip *ip, bool *v4)
     return true;
 }
 
+bool ks_py_ip_valid(const char *s)
+{
+    struct ks_ip ip;
+    bool v4;
+    /* IPv6 may carry a scope id ("fe80::1%eth0", Python 3.9): non-empty,
+     * without "%" or "/" */
+    const char *pct = strchr(s, '%');
+    if (pct != NULL) {
+        if (strchr(s, ':') == NULL || pct[1] == '\0' || strchr(pct + 1, '%') != NULL ||
+            strchr(pct + 1, '/') != NULL)
+            return false;
+        char addr[64];
+        size_t al = (size_t)(pct - s);
+        if (al >= sizeof(addr))
+            return false;
+        memcpy(addr, s, al);
+        addr[al] = '\0';
+        return py_ip(addr, &ip, &v4);
+    }
+    return py_ip(s, &ip, &v4);
+}
+
 /* ipaddress.ip_network(s) (strict): -1 on ValueError. */
 static int py_network(const char *s, uint8_t net[16], int *bits, bool *v4)
 {

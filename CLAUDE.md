@@ -30,13 +30,13 @@ numa máquina com Go.)
 - Estado global de módulo é aceito onde o upstream usa globais (caches do procmon); APIs de teste para resetar (ks_procmon_cache_reset).
 - Testes que inspecionam processos filhos via /proc são pulados sob valgrind (KS_TEST_VALGRIND): o filho de um processo sob valgrind é o próprio valgrind.
 - UI: GTK 2 só em ui/prompt.c, ui/tray.c e ui/main.c; o resto de ui/ (libui.a) usa só GLib e é testado sem display (tests/unit/test_ui_*.c). Comportamento do Python/Qt (slugify, json.dumps, QSettings, configparser, LIKE do SQLite) é reproduzido em ui/: use esses módulos.
-- A lógica do popup é comparada com o código Python do upstream por `make diff-ui`: mudou ui/prompt_rule.c, rode-o.
+- A lógica do popup é comparada com o código Python do upstream por `make diff-ui`: mudou ui/prompt_rule.c ou ui/rulegen.c, rode-o.
 - Recursos do upstream usados pela UI ficam em ui/res/ (tools/sync-ui-res.sh) e são embutidos no binário; as tabelas do slugify vêm de tools/gen-slug-tables.py.
 
 ## Comandos
 - make / make test / make asan / make valgrind / make lint
 - make diff (teste diferencial contra o Go do upstream; ver tests/diff/run.sh)
-- make diff-ui (popup contra o código Python do upstream; precisa do submódulo e de python3-protobuf, python3-grpc-tools, python3-slugify, python3-unidecode)
+- make diff-ui (popup e editor de regras contra o código Python do upstream; precisa do submódulo e de python3-protobuf, python3-grpc-tools, python3-slugify, python3-unidecode)
 - make fuzz-run FUZZ_TIME=60 (nesta máquina: `FUZZ_LDFLAGS=-L/usr/lib/gcc/x86_64-linux-gnu/11`)
 - make test-integration (network namespace: como root usa `unshare -nm`; sem root, user namespace, se o kernel permitir. Precisa de nft, curl e python3; openssl para o teste HTTPS; python3-grpcio e python3-grpc-tools para os testes com UI (tests/integration/fake_ui.py). Os testes de DNS trocam /etc/resolv.conf só dentro do mount namespace. tests/integration/ui.sh roda a nossa UI em Xvfb (xdotool para o clique) com o nosso daemon e com o original, se OPENSNITCHD (padrão /usr/bin/opensnitchd) existir; tests/integration/stats_gui.sh roda tests/gui/test_stats_gui (diálogos e tarefas da janela de estatísticas com as respostas do daemon injetadas); tests/integration/stats_win.sh abre a janela de estatísticas com 100 mil eventos, e usa xsel e ImageMagick `import` se houver; KS_SHOT_DIR guarda capturas de tela)
 - make install / install-data / uninstall (respeitam PREFIX e DESTDIR; `install-data` põe o .desktop, o ícone e o metainfo). tools/gen-icons.sh gera os PNG do ícone a partir do SVG (`data/`)

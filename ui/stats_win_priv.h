@@ -84,9 +84,14 @@ struct ks_stats_win {
     struct ks_procdlg *proc;
     struct ks_desktop *desktop;
     GtkWidget *proc_button; /* the "process details" button of the applications tab */
+
+    /* the rules editor (rules_editor.c), made on first use */
+    struct ks_ruleed *ruleed;
+    GtkWidget *rule_edit, *rule_delete; /* the buttons of a rule's detail view */
 };
 
 struct ks_procdlg;
+struct ks_ruleed;
 
 /* stats_win.c */
 struct tabview *ks_sw_cur_tab(struct ks_stats_win *w);
@@ -100,6 +105,9 @@ void ks_sw_enter_detail(struct ks_stats_win *w, enum ks_tab tab, const char *dat
 GPtrArray *ks_sw_selected_rows(struct tabview *tv);
 /* _del_by_field() for one item of a tab; false if nothing to delete */
 bool ks_sw_del_by_field(struct ks_stats_win *w, enum ks_tab tab, const char *value);
+
+/* the rules editor of the window (created on first use) */
+struct ks_ruleed *ks_sw_ruleed(struct ks_stats_win *w);
 
 /* stats_menu.c */
 void ks_sw_menu_attach(struct ks_stats_win *w, struct tabview *tv);

@@ -8,12 +8,20 @@
  *               and the OpenSnitch contributors.
  * Copyright (C) 2026 the Kisnitch contributors.
  */
+/* struct ifreq and SIOCGIFCONF are not POSIX */
+#define _DEFAULT_SOURCE 1
 #include "ui/nodes.h"
 
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "common/json_util.h"
 #include "common/log.h"
@@ -61,6 +69,47 @@ void ks_nodes_peer_addr(const char *peer, char *out, size_t len)
         snprintf(out, len, "unix:/local");
     else
         snprintf(out, len, "%.*s:%.*s", pl, peer, (int)al, a);
+}
+
+size_t ks_net_ifaces(struct ks_iface *out, size_t max)
+{
+    /* NetworkInterfaces.list(): SIOCGIFCONF on a datagram socket, IPv4 only */
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return 0;
+    struct ifreq buf[64];
+    struct ifconf ifc;
+    memset(&ifc, 0, sizeof(ifc));
+    ifc.ifc_len = (int)sizeof(buf);
+    ifc.ifc_req = buf;
+    size_t n = 0;
+    if (ioctl(fd, SIOCGIFCONF, &ifc) == 0) {
+        size_t cnt = (size_t)ifc.ifc_len / sizeof(struct ifreq);
+        for (size_t i = 0; i < cnt && n < max; i++) {
+            struct sockaddr_in sin;
+            memcpy(&sin, &buf[i].ifr_addr, sizeof(sin));
+            snprintf(out[n].name, sizeof(out[n].name), "%.*s", (int)IFNAMSIZ - 1, buf[i].ifr_name);
+            if (inet_ntop(AF_INET, &sin.sin_addr, out[n].ip, sizeof(out[n].ip)) != NULL)
+                n++;
+        }
+    }
+    close(fd);
+    return n;
+}
+
+bool ks_nodes_is_local(const char *addr)
+{
+    if (strncmp(addr, "unix", 4) == 0)
+        return true;
+    if (strncmp(addr, "ipv4", 4) == 0 || strncmp(addr, "ipv6", 4) == 0) {
+        struct ks_iface ifs[64];
+        size_t n = ks_net_ifaces(ifs, 64);
+        for (size_t i = 0; i < n; i++) {
+            if (strstr(addr, ifs[i].ip) != NULL)
+                return true;
+        }
+    }
+    return false;
 }
 
 bool ks_nodes_peer_is_unix(const char *peer)

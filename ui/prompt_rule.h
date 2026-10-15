@@ -96,6 +96,9 @@ void ks_py_aliases_free(struct ks_py_aliases *a);
  * nothing, as the ValueError does upstream. NULL if none. */
 const char *ks_py_aliases_get(const struct ks_py_aliases *a, const char *ip);
 
+/* ipaddress.ip_address(s) without a ValueError (rules editor). */
+bool ks_py_ip_valid(const char *s);
+
 /* The uid label: "1000 (user)" for local nodes ("" if the user is
  * unknown), "1000" for remote ones. malloc'd. */
 char *ks_prompt_uid_text(const Protocol__Connection *con, bool is_local);

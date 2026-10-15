@@ -17,6 +17,7 @@
 
 #include "common/log.h"
 #include "ui/pycsv.h"
+#include "ui/rules_editor.h"
 #include "ui/rulesops.h"
 #include "ui/stats_win_priv.h"
 #include "ui/statsdb.h"
@@ -499,15 +500,41 @@ static void popup(GtkWidget *menu, struct mctx *c, GdkEventButton *ev)
                    ev ? ev->time : gtk_get_current_event_time());
 }
 
+/* _table_menu_new_rule_from_row() */
+static void m_new_rule(GtkMenuItem *item, gpointer ud)
+{
+    (void)ud;
+    struct mctx *c = item_ctx(item);
+    if (c->rows->len > 0) {
+        const char *time = row_at(c, 0)[COL_TIME];
+        if (!ks_ruleed_new_rule_from_connection(ks_sw_ruleed(c->w), time)) {
+            char *m = g_strdup_printf("Error creating new rule from event (%s)", time);
+            ks_sw_message(c->w, GTK_MESSAGE_WARNING, "New rule error", m);
+            g_free(m);
+        }
+    }
+    clear_selection(c->tv);
+}
+
+/* _table_menu_edit() */
+static void m_edit(GtkMenuItem *item, gpointer ud)
+{
+    (void)ud;
+    struct mctx *c = item_ctx(item);
+    if (c->rows->len > 0) {
+        char **row = row_at(c, 0);
+        ks_ruleed_edit_rule(ks_sw_ruleed(c->w), row[COL_R_NODE], row[COL_R_NAME]);
+    }
+    clear_selection(c->tv);
+}
+
 /* _configure_events_contextual_menu() */
 static void events_menu(struct mctx *c, GdkEventButton *ev)
 {
     GtkWidget *menu = gtk_menu_new();
     add_item(menu, c, "Details", G_CALLBACK(m_details), NULL, true);
     GtkWidget *rules = add_submenu(menu, "Rules");
-    /* new rule from the event: the rules editor is the next step */
-    GtkWidget *nw = add_item(rules, c, "New", NULL, NULL, false);
-    gtk_widget_set_tooltip_text(nw, "The rules editor is not ported yet");
+    add_item(rules, c, "New", G_CALLBACK(m_new_rule), NULL, true);
     popup(menu, c, ev);
 }
 
@@ -557,8 +584,7 @@ static void rules_menu(struct mctx *c, GdkEventButton *ev)
         add_item(menu, c, on ? "Disable" : "Enable", G_CALLBACK(m_enable), NULL, true);
     }
     add_item(menu, c, "Duplicate", G_CALLBACK(m_duplicate), NULL, true);
-    GtkWidget *ed = add_item(menu, c, "Edit", NULL, NULL, false);
-    gtk_widget_set_tooltip_text(ed, "The rules editor is not ported yet");
+    add_item(menu, c, "Edit", G_CALLBACK(m_edit), NULL, c->rows->len > 0);
     add_item(menu, c, "Delete", G_CALLBACK(m_delete), NULL, true);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
     GtkWidget *exp = add_submenu(menu, "Export");

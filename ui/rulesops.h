@@ -43,7 +43,8 @@ bool ks_rops_duplicate(struct ks_rulesdb *rules, struct ks_nodes *nodes, const c
  * and stores it for that node. */
 bool ks_rops_apply_to_node(struct ks_rulesdb *rules, struct ks_nodes *nodes, const char *name,
                            const char *target, ks_ntf_reply_cb cb, void *ud);
-/* Nodes.delete_rule(): deletes it from the table and sends DELETE_RULE. */
+/* Nodes.delete_rule(): deletes it from the table and sends DELETE_RULE (to
+ * every node if `node` is NULL). */
 bool ks_rops_delete(struct ks_rulesdb *rules, struct ks_nodes *nodes, const char *name,
                     const char *node, ks_ntf_reply_cb cb, void *ud);
 

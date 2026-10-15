@@ -18,6 +18,8 @@
 #include "common/log.h"
 #include "ui/highlight.h"
 #include "ui/netstat.h"
+#include "ui/rules_editor.h"
+#include "ui/rulesops.h"
 #include "ui/statsdb.h"
 
 /* Config.STATS_* keys */
@@ -249,6 +251,10 @@ static void set_detail(struct ks_stats_win *w, struct tabview *tv, bool on, cons
         ks_sw_node_update_buttons(w);
     if (tv->tab == KS_TAB_PROCS)
         gtk_widget_set_visible(w->proc_button, on);
+    if (tv->tab == KS_TAB_RULES) {
+        gtk_widget_set_visible(w->rule_edit, on);
+        gtk_widget_set_visible(w->rule_delete, on);
+    }
 }
 
 void ks_sw_enter_detail(struct ks_stats_win *w, enum ks_tab tab, const char *data,
@@ -287,6 +293,18 @@ static void on_back(GtkButton *b, gpointer ud)
 const char *ks_sw_cell(struct tabview *tv, gint64 row, int col)
 {
     return ks_qmodel_cell(ks_qstore_model(tv->store), row, col);
+}
+
+static void on_rule_saved(void *ud)
+{
+    ks_sw_refresh(ud); /* _cb_app_rules_updated() */
+}
+
+struct ks_ruleed *ks_sw_ruleed(struct ks_stats_win *w)
+{
+    if (w->ruleed == NULL)
+        w->ruleed = ks_ruleed_new(w->svc, GTK_WINDOW(w->win), on_rule_saved, w);
+    return w->ruleed;
 }
 
 struct tabview *ks_sw_tab(struct ks_stats_win *w, enum ks_tab tab)
@@ -564,6 +582,13 @@ static void on_start(GtkButton *b, gpointer ud)
 
 /* ---- construction -------------------------------------------------------- */
 
+/* _cb_new_rule_clicked() */
+static void on_new_rule(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    ks_ruleed_new_rule(ks_sw_ruleed(ud));
+}
+
 static GtkWidget *label_pair(GtkWidget *box, const char *name, GtkWidget **val)
 {
     GtkWidget *l = gtk_label_new(name);
@@ -572,6 +597,29 @@ static GtkWidget *label_pair(GtkWidget *box, const char *name, GtkWidget **val)
     gtk_misc_set_alignment(GTK_MISC(*val), 0.0f, 0.5f);
     gtk_box_pack_start(GTK_BOX(box), *val, FALSE, FALSE, 4);
     return l;
+}
+
+/* _cb_edit_rule_clicked() */
+static void on_rule_edit(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    struct tabview *tv = ud;
+    struct ks_stats_win *w = g_object_get_data(G_OBJECT(tv->tree), "win");
+    ks_ruleed_edit_rule(ks_sw_ruleed(w), tv->node, tv->data);
+}
+
+/* _cb_del_rule_clicked() */
+static void on_rule_delete(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    struct tabview *tv = ud;
+    struct ks_stats_win *w = g_object_get_data(G_OBJECT(tv->tree), "win");
+    if (!ks_sw_confirm(w, "    You are about to delete this rule.    "))
+        return;
+    ks_rops_delete(ks_service_rules(w->svc), ks_service_nodes(w->svc), tv->data, tv->node,
+                   ks_sw_ntf_reply, w);
+    gtk_button_clicked(GTK_BUTTON(tv->back)); /* cmd.click() */
+    ks_sw_refresh(w);
 }
 
 /* _cb_proc_details_clicked(): {pid: node} of every row of the table */
@@ -652,6 +700,17 @@ static void build_tab(struct ks_stats_win *w, int i)
         ks_sw_netstat_build(w, tv, top);
         ks_qmodel_set_mapper(ks_qstore_model(tv->store), ks_netstat_display);
     }
+    if (tv->tab == KS_TAB_RULES) {
+        /* editRuleButton and delRuleButton, in the detail view */
+        w->rule_edit = gtk_button_new_from_stock(GTK_STOCK_EDIT);
+        w->rule_delete = gtk_button_new_from_stock(GTK_STOCK_DELETE);
+        gtk_widget_set_no_show_all(w->rule_edit, TRUE);
+        gtk_widget_set_no_show_all(w->rule_delete, TRUE);
+        g_signal_connect(w->rule_edit, "clicked", G_CALLBACK(on_rule_edit), tv);
+        g_signal_connect(w->rule_delete, "clicked", G_CALLBACK(on_rule_delete), tv);
+        gtk_box_pack_end(GTK_BOX(top), w->rule_delete, FALSE, FALSE, 2);
+        gtk_box_pack_end(GTK_BOX(top), w->rule_edit, FALSE, FALSE, 2);
+    }
     if (tv->tab == KS_TAB_PROCS) {
         /* cmdProcDetails: the process details of every pid of the detail */
         w->proc_button = gtk_button_new_with_label("Process details");
@@ -716,6 +775,10 @@ struct ks_stats_win *ks_stats_win_new(struct ks_service *svc, struct ks_settings
     gtk_widget_set_tooltip_text(w->start_button, "Start or Stop interception");
     g_signal_connect(w->start_button, "clicked", G_CALLBACK(on_start), w);
     gtk_box_pack_start(GTK_BOX(hdr), w->start_button, FALSE, FALSE, 4);
+    GtkWidget *newrule = gtk_button_new_from_stock(GTK_STOCK_NEW);
+    gtk_widget_set_tooltip_text(newrule, "Create a new rule");
+    g_signal_connect(newrule, "clicked", G_CALLBACK(on_new_rule), w);
+    gtk_box_pack_start(GTK_BOX(hdr), newrule, FALSE, FALSE, 4);
     GtkWidget *l;
     l = label_pair(hdr, "Status", &w->status_label);
     (void)l;
@@ -790,6 +853,7 @@ void ks_stats_win_free(struct ks_stats_win *w)
     if (w == NULL)
         return;
     ks_procdlg_free(w->proc);
+    ks_ruleed_free(w->ruleed);
     gtk_widget_destroy(w->win);
     for (int i = 0; i < NTABS; i++) {
         g_object_unref(w->tv[i].store);
