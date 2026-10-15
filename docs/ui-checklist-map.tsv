@@ -1,0 +1,108 @@
+# widget	estado	nota (lido por tools/gen-ui-checklist.py)
+stats:StatsDialog	ok	título da janela "Kisnitch Network Statistics" (nome do projeto)
+stats:actionsButton	ok	botão "Actions": exportar/importar regras, exportar eventos para CSV, sair (ks_sw_actions_clicked)
+stats:prefsButton	ok	botão de preferências do cabeçalho
+stats:newRuleButton	ok	botão "New" do cabeçalho
+stats:fwButton	fase 8	editor do firewall de sistema
+stats:nodeLabel	ok	rótulo preenchido em tempo de execução
+stats:statusLabel	ok	rótulo preenchido em tempo de execução
+stats:startButton	ok	Start/Stop do cabeçalho
+stats:cmdNodesBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
+stats:nodeActionsButton	ok	Actions do nó (exportar/importar regras)
+stats:nodeDeleteButton	ok	botão Delete do nó
+stats:nodePrefsButton	ok	abre as preferências na aba Nodes
+stats:nodeStartButton	ok	Start/Stop do nó
+stats:labelNodeName	ok	rótulo preenchido em tempo de execução
+stats:labelNodeRAM	ok	rótulo preenchido em tempo de execução
+stats:labelNodeSwap	ok	rótulo preenchido em tempo de execução
+stats:labelNodeLoadAvg	ok	rótulo preenchido em tempo de execução
+stats:rulesTreePanel	divergência 66	a árvore vira um combo (aplicações, permanentes, temporárias, alertas); o ramo do firewall vem com a fase 8
+stats:cmdRulesBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
+stats:editRuleButton	ok	botão Edit do detalhe de uma regra
+stats:delRuleButton	ok	botão Delete do detalhe de uma regra
+stats:cmdHostsBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
+stats:cmdProcsBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
+stats:cmdProcDetails	ok	botão de detalhes do processo (aba Applications)
+stats:cmdAddrsBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
+stats:cmdPortsBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
+stats:cmdUsersBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
+stats:cmdNetstatBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
+stats:prevButton	n/a	escondido pelo próprio upstream (setVisible(False)); nosso modelo virtual rola
+stats:labelRowsCount	ok	contador de linhas
+stats:nextButton	n/a	escondido pelo próprio upstream (setVisible(False)); nosso modelo virtual rola
+stats:cmdCleanSql	ok	botão Clear (apaga os eventos)
+stats:helpButton	ok	botão Help (ks_sw_help_clicked), em diálogo em vez de tooltip
+stats:consLabel	ok	rótulo preenchido em tempo de execução
+stats:droppedLabel	ok	rótulo preenchido em tempo de execução
+stats:uptimeLabel	ok	rótulo preenchido em tempo de execução
+stats:rulesLabel	ok	rótulo preenchido em tempo de execução
+stats:rxtxLabel	n/a	o upstream não a usa (sem referência em stats.py)
+stats:daemonVerLabel	ok	rótulo preenchido em tempo de execução
+preferences:cmdTimeoutUp	ok	setas do GtkSpinButton
+preferences:cmdTimeoutDown	ok	setas do GtkSpinButton
+preferences:popupsCheck	ok	"Disable pop-ups, only display a notification"
+preferences:showAdvancedCheck	ok	"Show advanced view by default"
+preferences:labelUIDensity	qt	densidade do tema Qt
+preferences:labelUIScreenFactor	qt	escala de tela do Qt
+preferences:cmdUIDensityUp	ok	setas do GtkSpinButton
+preferences:cmdUIDensityDown	ok	setas do GtkSpinButton
+preferences:cmdRefreshUIUp	ok	setas do GtkSpinButton
+preferences:cmdRefreshUIDown	ok	setas do GtkSpinButton
+preferences:checkUIAutoScreen	qt	escala automática do Qt
+preferences:label_33	qt	plugin de plataforma do Qt
+preferences:label_28	ok	link "More information" substituído por dicas nos campos de autenticação
+preferences:cmdGrpcClientsDown	ok	setas do GtkSpinButton
+preferences:cmdGrpcClientsUp	ok	setas do GtkSpinButton
+preferences:cmdGrpcWorkersDown	ok	setas do GtkSpinButton
+preferences:cmdGrpcWorkersUp	ok	setas do GtkSpinButton
+preferences:radioQtNotifs	fase 10	as notificações do desktop vêm com a fase 10; hoje o rádio é "tray icon alert"
+preferences:checkInterceptUnknown	ok	"Debug invalid connections"
+preferences:checkNodeLogUTC	ok	"Log UTC timestamps"
+preferences:checkNodeLogMicro	ok	"Log timestamp microseconds"
+preferences:label_26	ok	link "More information" substituído por dicas nos campos de autenticação
+preferences:cmdNodeGcDown	ok	setas do GtkSpinButton
+preferences:cmdNodeGcUp	ok	setas do GtkSpinButton
+preferences:cmdDBMaxDaysUp	ok	setas do GtkSpinButton
+preferences:cmdDBMaxDaysDown	ok	setas do GtkSpinButton
+preferences:cmdDBPurgesUp	ok	setas do GtkSpinButton
+preferences:cmdDBPurgesDown	ok	setas do GtkSpinButton
+preferences:helpButton	ok	botão Help
+ruleseditor:selectIPsListButton	ok	botão de abrir diretório da lista de IPs
+ruleseditor:selectNetsListButton	ok	botão de abrir diretório da lista de redes
+ruleseditor:selectListButton	ok	botão de abrir diretório da lista de domínios
+ruleseditor:selectListRegexpButton	ok	botão de abrir diretório da lista de regex
+ruleseditor:pushButton	n/a	só tooltip de aviso "experimental", sem ação
+prompt:checkAdvanced	ok	botão "+" do modo avançado (set_advanced)
+prompt:cmdBack	ok	botão Voltar da visão avançada
+prompt:cmdBackChecksums	ok	botão Voltar da visão de checksums
+prompt:messageLabel	ok	rótulo preenchido em tempo de execução
+prompt:cmdInfo	ok	botão de informação do processo
+prompt:appNameLabel	ok	rótulo preenchido em tempo de execução
+prompt:argsLabel	ok	rótulo preenchido em tempo de execução
+prompt:appDescriptionLabel	ok	rótulo preenchido em tempo de execução
+prompt:appPathLabel	ok	rótulo preenchido em tempo de execução
+prompt:label_2	ok	rótulo preenchido em tempo de execução
+prompt:checkSum	ok	filtro por checksum
+prompt:checksumLabel	ok	rótulo preenchido em tempo de execução
+prompt:checkUserID	ok	filtro por user id
+prompt:checkDstPort	ok	filtro por porta de destino
+prompt:destIPLabel	ok	rótulo preenchido em tempo de execução
+prompt:uidLabel	ok	rótulo preenchido em tempo de execução
+prompt:checkDstIP	ok	filtro por IP de destino
+prompt:destPortLabel	ok	rótulo preenchido em tempo de execução
+prompt:sourceIPLabel	ok	rótulo preenchido em tempo de execução
+process_details:labelProcPath	ok	rótulo preenchido em tempo de execução
+process_details:labelCwd	ok	rótulo preenchido em tempo de execução
+process_details:labelStatm	ok	rótulo preenchido em tempo de execução
+process_details:cmdAction	ok	botão Start/Pause do monitoramento do processo
+firewall:label_2	fase 8	editor do firewall de sistema
+firewall:sliderFwEnable	fase 8	editor do firewall de sistema
+firewall:cmdAllowINService	fase 8	editor do firewall de sistema
+firewall:cmdAllowOUTService	fase 8	editor do firewall de sistema
+firewall:label_3	fase 8	editor do firewall de sistema
+firewall:lblProfile	fase 8	editor do firewall de sistema
+firewall:cmdHelp	fase 8	editor do firewall de sistema
+firewall_rule:cmdAddStatement	fase 8	editor do firewall de sistema
+firewall_rule:cmdDelStatement	fase 8	editor do firewall de sistema
+firewall_rule:label_3	fase 8	editor do firewall de sistema
+firewall_rule:helpButton	fase 8	editor do firewall de sistema

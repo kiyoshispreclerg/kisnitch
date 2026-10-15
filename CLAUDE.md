@@ -1,6 +1,6 @@
 # Projeto: Kisnitch, port do OpenSnitch para C + GTK2
 
-Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 6 concluída. Próxima: 7.
+Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 7 concluída (versão 0.1.0). Próxima: 8.
 (O teste diferencial opcional da fase 1 roda no job `diff` do CI ou com `make diff`
 numa máquina com Go.)
 
@@ -41,4 +41,5 @@ numa máquina com Go.)
 - make test-integration (network namespace: como root usa `unshare -nm`; sem root, user namespace, se o kernel permitir. Precisa de nft, curl e python3; openssl para o teste HTTPS; python3-grpcio e python3-grpc-tools para os testes com UI (tests/integration/fake_ui.py). Os testes de DNS trocam /etc/resolv.conf só dentro do mount namespace. tests/integration/ui.sh roda a nossa UI em Xvfb (xdotool para o clique) com o nosso daemon e com o original, se OPENSNITCHD (padrão /usr/bin/opensnitchd) existir; tests/integration/stats_gui.sh roda tests/gui/test_stats_gui (diálogos e tarefas da janela de estatísticas com as respostas do daemon injetadas); tests/integration/stats_win.sh abre a janela de estatísticas com 100 mil eventos, e usa xsel e ImageMagick `import` se houver; KS_SHOT_DIR guarda capturas de tela)
 - make install / install-data / uninstall (respeitam PREFIX e DESTDIR; `install-data` põe o .desktop, o ícone e o metainfo). tools/gen-icons.sh gera os PNG do ícone a partir do SVG (`data/`)
 - tools/bench.sh [taxa] [segundos] (RSS do daemon ocioso e sob carga; resultados em docs/BENCH.md)
+- make ui-checklist (regenera docs/UI-CHECKLIST.md dos `.ui` do upstream; falha se um widget ficar sem resposta; exceções em docs/ui-checklist-map.tsv)
 - tools/upstream-diff.sh, tools/sync-proto.sh, tools/sync-fixtures.sh

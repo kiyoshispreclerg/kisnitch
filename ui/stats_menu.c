@@ -226,6 +226,160 @@ void ks_sw_copy_selected(struct ks_stats_win *w)
     g_ptr_array_free(rows, TRUE);
 }
 
+/* ---- the Actions button and Help ------------------------------------------ */
+
+/* _on_menu_export_clicked() */
+static void on_all_export(GtkMenuItem *item, gpointer ud)
+{
+    (void)item;
+    struct ks_stats_win *w = ud;
+    char *dir = ks_sw_choose_dir(w, "Select a directory to export rules");
+    if (dir == NULL)
+        return;
+    struct ks_nodes *nodes = ks_service_nodes(w->svc);
+    GString *errors = g_string_new(NULL);
+    for (size_t i = 0; i < nodes->len; i++) {
+        if (!ks_rops_export_all(ks_service_rules(w->svc), nodes->items[i]->addr, dir))
+            g_string_append_printf(errors, "%s\n", nodes->items[i]->addr);
+    }
+    if (errors->len > 0) {
+        char *m = g_strdup_printf("Error exporting rules of the following nodes:\n\n%s", errors->str);
+        ks_sw_message(w, GTK_MESSAGE_WARNING, "Rules export error", m);
+        g_free(m);
+    } else {
+        char *m = g_strdup_printf("Rules exported to %s", dir);
+        ks_sw_message(w, GTK_MESSAGE_INFO, "Rules export", m);
+        g_free(m);
+    }
+    g_string_free(errors, TRUE);
+    g_free(dir);
+}
+
+/* _on_menu_import_clicked() */
+static void on_all_import(GtkMenuItem *item, gpointer ud)
+{
+    (void)item;
+    struct ks_stats_win *w = ud;
+    char *dir = ks_sw_choose_dir(w, "Select a directory with rules to import (JSON files)");
+    if (dir == NULL)
+        return;
+    int n = ks_rops_import(ks_service_rules(w->svc), ks_service_nodes(w->svc), NULL, dir,
+                           ks_sw_ntf_reply, w);
+    if (n >= 0) {
+        ks_sw_message(w, GTK_MESSAGE_INFO, "Rules import", "Rules imported fine");
+        if (ks_sw_cur_tab(w)->tab == KS_TAB_RULES)
+            ks_sw_refresh(w);
+    } else {
+        char *m = g_strdup_printf("Error importing rules from %s", dir);
+        ks_sw_message(w, GTK_MESSAGE_WARNING, "Rules import error", m);
+        g_free(m);
+    }
+    g_free(dir);
+}
+
+/* the rows of the table, as csv.writer(dialect='excel') writes them */
+bool ks_sw_write_csv(struct ks_stats_win *w, struct tabview *tv, const char *filename)
+{
+    (void)w;
+    struct ks_qmodel *m = ks_qstore_model(tv->store);
+    int ncols = ks_qmodel_cols(m);
+    GString *g = g_string_new(NULL);
+    const char **cells = g_new0(const char *, (gsize)ncols + 1);
+    for (int c = 0; c < ncols; c++)
+        cells[c] = ks_qmodel_colname(m, c);
+    ks_pycsv_row(g, cells, ncols);
+    int64_t rows = ks_qmodel_rows(m);
+    for (int64_t r = 0; r < rows; r++) {
+        for (int c = 0; c < ncols; c++)
+            cells[c] = ks_qmodel_cell(m, r, c);
+        ks_pycsv_row(g, cells, ncols);
+    }
+    g_free(cells);
+    GError *err = NULL;
+    bool ok = g_file_set_contents(filename, g->str, (gssize)g->len, &err);
+    if (!ok) {
+        ks_error("export to CSV: %s", err->message);
+        g_error_free(err);
+    }
+    g_string_free(g, TRUE);
+    return ok;
+}
+
+/* _on_menu_export_csv_clicked() */
+static void on_export_csv(GtkMenuItem *item, gpointer ud)
+{
+    (void)item;
+    struct ks_stats_win *w = ud;
+    static const char *const names[] = {"events.csv", "nodes.csv", "rules.csv", "hosts.csv",
+                                        "procs.csv", "addrs.csv", "ports.csv", "users.csv",
+                                        "netstat.csv"};
+    int idx = gtk_notebook_get_current_page(GTK_NOTEBOOK(w->nb));
+    GtkWidget *d = gtk_file_chooser_dialog_new("Save as CSV", GTK_WINDOW(w->win),
+                                               GTK_FILE_CHOOSER_ACTION_SAVE, GTK_STOCK_CANCEL,
+                                               GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE,
+                                               GTK_RESPONSE_ACCEPT, NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d), TRUE);
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(d), names[idx]);
+    char *file = NULL;
+    if (gtk_dialog_run(GTK_DIALOG(d)) == GTK_RESPONSE_ACCEPT)
+        file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
+    gtk_widget_destroy(d);
+    if (file != NULL && file[0] != '\0' && !ks_sw_write_csv(w, ks_sw_cur_tab(w), file))
+        ks_sw_message(w, GTK_MESSAGE_WARNING, "Error saving the CSV file", file);
+    g_free(file);
+}
+
+/* _on_menu_exit_clicked() */
+static void on_quit(GtkMenuItem *item, gpointer ud)
+{
+    (void)item;
+    (void)ud;
+    gtk_main_quit();
+}
+
+void ks_sw_actions_clicked(GtkButton *b, gpointer ud)
+{
+    struct ks_stats_win *w = ud;
+    GtkWidget *menu = gtk_menu_new();
+    static const struct {
+        const char *label;
+        GCallback cb;
+    } items[] = {{"Export rules", G_CALLBACK(on_all_export)},
+                 {"Import rules", G_CALLBACK(on_all_import)},
+                 {"Export events to CSV", G_CALLBACK(on_export_csv)},
+                 {"Quit", G_CALLBACK(on_quit)}};
+    for (size_t i = 0; i < sizeof(items) / sizeof(items[0]); i++) {
+        GtkWidget *mi = gtk_menu_item_new_with_label(items[i].label);
+        g_signal_connect(mi, "activate", items[i].cb, w);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+    }
+    gtk_widget_show_all(menu);
+    g_object_ref_sink(menu);
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 1, gtk_get_current_event_time());
+    (void)b;
+}
+
+/* _cb_help_button_clicked() */
+void ks_sw_help_clicked(GtkButton *b, gpointer ud)
+{
+    struct ks_stats_win *w = ud;
+    (void)b;
+    GtkWidget *d = gtk_message_dialog_new_with_markup(
+        GTK_WINDOW(w->win), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+        "<b>Quick help</b>\n\n"
+        "- Use CTRL+c to copy selected rows.\n"
+        "- Use Home,End,PgUp,PgDown,PgUp,Up or Down keys to navigate rows.\n"
+        "- Use right click on a row to stop refreshing the view.\n"
+        "- Selecting more than one row also stops refreshing the view.\n"
+        "- On the Events view, clicking on columns Node, Process or Rule\n"
+        "jumps to the view of the selected item.\n"
+        "- On the rest of the views, double click on a row to get detailed\n"
+        " information.\n\n"
+        "For more information visit the <a href=\"https://github.com/evilsocket/opensnitch/wiki/\">wiki</a>");
+    g_signal_connect_swapped(d, "response", G_CALLBACK(gtk_widget_destroy), d);
+    gtk_widget_show(d);
+}
+
 /* ---- the rules menu --------------------------------------------------------- */
 
 struct mctx {

@@ -127,6 +127,10 @@ void ks_sw_ntf_reply(const char *addr, const Protocol__NotificationReply *r, voi
 void ks_sw_show_conn_details(struct ks_stats_win *w, const char *time);
 void ks_sw_show_alert(struct ks_stats_win *w, const char *time, const char *node);
 char *ks_sw_choose_dir(struct ks_stats_win *w, const char *title);
+/* the main window's Actions menu and Help (stats_menu.c) */
+void ks_sw_actions_clicked(GtkButton *b, gpointer ud);
+void ks_sw_help_clicked(GtkButton *b, gpointer ud);
+bool ks_sw_write_csv(struct ks_stats_win *w, struct tabview *tv, const char *filename);
 
 /* stats_netstat.c */
 void ks_sw_netstat_build(struct ks_stats_win *w, struct tabview *tv, GtkWidget *top);

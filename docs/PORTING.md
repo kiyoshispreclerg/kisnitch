@@ -259,8 +259,8 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - `db.c`: esquema SQLite compatível com o do original, limpeza por dias (`max_days`; o original não limita por contagem, divergência 62).
 
 **Aceite:**
-- [ ] Checklist gerado a partir dos arquivos `.ui` do upstream (cada widget/opção existente lá tem equivalente aqui). Gerar com script e manter em `docs/UI-CHECKLIST.md`.
-- [ ] 100 mil eventos na tabela sem travar a interface (paginação/virtualização no `GtkTreeView`).
+- [x] Checklist gerado a partir dos arquivos `.ui` do upstream (cada widget/opção existente lá tem equivalente aqui). Gerar com script e manter em `docs/UI-CHECKLIST.md` (`make ui-checklist`; as exceções, por widget, em `docs/ui-checklist-map.tsv`).
+- [x] 100 mil eventos na tabela sem travar a interface (paginação/virtualização no `GtkTreeView`).
 
 ### Fase 8 — Firewall de sistema
 

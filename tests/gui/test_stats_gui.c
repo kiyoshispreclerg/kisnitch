@@ -8,6 +8,7 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "common/pb_util.h"
 #include "ui/db.h"
@@ -492,6 +493,24 @@ TEST(preferences_save)
     gtk_widget_hide(win);
 }
 
+TEST(export_csv)
+{
+    struct tabview *tv = ks_sw_tab(w, KS_TAB_MAIN);
+    ks_sw_run_query(w, tv, false);
+    char *path = g_build_filename(g_get_tmp_dir(), "ks-events-test.csv", NULL);
+    CHECK(ks_sw_write_csv(w, tv, path));
+    char *txt = NULL;
+    CHECK(g_file_get_contents(path, &txt, NULL, NULL));
+    if (txt != NULL) {
+        CHECK_STR_HAS(txt, "Time,node,action");
+        CHECK_STR_HAS(txt, "one.example");
+        CHECK_STR_HAS(txt, "\r\n");
+    }
+    g_free(txt);
+    unlink(path);
+    g_free(path);
+}
+
 int main(int argc, char **argv)
 {
     if (!gtk_init_check(&argc, &argv)) {
@@ -521,6 +540,7 @@ int main(int argc, char **argv)
     RUN(rules_editor_new_and_save);
     RUN(rules_editor_from_event_and_edit);
     RUN(preferences_save);
+    RUN(export_csv);
 
     ks_stats_win_free(w);
     ks_service_free(svc);

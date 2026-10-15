@@ -98,7 +98,7 @@ LIBCOMMON = $(BUILD)/libcommon.a
 LIBDAEMON = $(BUILD)/libdaemon.a
 LIBUI     = $(BUILD)/libui.a
 
-.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui clean test-integration install install-data uninstall
+.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui ui-checklist clean test-integration install install-data uninstall
 
 all: $(BUILD)/kisnitchd $(BUILD)/kisnitch-gtk
 
@@ -276,6 +276,9 @@ $(BUILD)/diff/ks_prefs_diff: tests/diff/ks_prefs_diff.c $(LIBUI) $(LIBCOMMON)
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(UI_CFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) -MMD -MP $(ALL_LDFLAGS) \
 		-o $@ $< $(LIBUI) $(LIBCOMMON) $(LDLIBS) $(UI_LIBS)
+
+ui-checklist:
+	python3 tools/gen-ui-checklist.py
 
 diff-ui: $(BUILD)/diff/ks_prompt_diff $(BUILD)/diff/ks_rules_diff $(BUILD)/diff/ks_prefs_diff
 	KS_PROMPT_DIFF=$(CURDIR)/$(BUILD)/diff/ks_prompt_diff tests/diff/prompt/run.sh

@@ -803,10 +803,16 @@ struct ks_stats_win *ks_stats_win_new(struct ks_service *svc, struct ks_settings
     gtk_widget_set_tooltip_text(newrule, "Create a new rule");
     g_signal_connect(newrule, "clicked", G_CALLBACK(on_new_rule), w);
     gtk_box_pack_start(GTK_BOX(hdr), newrule, FALSE, FALSE, 4);
+    GtkWidget *actions_btn = gtk_button_new_with_label("Actions");
+    g_signal_connect(actions_btn, "clicked", G_CALLBACK(ks_sw_actions_clicked), w);
+    gtk_box_pack_start(GTK_BOX(hdr), actions_btn, FALSE, FALSE, 4);
     GtkWidget *prefs_btn = gtk_button_new_from_stock(GTK_STOCK_PREFERENCES);
     gtk_widget_set_tooltip_text(prefs_btn, "Preferences");
     g_signal_connect(prefs_btn, "clicked", G_CALLBACK(on_prefs_button), w);
     gtk_box_pack_start(GTK_BOX(hdr), prefs_btn, FALSE, FALSE, 4);
+    GtkWidget *help_btn = gtk_button_new_from_stock(GTK_STOCK_HELP);
+    g_signal_connect(help_btn, "clicked", G_CALLBACK(ks_sw_help_clicked), w);
+    gtk_box_pack_start(GTK_BOX(hdr), help_btn, FALSE, FALSE, 4);
     GtkWidget *l;
     l = label_pair(hdr, "Status", &w->status_label);
     (void)l;
