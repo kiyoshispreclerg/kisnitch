@@ -151,7 +151,7 @@ bool ks_rule_is_regex(const char *text)
     return strpbrk(text, "\\*{[|^?$") != NULL;
 }
 
-/* What PCRE2 takes and Python's `re` (3.10 to 3.13) refuses, or the other way: the
+/* What PCRE2 takes and Python's `re` (3.11 to 3.13) refuses, or the other way: the
  * escapes Python has no meaning for (any ASCII letter not in its list is "bad escape"),
  * (?<name>...) and (?|...), (?'name'...). Quantifiers above 65535 and \N{NAME} are fine
  * for Python and not for PCRE2: those are taken as valid. Returns a copy of the pattern
@@ -201,6 +201,13 @@ static char *python_view(const char *re)
         } else if (*p == '(' && p[1] == '?') {
             char c = p[2];
             if ((c == '<' && p[3] != '=' && p[3] != '!') || c == '|' || c == '\'') {
+                g_string_free(g, TRUE);
+                return NULL;
+            }
+            /* "global flags not at the start of the expression": an error from 3.11 on
+             * (a warning before) */
+            size_t k = strspn(p + 2, "aiLmsux");
+            if (p != re && k > 0 && p[2 + k] == ')') {
                 g_string_free(g, TRUE);
                 return NULL;
             }

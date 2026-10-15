@@ -52,11 +52,15 @@ TEXT = {
 }
 # regular expressions where Python's `re` and PCRE2 are known to differ (not the possessive
 # quantifiers, "a*+": Python takes them from 3.11 on)
-TRICKY = ["\\p{L}", "a(?i)b", "(?P<n>a)(?P<n>b)", "\\d{2,1}", "[z-a]", "a{,3}", "(?<n>a)", "\\k<n>",
+TRICKY = ["\\p{L}", "(?P<n>a)(?P<n>b)", "\\d{2,1}", "[z-a]", "a{,3}", "(?<n>a)", "\\k<n>",
           "\\1", "(a)\\2", "a**", "(?<=a+)b", "[[:alpha:]]", "\\Z", "\\z", "\\A.*", "(?#c)a",
           "(?x) a b", "\\h", "\\R", "\\X", "(?|a|b)", "a{1,2}{3}", "\\_", "\\-", "\\e", "\\a",
           "[\\d-z]", "(?P=n)", "(?(1)a|b)", "\\N{DIGIT ONE}", "x{65536}", "(?s).", "\\G", "\\Q.\\E",
           "[]a]", "[^]a]", "a|*", "(*)", "?a", "+", "(", ")", "\\"]
+# mid-pattern global flags: a warning up to Python 3.10, an error from 3.11 (ours follows 3.11;
+# tests/unit/test_ui_rulegen.c covers it)
+if sys.version_info >= (3, 11):
+    TRICKY.append("a(?i)b")
 for t in TRICKY:
     for key in ("dsthost", "proc"):
         f = base()

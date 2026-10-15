@@ -1,7 +1,7 @@
 # Kisnitch build configuration. Override any variable on the command line,
 # e.g. `make CC=clang PREFIX=/usr TLS=1`.
 
-VERSION          = 0.0.1
+VERSION          = 0.1.0
 UPSTREAM_VERSION = 1.8.0
 FULL_VERSION     = $(VERSION)+os$(UPSTREAM_VERSION)
 

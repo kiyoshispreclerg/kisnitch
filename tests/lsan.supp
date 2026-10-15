@@ -1,0 +1,6 @@
+# third-party leaks in GTK/fontconfig at exit (the GUI tests create real windows)
+leak:libfontconfig.so
+leak:libgtk-x11-2.0.so
+leak:libatk-bridge-2.0.so
+leak:libappmenu-gtk-module.so
+leak:libgdk-x11-2.0.so

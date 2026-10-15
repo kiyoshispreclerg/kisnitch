@@ -154,7 +154,11 @@ if [ -n "$win" ]; then
     fi
     rss=$(awk '/VmRSS/ {print $2}' /proc/$uipid/status)
     echo "  RSS with $NEVENTS events and the window open: $((rss / 1024)) MB"
-    [ "$rss" -lt 150000 ] && ok "RSS under 150 MB" || bad "RSS is $((rss / 1024)) MB"
+    if ldd "$KISNITCH_GTK" 2>/dev/null | grep -q 'lib[a-z]*san'; then
+        ok "RSS not checked (sanitizer build)"   # ASan's shadow memory and quarantine inflate it
+    else
+        [ "$rss" -lt 150000 ] && ok "RSS under 150 MB" || bad "RSS is $((rss / 1024)) MB"
+    fi
 fi
 
 # 4b. the Netstat tab shows the sockets table with names for the numbers

@@ -181,6 +181,10 @@ TEST(helpers)
     CHECK(!ks_rule_valid_regex("\\p{L}", NULL, 0));
     CHECK(!ks_rule_valid_regex("(?<n>a)", NULL, 0));
     CHECK(ks_rule_valid_regex("(?<=a)b", NULL, 0));
+    /* global flags: only at the start (Python 3.11 on); scoped ones anywhere */
+    CHECK(ks_rule_valid_regex("(?i)ab", NULL, 0));
+    CHECK(!ks_rule_valid_regex("a(?i)b", NULL, 0));
+    CHECK(ks_rule_valid_regex("a(?i:b)", NULL, 0));
     CHECK(!ks_rule_valid_regex("[\\d-z]+", NULL, 0)); /* bad character range, in both */
     CHECK(ks_rule_valid_regex("[a-z]+\\.org", NULL, 0));
     CHECK(!ks_rule_valid_regex("(", NULL, 0));

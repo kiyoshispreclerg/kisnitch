@@ -26,4 +26,4 @@ until [ -e "/tmp/.X11-unix/X$disp" ]; do
     i=$((i + 1)); [ $i -gt 50 ] && { echo "FAIL: Xvfb didn't start"; exit 1; }
     sleep 0.1
 done
-HOME=$(mktemp -d) DISPLAY=":$disp" "$bin"
+ASAN_OPTIONS=fast_unwind_on_malloc=0 LSAN_OPTIONS="suppressions=$(cd "$(dirname "$0")/.." && pwd)/lsan.supp:print_suppressions=0" HOME=$(mktemp -d) DISPLAY=":$disp" "$bin"

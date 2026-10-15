@@ -8,6 +8,7 @@
 
 static void tree_model_init(GtkTreeModelIface *iface);
 
+// cppcheck-suppress unknownMacro
 G_DEFINE_TYPE_WITH_CODE(KsQStore, ks_qstore, G_TYPE_OBJECT,
                         G_IMPLEMENT_INTERFACE(GTK_TYPE_TREE_MODEL, tree_model_init))
 
