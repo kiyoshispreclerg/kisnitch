@@ -1,0 +1,140 @@
+name: Release
+
+# Source zip + .deb for Ubuntu 22.04 and 24.04, Devuan daedalus (Debian 12
+# "bookworm" base) and Devuan excalibur (Debian 13 "trixie" base) on every
+# v* tag, or on demand from the Actions tab, once lint and ASan pass. Each
+# .deb is installed on a clean system of its own target and run before
+# anything is published. Tags starting with v0 or containing a hyphen are
+# published as pre-releases.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  source:
+    needs: checks
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the tag against config.mk
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          v=$(sed -n 's/^VERSION *= *//p' config.mk)
+          t=${GITHUB_REF_NAME%%-*}   # v0.3.0-rc1 -> v0.3.0
+          [ "v$v" = "$t" ] || { echo "::error::tag $GITHUB_REF_NAME != VERSION $v in config.mk"; exit 1; }
+      - name: Zip the sources
+        run: |
+          v=$(sed -n 's/^VERSION *= *//p' config.mk)
+          mkdir dist
+          git archive --format=zip --prefix="kisnitch-$v/" -o "dist/kisnitch-$v-src.zip" HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source
+          path: dist/*.zip
+
+  deb:
+    name: deb (${{ matrix.name }})
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Built on the oldest release of each family; the .deb's Depends
+          # come from dpkg-shlibdeps, so they match the libraries there.
+          - name: ubuntu22.04
+            runner: ubuntu-22.04
+          - name: ubuntu24.04
+            runner: ubuntu-24.04
+          - name: devuan-daedalus
+            runner: ubuntu-latest
+            image: debian:bookworm   # Devuan daedalus is bookworm without systemd
+          - name: devuan-excalibur
+            runner: ubuntu-latest
+            image: debian:trixie   # Devuan excalibur is trixie without systemd
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.image }}
+    steps:
+      - name: Install build dependencies
+        run: |
+          SUDO=$(command -v sudo || true)
+          $SUDO apt-get update
+          DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y --no-install-recommends \
+            ca-certificates git build-essential dpkg-dev pkg-config \
+            libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev \
+            libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev
+      - uses: actions/checkout@v4
+      - name: Build the .deb
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          tools/build-deb.sh dist
+          cd dist
+          for f in *.deb; do mv "$f" "${f%_*.deb}_${{ matrix.name }}_${f##*_}"; done
+          dpkg-deb -I *.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.name }}
+          path: dist/*.deb
+
+  # Installs each .deb on a bare image of the system it was built for (so
+  # only its Depends come along: a missing one fails here, not on a
+  # user's machine), then runs tools/smoke-test.sh.
+  smoke:
+    name: smoke (${{ matrix.name }})
+    needs: deb
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu22.04
+            image: ubuntu:22.04
+          - name: ubuntu24.04
+            image: ubuntu:24.04
+          - name: devuan-daedalus
+            image: debian:bookworm
+          - name: devuan-excalibur
+            image: debian:trixie
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      # Checkout first: it empties the workspace.
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb-${{ matrix.name }}
+          path: dist
+      - name: Install the .deb alone
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ./dist/*.deb
+      - name: Install what the test needs
+        run: apt-get install -y --no-install-recommends xvfb xauth fonts-dejavu-core
+      - name: Run it
+        run: sh tools/smoke-test.sh
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [source, deb, smoke]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          # Every 0.x.x is a pre-release (stable starts at 1.0.0), and so is
+          # any suffixed tag such as v1.0.0-rc1.
+          prerelease: ${{ startsWith(github.ref_name, 'v0') || contains(github.ref_name, '-') }}
