@@ -146,7 +146,6 @@ static GdkPixbuf *load_png(const unsigned char *data, size_t len)
     GdkPixbufLoader *l = gdk_pixbuf_loader_new_with_type("png", NULL);
     if (l == NULL)
         return NULL;
-    /* the PNGs are 512x512: decode them small */
     gdk_pixbuf_loader_set_size(l, ICON_PX, ICON_PX);
     GdkPixbuf *pb = NULL;
     if (gdk_pixbuf_loader_write(l, data, len, NULL) && gdk_pixbuf_loader_close(l, NULL)) {
@@ -272,10 +271,10 @@ struct ks_tray *ks_tray_new(struct ks_service *svc, void (*on_open)(void *),
     t->on_open = on_open;
     t->on_close = on_close;
     t->ud = ud;
-    t->pix[ICON_OFF] = load_png(ks_res_icon_off_png, ks_res_icon_off_png_len);
-    t->pix[ICON_WHITE] = load_png(ks_res_icon_white_png, ks_res_icon_white_png_len);
-    t->pix[ICON_PAUSE] = load_png(ks_res_icon_pause_png, ks_res_icon_pause_png_len);
-    t->pix[ICON_ALERT] = load_png(ks_res_icon_alert_png, ks_res_icon_alert_png_len);
+    t->pix[ICON_OFF] = load_png(ks_res_tray_off_png, ks_res_tray_off_png_len);
+    t->pix[ICON_WHITE] = load_png(ks_res_tray_enabled_png, ks_res_tray_enabled_png_len);
+    t->pix[ICON_PAUSE] = load_png(ks_res_tray_pause_png, ks_res_tray_pause_png_len);
+    t->pix[ICON_ALERT] = load_png(ks_res_tray_alert_png, ks_res_tray_alert_png_len);
 
     t->icon = gtk_status_icon_new_from_pixbuf(t->pix[ICON_OFF]);
     gtk_status_icon_set_title(t->icon, "Kisnitch");

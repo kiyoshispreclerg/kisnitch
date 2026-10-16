@@ -79,11 +79,10 @@ UI_GTK_SRC = ui/main.c \
              ui/tray.c
 UI_RES     = ui/res/network_aliases.json \
              data/icons/hicolor/128x128/apps/kisnitch.png \
-             ui/res/icon-off.png \
-             ui/res/icon-white.png \
-             ui/res/icon-pause.png \
-             ui/res/icon-red.png \
-             ui/res/icon-alert.png
+             ui/res/tray-off.png \
+             ui/res/tray-enabled.png \
+             ui/res/tray-pause.png \
+             ui/res/tray-alert.png
 
 UNIT_TESTS = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(filter-out tests/unit/test_ui_%,$(wildcard tests/unit/test_*.c)))
 UI_TESTS   = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(wildcard tests/unit/test_ui_*.c))

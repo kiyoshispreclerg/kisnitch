@@ -17,11 +17,10 @@
 
 KS_RES(ks_res_network_aliases_json);
 KS_RES(ks_res_kisnitch_png); /* data/icons/hicolor/128x128/apps/kisnitch.png */
-KS_RES(ks_res_icon_off_png);
-KS_RES(ks_res_icon_white_png);
-KS_RES(ks_res_icon_pause_png);
-KS_RES(ks_res_icon_red_png);
-KS_RES(ks_res_icon_alert_png);
+KS_RES(ks_res_tray_off_png);
+KS_RES(ks_res_tray_enabled_png);
+KS_RES(ks_res_tray_pause_png);
+KS_RES(ks_res_tray_alert_png);
 
 #undef KS_RES
 
