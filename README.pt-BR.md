@@ -1,0 +1,120 @@
+# Kisnitch
+
+[English](README.md) | **Português (Brasil)**
+
+Uma versão leve do [OpenSnitch](https://github.com/evilsocket/opensnitch), o
+firewall de aplicação para Linux, reescrita em C11 com interface em GTK2.
+
+O objetivo é ser um substituto direto: mesmos arquivos de configuração e de
+regras, e o mesmo protocolo gRPC entre daemon e interface. Assim o daemon do
+Kisnitch funciona com a UI original e vice-versa.
+
+> **Estado:** em desenvolvimento, fase 6: o daemon intercepta conexões
+> (nfqueue + nftables), aplica as regras, acompanha o DNS e conversa com a UI
+> original do OpenSnitch. A UI em GTK2 (`kisnitch-gtk`) já tem o popup de
+> permissão e o ícone de bandeja, e funciona com o daemon original e com o
+> nosso; a janela principal (estatísticas, regras, preferências) vem na
+> fase 7. O plano completo está em [docs/PORTING.md](docs/PORTING.md).
+
+## Compilar e testar
+
+Em Debian/Devuan/Ubuntu:
+
+```sh
+sudo apt install build-essential pkg-config libpcre2-dev \
+    libnetfilter-queue-dev libnftnl-dev libmnl-dev \
+    libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev
+make            # build/kisnitchd e build/kisnitch-gtk
+make test       # testes unitários (sem root, sem rede)
+make asan       # os mesmos testes com AddressSanitizer + UBSan
+```
+
+Testes de integração (precisam de `nftables`, `curl` e `python3`; os testes
+com a UI falsa também de `python3-grpcio` e `python3-grpc-tools`, e os da
+nossa UI de `xvfb` e `xdotool`; cada parte é pulada sem o que precisa). Rodam
+num network namespace próprio e não mexem na rede da máquina:
+
+```sh
+sudo make test-integration   # ou sem sudo, se o kernel permitir user namespaces
+```
+
+Opcionais: `valgrind` (`make valgrind`), `cppcheck` (`make lint`) e `clang`
+(`make fuzz-run`). Só quem muda `proto/ui.proto` precisa do
+`protobuf-c-compiler` (`tools/sync-proto.sh` regenera `common/pb/`).
+
+Nada é instalado no sistema: tudo fica em `build/`. O daemon usa os mesmos
+arquivos do OpenSnitch (`/etc/opensnitchd/default-config.json` e
+`/etc/opensnitchd/rules/`) e precisa de root. Pare o `opensnitchd` antes,
+porque os dois usam a mesma fila e a mesma tabela do nftables:
+
+```sh
+sudo ./build/kisnitchd -debug -log-file /dev/stdout
+```
+
+Ctrl+C remove as regras de interceptação. Para experimentar sem tocar na
+rede da máquina, rode-o dentro de `sudo unshare -n` (é o que os testes de
+integração fazem).
+
+### Com a UI original
+
+A UI do OpenSnitch (`opensnitch-ui`) é o servidor: ela escuta em
+`unix:///tmp/osui.sock` (o `Server.Address` do config padrão) e o daemon
+conecta nela. Com a UI aberta na sessão gráfica:
+
+```sh
+sudo systemctl stop opensnitch     # ou o equivalente no seu init
+sudo ./build/kisnitchd -debug -log-file /dev/stdout
+```
+
+O log mostra "Connected to the UI service on ..." e "Start receiving
+notifications"; a partir daí, conexões sem regra abrem o popup da UI, e o
+que se escolhe nela vira regra em `/etc/opensnitchd/rules/` (se a duração
+for "sempre"). Para apontar para outro socket: `-ui-socket unix:///caminho`.
+Autenticação TLS entre daemon e UI ainda não existe (fase 10).
+
+### A UI (`kisnitch-gtk`)
+
+Substitui a `opensnitch-ui`: escuta no mesmo endereço (`unix:///tmp/osui.sock`,
+ou `global/server_address` do `~/.config/opensnitch/settings.conf`, que é o
+mesmo arquivo da UI original) e mostra o popup para cada conexão sem regra.
+Feche a UI original antes (as duas usam o mesmo socket e o mesmo controle de
+instância única):
+
+```sh
+./build/kisnitch-gtk                       # ou --socket unix:///outro/caminho
+```
+
+Funciona com o `opensnitchd` original e com o `kisnitchd`. As preferências
+do popup (tempo, ação e duração padrão, alvo, opções avançadas) são lidas do
+`settings.conf`; enquanto a janela de preferências não existe (fase 7), dá
+para ajustá-las pela UI original ou editando o arquivo. O menu da bandeja
+liga e desliga a interceptação e o início automático.
+
+### Teste diferencial (opcional)
+
+Compara o motor de regras com o código Go do próprio OpenSnitch, sobre o
+corpus de `tests/diff/corpus.json`. Roda no job `diff` do CI; para rodar
+localmente:
+
+```sh
+git submodule update --init          # código do upstream em upstream/
+sudo apt install golang-go libnetfilter-queue-dev
+make diff
+```
+
+Precisa de Go 1.21 ou mais novo (com rede na primeira vez, para baixar o
+toolchain 1.23 que o upstream pede e os módulos Go).
+
+O popup da UI também tem o seu: `make diff-ui` passa os mesmos casos pelo
+código Python do popup original (com o Qt substituído) e pelo nosso. Precisa
+do submódulo e de `python3-protobuf python3-grpc-tools python3-slugify
+python3-unidecode`.
+
+## Créditos e licença
+
+O Kisnitch é obra derivada do OpenSnitch, criado por Simone Margaritelli
+(evilsocket) e mantido por Gustavo Iñiguez Goia e colaboradores. Os arquivos
+traduzidos do código original mantêm seus avisos de copyright.
+
+Distribuído sob a [GNU GPL v3 ou posterior](LICENSE), a mesma licença do
+OpenSnitch. O cJSON, em `common/vendor/cjson/`, é distribuído sob a licença MIT.

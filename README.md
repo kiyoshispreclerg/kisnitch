@@ -1,118 +1,121 @@
 # Kisnitch
 
-Uma versão leve do [OpenSnitch](https://github.com/evilsocket/opensnitch), o
-firewall de aplicação para Linux, reescrita em C11 com interface em GTK2.
+[English](README.md) | **[Português (Brasil)](README.pt-BR.md)**
 
-O objetivo é ser um substituto direto: mesmos arquivos de configuração e de
-regras, e o mesmo protocolo gRPC entre daemon e interface. Assim o daemon do
-Kisnitch funciona com a UI original e vice-versa.
+A lightweight version of [OpenSnitch](https://github.com/evilsocket/opensnitch),
+the Linux application firewall, rewritten in C11 with a GTK2 interface.
 
-> **Estado:** em desenvolvimento, fase 6: o daemon intercepta conexões
-> (nfqueue + nftables), aplica as regras, acompanha o DNS e conversa com a UI
-> original do OpenSnitch. A UI em GTK2 (`kisnitch-gtk`) já tem o popup de
-> permissão e o ícone de bandeja, e funciona com o daemon original e com o
-> nosso; a janela principal (estatísticas, regras, preferências) vem na
-> fase 7. O plano completo está em [docs/PORTING.md](docs/PORTING.md).
+The goal is to be a drop-in replacement: same configuration and rule files,
+and the same gRPC protocol between daemon and UI. Kisnitch's daemon works with
+the original UI and vice versa.
 
-## Compilar e testar
+> **Status:** under development, phase 6: the daemon intercepts connections
+> (nfqueue + nftables), applies rules, tracks DNS and talks to the original
+> OpenSnitch UI. The GTK2 UI (`kisnitch-gtk`) already has the permission popup
+> and the tray icon, and works with both the original daemon and ours; the
+> main window (statistics, rules, preferences) comes in phase 7. The full plan
+> is in [docs/PORTING.md](docs/PORTING.md).
 
-Em Debian/Devuan/Ubuntu:
+## Build and test
+
+On Debian/Devuan/Ubuntu:
 
 ```sh
 sudo apt install build-essential pkg-config libpcre2-dev \
     libnetfilter-queue-dev libnftnl-dev libmnl-dev \
     libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev
-make            # build/kisnitchd e build/kisnitch-gtk
-make test       # testes unitários (sem root, sem rede)
-make asan       # os mesmos testes com AddressSanitizer + UBSan
+make            # build/kisnitchd and build/kisnitch-gtk
+make test       # unit tests (no root, no network)
+make asan       # the same tests with AddressSanitizer + UBSan
 ```
 
-Testes de integração (precisam de `nftables`, `curl` e `python3`; os testes
-com a UI falsa também de `python3-grpcio` e `python3-grpc-tools`, e os da
-nossa UI de `xvfb` e `xdotool`; cada parte é pulada sem o que precisa). Rodam
-num network namespace próprio e não mexem na rede da máquina:
+Integration tests (need `nftables`, `curl` and `python3`; the tests with the
+fake UI also need `python3-grpcio` and `python3-grpc-tools`, and those for our
+UI need `xvfb` and `xdotool`; each part is skipped if its requirements are
+missing). They run in their own network namespace and do not touch the
+machine's network:
 
 ```sh
-sudo make test-integration   # ou sem sudo, se o kernel permitir user namespaces
+sudo make test-integration   # or without sudo, if the kernel allows user namespaces
 ```
 
-Opcionais: `valgrind` (`make valgrind`), `cppcheck` (`make lint`) e `clang`
-(`make fuzz-run`). Só quem muda `proto/ui.proto` precisa do
-`protobuf-c-compiler` (`tools/sync-proto.sh` regenera `common/pb/`).
+Optional: `valgrind` (`make valgrind`), `cppcheck` (`make lint`) and `clang`
+(`make fuzz-run`). Only whoever changes `proto/ui.proto` needs
+`protobuf-c-compiler` (`tools/sync-proto.sh` regenerates `common/pb/`).
 
-Nada é instalado no sistema: tudo fica em `build/`. O daemon usa os mesmos
-arquivos do OpenSnitch (`/etc/opensnitchd/default-config.json` e
-`/etc/opensnitchd/rules/`) e precisa de root. Pare o `opensnitchd` antes,
-porque os dois usam a mesma fila e a mesma tabela do nftables:
+Nothing is installed on the system: everything stays in `build/`. The daemon
+uses the same files as OpenSnitch (`/etc/opensnitchd/default-config.json` and
+`/etc/opensnitchd/rules/`) and needs root. Stop `opensnitchd` first, because
+both use the same queue and the same nftables table:
 
 ```sh
 sudo ./build/kisnitchd -debug -log-file /dev/stdout
 ```
 
-Ctrl+C remove as regras de interceptação. Para experimentar sem tocar na
-rede da máquina, rode-o dentro de `sudo unshare -n` (é o que os testes de
-integração fazem).
+Ctrl+C removes the interception rules. To try it without touching the
+machine's network, run it inside `sudo unshare -n` (which is what the
+integration tests do).
 
-### Com a UI original
+### With the original UI
 
-A UI do OpenSnitch (`opensnitch-ui`) é o servidor: ela escuta em
-`unix:///tmp/osui.sock` (o `Server.Address` do config padrão) e o daemon
-conecta nela. Com a UI aberta na sessão gráfica:
+The OpenSnitch UI (`opensnitch-ui`) is the server: it listens on
+`unix:///tmp/osui.sock` (the default config's `Server.Address`) and the daemon
+connects to it. With the UI open in the graphical session:
 
 ```sh
-sudo systemctl stop opensnitch     # ou o equivalente no seu init
+sudo systemctl stop opensnitch     # or the equivalent for your init
 sudo ./build/kisnitchd -debug -log-file /dev/stdout
 ```
 
-O log mostra "Connected to the UI service on ..." e "Start receiving
-notifications"; a partir daí, conexões sem regra abrem o popup da UI, e o
-que se escolhe nela vira regra em `/etc/opensnitchd/rules/` (se a duração
-for "sempre"). Para apontar para outro socket: `-ui-socket unix:///caminho`.
-Autenticação TLS entre daemon e UI ainda não existe (fase 10).
+The log shows "Connected to the UI service on ..." and "Start receiving
+notifications"; from then on, connections without a rule open the UI's popup,
+and what you choose there becomes a rule in `/etc/opensnitchd/rules/` (if the
+duration is "always"). To point at another socket: `-ui-socket unix:///path`.
+TLS authentication between daemon and UI does not exist yet (phase 10).
 
-### A UI (`kisnitch-gtk`)
+### The UI (`kisnitch-gtk`)
 
-Substitui a `opensnitch-ui`: escuta no mesmo endereço (`unix:///tmp/osui.sock`,
-ou `global/server_address` do `~/.config/opensnitch/settings.conf`, que é o
-mesmo arquivo da UI original) e mostra o popup para cada conexão sem regra.
-Feche a UI original antes (as duas usam o mesmo socket e o mesmo controle de
-instância única):
+It replaces `opensnitch-ui`: it listens on the same address
+(`unix:///tmp/osui.sock`, or `global/server_address` from
+`~/.config/opensnitch/settings.conf`, the same file as the original UI) and
+shows the popup for each connection without a rule. Close the original UI
+first (both use the same socket and the same single-instance lock):
 
 ```sh
-./build/kisnitch-gtk                       # ou --socket unix:///outro/caminho
+./build/kisnitch-gtk                       # or --socket unix:///other/path
 ```
 
-Funciona com o `opensnitchd` original e com o `kisnitchd`. As preferências
-do popup (tempo, ação e duração padrão, alvo, opções avançadas) são lidas do
-`settings.conf`; enquanto a janela de preferências não existe (fase 7), dá
-para ajustá-las pela UI original ou editando o arquivo. O menu da bandeja
-liga e desliga a interceptação e o início automático.
+It works with the original `opensnitchd` and with `kisnitchd`. The popup
+preferences (timeout, default action and duration, target, advanced options)
+are read from `settings.conf`; until the preferences window exists (phase 7),
+you can adjust them through the original UI or by editing the file. The tray
+menu toggles interception and autostart.
 
-### Teste diferencial (opcional)
+### Differential test (optional)
 
-Compara o motor de regras com o código Go do próprio OpenSnitch, sobre o
-corpus de `tests/diff/corpus.json`. Roda no job `diff` do CI; para rodar
-localmente:
+Compares the rules engine with OpenSnitch's own Go code, over the corpus in
+`tests/diff/corpus.json`. It runs in the CI `diff` job; to run it locally:
 
 ```sh
-git submodule update --init          # código do upstream em upstream/
+git submodule update --init          # upstream code in upstream/
 sudo apt install golang-go libnetfilter-queue-dev
 make diff
 ```
 
-Precisa de Go 1.21 ou mais novo (com rede na primeira vez, para baixar o
-toolchain 1.23 que o upstream pede e os módulos Go).
+It needs Go 1.21 or newer (with network access the first time, to download
+the 1.23 toolchain that upstream requires and the Go modules).
 
-O popup da UI também tem o seu: `make diff-ui` passa os mesmos casos pelo
-código Python do popup original (com o Qt substituído) e pelo nosso. Precisa
-do submódulo e de `python3-protobuf python3-grpc-tools python3-slugify
+The UI popup has its own: `make diff-ui` runs the same cases through the
+original popup's Python code (with Qt replaced) and through ours. It needs the
+submodule and `python3-protobuf python3-grpc-tools python3-slugify
 python3-unidecode`.
 
-## Créditos e licença
+## Credits and license
 
-O Kisnitch é obra derivada do OpenSnitch, criado por Simone Margaritelli
-(evilsocket) e mantido por Gustavo Iñiguez Goia e colaboradores. Os arquivos
-traduzidos do código original mantêm seus avisos de copyright.
+Kisnitch is a derivative work of OpenSnitch, created by Simone Margaritelli
+(evilsocket) and maintained by Gustavo Iñiguez Goia and contributors. Files
+translated from the original code keep their copyright notices.
 
-Distribuído sob a [GNU GPL v3 ou posterior](LICENSE), a mesma licença do
-OpenSnitch. O cJSON, em `common/vendor/cjson/`, é distribuído sob a licença MIT.
+Distributed under the [GNU GPL v3 or later](LICENSE), the same license as
+OpenSnitch. cJSON, in `common/vendor/cjson/`, is distributed under the MIT
+license.
