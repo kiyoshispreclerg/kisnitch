@@ -9,12 +9,14 @@ O objetivo é ser um substituto direto: mesmos arquivos de configuração e de
 regras, e o mesmo protocolo gRPC entre daemon e interface. Assim o daemon do
 Kisnitch funciona com a UI original e vice-versa.
 
-> **Estado:** em desenvolvimento, fase 6: o daemon intercepta conexões
-> (nfqueue + nftables), aplica as regras, acompanha o DNS e conversa com a UI
-> original do OpenSnitch. A UI em GTK2 (`kisnitch-gtk`) já tem o popup de
-> permissão e o ícone de bandeja, e funciona com o daemon original e com o
-> nosso; a janela principal (estatísticas, regras, preferências) vem na
-> fase 7. O plano completo está em [docs/PORTING.md](docs/PORTING.md).
+> **Estado:** versão 0.1.0, fase 7 de 11 concluída. O daemon intercepta
+> conexões (nfqueue + nftables), aplica as regras, acompanha o DNS e conversa
+> com a UI original do OpenSnitch e com a nossa. A UI em GTK2 (`kisnitch-gtk`)
+> está completa: popup de permissão, ícone de bandeja, janela de estatísticas,
+> editor de regras e preferências. Ainda faltam o firewall de sistema
+> (`system-fw.json`, fase 8), o monitor de processos eBPF (fase 9, opcional) e
+> o restante (monitor audit, tarefas, TLS entre daemon e UI, i18n; fase 10). O
+> plano completo está em [docs/PORTING.md](docs/PORTING.md).
 
 ## Compilar e testar
 
@@ -84,11 +86,10 @@ instância única):
 ./build/kisnitch-gtk                       # ou --socket unix:///outro/caminho
 ```
 
-Funciona com o `opensnitchd` original e com o `kisnitchd`. As preferências
-do popup (tempo, ação e duração padrão, alvo, opções avançadas) são lidas do
-`settings.conf`; enquanto a janela de preferências não existe (fase 7), dá
-para ajustá-las pela UI original ou editando o arquivo. O menu da bandeja
-liga e desliga a interceptação e o início automático.
+Funciona com o `opensnitchd` original e com o `kisnitchd`. O menu da
+bandeja liga e desliga a interceptação e o início automático. A janela de
+estatísticas, o editor de regras e a janela de preferências são os mesmos da UI
+original e leem e gravam o mesmo `settings.conf` e usam um esquema SQLite compatível com o original.
 
 ### Teste diferencial (opcional)
 

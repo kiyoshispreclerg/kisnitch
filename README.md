@@ -9,12 +9,14 @@ The goal is to be a drop-in replacement: same configuration and rule files,
 and the same gRPC protocol between daemon and UI. Kisnitch's daemon works with
 the original UI and vice versa.
 
-> **Status:** under development, phase 6: the daemon intercepts connections
-> (nfqueue + nftables), applies rules, tracks DNS and talks to the original
-> OpenSnitch UI. The GTK2 UI (`kisnitch-gtk`) already has the permission popup
-> and the tray icon, and works with both the original daemon and ours; the
-> main window (statistics, rules, preferences) comes in phase 7. The full plan
-> is in [docs/PORTING.md](docs/PORTING.md).
+> **Status:** version 0.1.0, phase 7 of 11 complete. The daemon intercepts
+> connections (nfqueue + nftables), applies rules, tracks DNS and talks to
+> both the original OpenSnitch UI and our own. The GTK2 UI (`kisnitch-gtk`)
+> is complete: permission popup, tray icon, statistics window, rules editor
+> and preferences. Not done yet: the system firewall (`system-fw.json`, phase
+> 8), the eBPF process monitor (phase 9, optional), and the remainder (audit
+> monitor, tasks, TLS between daemon and UI, i18n; phase 10). The full plan is
+> in [docs/PORTING.md](docs/PORTING.md).
 
 ## Build and test
 
@@ -85,11 +87,10 @@ first (both use the same socket and the same single-instance lock):
 ./build/kisnitch-gtk                       # or --socket unix:///other/path
 ```
 
-It works with the original `opensnitchd` and with `kisnitchd`. The popup
-preferences (timeout, default action and duration, target, advanced options)
-are read from `settings.conf`; until the preferences window exists (phase 7),
-you can adjust them through the original UI or by editing the file. The tray
-menu toggles interception and autostart.
+It works with the original `opensnitchd` and with `kisnitchd`. The tray
+menu toggles interception and autostart. The statistics window, the rules
+editor and the preferences window are the same ones the original UI offers and
+read and write the same `settings.conf` and use a SQLite schema compatible with the original.
 
 ### Differential test (optional)
 
