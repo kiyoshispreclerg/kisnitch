@@ -18,6 +18,25 @@ the original UI and vice versa.
 > monitor, tasks, TLS between daemon and UI, i18n; phase 10). The full plan is
 > in [docs/PORTING.md](docs/PORTING.md).
 
+## Install
+
+Each [release](https://github.com/kiyoshispreclerg/kisnitch/releases) ships
+`.deb` packages (`amd64`) built for Ubuntu 22.04, Ubuntu 24.04, Devuan 5
+daedalus and Devuan 6 excalibur. Download the one that matches your system
+and install it with apt, which pulls in the dependencies:
+
+```sh
+sudo apt install ./kisnitch_<version>-1_<system>_amd64.deb
+```
+
+The package installs `kisnitchd`, `kisnitch-gtk`, the `.desktop` file, the
+icons and the AppStream metadata. It does not need systemd and conflicts with
+`opensnitch` and `python3-opensnitch-ui`, so remove those first. Each package
+is installed and smoke-tested on a clean system of its own target before it
+is published. Releases starting with `v0` are marked as pre-releases.
+
+To build from source instead, see below.
+
 ## Build and test
 
 On Debian/Devuan/Ubuntu:
@@ -45,7 +64,10 @@ Optional: `valgrind` (`make valgrind`), `cppcheck` (`make lint`) and `clang`
 (`make fuzz-run`). Only whoever changes `proto/ui.proto` needs
 `protobuf-c-compiler` (`tools/sync-proto.sh` regenerates `common/pb/`).
 
-Nothing is installed on the system: everything stays in `build/`. The daemon
+`make install` (and `make uninstall`) copies the binaries, the `.desktop`
+file, the icons and the metadata to `PREFIX` (default `/usr/local`), honouring
+`DESTDIR`; `tools/build-deb.sh` builds the `.deb` from the current tree. The
+commands below run straight from `build/` without installing anything. The daemon
 uses the same files as OpenSnitch (`/etc/opensnitchd/default-config.json` and
 `/etc/opensnitchd/rules/`) and needs root. Stop `opensnitchd` first, because
 both use the same queue and the same nftables table:
