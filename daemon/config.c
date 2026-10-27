@@ -137,6 +137,17 @@ int ks_config_parse(const char *json, size_t len, struct ks_config *out,
     return ks_schema_decode_buf(&config_schema, json, len, out, err, errlen);
 }
 
+/* A config is sound if it parses: shared by the backup and the fallback read. */
+static bool config_sound(const char *text, size_t len)
+{
+    struct ks_config c;
+    char e[512];
+    if (!ks_check_usable(text, len) || ks_config_parse(text, len, &c, e, sizeof(e)) < 0)
+        return false;
+    ks_config_free(&c);
+    return true;
+}
+
 int ks_config_load(const char *path, struct ks_config *out, char *err,
                    size_t errlen)
 {
@@ -144,7 +155,8 @@ int ks_config_load(const char *path, struct ks_config *out, char *err,
     size_t len;
 
     memset(out, 0, sizeof(*out));
-    char *raw = ks_read_file(path, KS_CONFIG_MAX_SIZE, &len, e, sizeof(e));
+    char *raw = ks_read_file_or_backup(path, KS_CONFIG_MAX_SIZE, config_sound, &len, e,
+                                       sizeof(e));
     if (raw == NULL) {
         snprintf(err, errlen, "Error loading configuration %s: %s", path, e);
         return -1;
@@ -187,7 +199,7 @@ int ks_config_save_raw(const char *path, const char *raw, size_t len,
     if (chmod(path, 0600) < 0)
         ks_warning("unable to set permissions to default config: %s",
                    strerror(errno));
-    if (ks_write_file(path, raw, len, 0644, e, sizeof(e)) < 0) {
+    if (ks_write_file_safe(path, raw, len, 0644, config_sound, e, sizeof(e)) < 0) {
         ks_error("writing configuration to disk: %s", e);
         snprintf(err, errlen, "%s", e);
         return -1;

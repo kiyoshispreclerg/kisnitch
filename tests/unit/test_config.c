@@ -443,6 +443,43 @@ TEST(save_raw_validates_and_writes_verbatim)
     CHECK_INT_EQ(st.st_mode & 0777, 0600);
 }
 
+TEST(load_falls_back_to_the_backup)
+{
+    char err[512], path[128], bak[140];
+    struct ks_config c;
+    make_path(path, sizeof(path), "fb.json");
+    snprintf(bak, sizeof(bak), "%s.backup", path);
+
+    const char *a = "{\"DefaultAction\":\"deny\"}", *b = "{\"DefaultAction\":\"allow\"}";
+    CHECK(ks_config_save_raw(path, a, strlen(a), err, sizeof(err)) == 0);
+    CHECK(access(bak, F_OK) != 0);
+    CHECK(ks_config_save_raw(path, b, strlen(b), err, sizeof(err)) == 0);
+
+    CHECK(ks_config_load(path, &c, err, sizeof(err)) == 0);
+    CHECK_STR_EQ(c.default_action, "allow");
+    ks_config_free(&c);
+
+    /* empty main: the previous config comes from the backup */
+    CHECK(write_str(path, "") == 0);
+    CHECK_MSG(ks_config_load(path, &c, err, sizeof(err)) == 0, "%s", err);
+    CHECK_STR_EQ(c.default_action, "deny");
+    ks_config_free(&c);
+
+    /* and saving again does not replace that good backup with the empty file */
+    CHECK(ks_config_save_raw(path, b, strlen(b), err, sizeof(err)) == 0);
+    CHECK(write_str(path, "") == 0);
+    CHECK(ks_config_save_raw(path, b, strlen(b), err, sizeof(err)) == 0);
+    CHECK(unlink(path) == 0);
+    CHECK(ks_config_load(path, &c, err, sizeof(err)) == 0); /* missing main */
+    CHECK_STR_EQ(c.default_action, "deny");
+    ks_config_free(&c);
+
+    /* no backup either: the old error */
+    CHECK(unlink(bak) == 0);
+    CHECK(ks_config_load(path, &c, err, sizeof(err)) == -1);
+    CHECK_STR_HAS(err, "No such file or directory");
+}
+
 TEST(free_is_idempotent)
 {
     struct ks_config c;
@@ -455,7 +492,8 @@ TEST(free_is_idempotent)
 static void rm_tmpdir(void)
 {
     static const char *const files[] = {"empty.json", "broken.json",
-                                        "reload.json", "save.json"};
+                                        "reload.json", "save.json", "fb.json",
+                                        "fb.json.backup"};
     char path[128];
     for (size_t i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
         make_path(path, sizeof(path), files[i]);
@@ -487,6 +525,7 @@ int main(void)
     RUN(load_errors);
     RUN(reload_keeps_previous_config_on_error);
     RUN(save_raw_validates_and_writes_verbatim);
+    RUN(load_falls_back_to_the_backup);
     RUN(free_is_idempotent);
 
     rm_tmpdir();
