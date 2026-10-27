@@ -188,6 +188,7 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 74 | `ui/prefs.c` | autenticação TLS do servidor da UI pode ser salva | a UI recusa TLS (divergência 59): ao salvar com tipo diferente de Simple, mostra "TLS is not supported yet" e mantém Simple | a UI ainda não fala TLS (fase 10) |
 | 75 | `ui/service.c` | o limpador do banco (`purge_oldest`) roda em timer da janela Qt | timer GLib de `database/purge_interval` minutos que chama `ks_db_purge_oldest(max_days)`; reiniciado ao salvar as preferências | mesmo efeito, sem Qt |
 | 76 | `ui/stats_win.c` | `_needs_refresh` compara com `datetime.now()` | compara com relógio monotônico | imune a mudança de hora |
+| 77 | `daemon/config.c`, `daemon/rules/loader.c`, `ui/settings.c` | grava o arquivo no lugar (`os.WriteFile`, `QSettings`) | grava em `<arquivo>.tmp` com fsync e `rename`, copia o arquivo anterior para `<arquivo>.backup` (só se íntegro) e, ao ler, usa o `.backup` se o arquivo faltar ou estiver vazio/zerado/inválido (`ks_write_file_safe`, `ks_read_file_or_backup`) | sobrevive a queda de energia; apagar um arquivo para "resetar" exige apagar o `.backup` também (apagar uma regra pela UI apaga o dela) |
 
 ## Bugs do upstream a relatar
 

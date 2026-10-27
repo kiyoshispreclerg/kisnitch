@@ -76,6 +76,12 @@ both use the same queue and the same nftables table:
 sudo ./build/kisnitchd -debug -log-file /dev/stdout
 ```
 
+Configuration and user state (`default-config.json`, each rule in `rules/`,
+`settings.conf`) are written power-loss-safe: to `<file>.tmp`, fsynced, then
+renamed, after copying the previous version to `<file>.backup`. If a file is
+missing or comes back empty, the `.backup` is used (with a warning in the log).
+To reset by deleting a file, delete its `.backup` too, or it comes back.
+
 Ctrl+C removes the interception rules. To try it without touching the
 machine's network, run it inside `sudo unshare -n` (which is what the
 integration tests do).

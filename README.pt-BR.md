@@ -75,6 +75,13 @@ porque os dois usam a mesma fila e a mesma tabela do nftables:
 sudo ./build/kisnitchd -debug -log-file /dev/stdout
 ```
 
+A configuração e o estado do usuário (`default-config.json`, cada regra em
+`rules/`, `settings.conf`) são gravados à prova de queda de energia: em
+`<arquivo>.tmp`, com fsync e `rename`, depois de copiar a versão anterior para
+`<arquivo>.backup`. Se um arquivo faltar ou vier vazio, o `.backup` é usado (com
+aviso no log). Para resetar apagando um arquivo, apague também o `.backup`,
+senão ele volta.
+
 Ctrl+C remove as regras de interceptação. Para experimentar sem tocar na
 rede da máquina, rode-o dentro de `sudo unshare -n` (é o que os testes de
 integração fazem).
