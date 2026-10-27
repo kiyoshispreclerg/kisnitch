@@ -6,12 +6,14 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "common/log.h"
 #include "common/unicode.h"
 
 char *ks_read_file(const char *path, size_t max_size, size_t *len, char *err,
@@ -178,6 +180,181 @@ int ks_write_file(const char *path, const char *data, size_t len, mode_t mode,
         return -1;
     }
     return 0;
+}
+
+/* ---- power-loss-safe files -------------------------------------------- */
+
+#define BACKUP_MAX_SIZE (64u * 1024 * 1024)
+
+bool ks_check_usable(const char *text, size_t len)
+{
+    return len > 0 && memchr(text, '\0', len) == NULL;
+}
+
+bool ks_check_json_object(const char *text, size_t len)
+{
+    if (!ks_check_usable(text, len))
+        return false;
+    char e[256];
+    cJSON *j = ks_json_parse(text, len, e, sizeof(e));
+    bool ok = cJSON_IsObject(j);
+    cJSON_Delete(j);
+    return ok;
+}
+
+int ks_flush_sync(FILE *f)
+{
+    if (fflush(f) != 0)
+        return -1;
+    return fsync(fileno(f));
+}
+
+static bool suffixed_path(char *out, size_t outlen, const char *path,
+                          const char *suffix)
+{
+    return snprintf(out, outlen, "%s%s", path, suffix) < (int)outlen;
+}
+
+/* Best effort: makes the rename itself durable. */
+static void sync_parent_dir(const char *path)
+{
+    char dir[PATH_MAX];
+    if (snprintf(dir, sizeof(dir), "%s", path) >= (int)sizeof(dir))
+        return;
+    char *slash = strrchr(dir, '/');
+    if (slash == NULL)
+        snprintf(dir, sizeof(dir), ".");
+    else if (slash == dir)
+        dir[1] = '\0';
+    else
+        *slash = '\0';
+    int fd = open(dir, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (fd >= 0) {
+        (void)fsync(fd);
+        close(fd);
+    }
+}
+
+/* data -> tmp (fsynced, `mode`) -> rename over path. */
+static int write_atomic(const char *path, const char *tmp, const char *data,
+                        size_t len, mode_t mode, char *err, size_t errlen)
+{
+    unlink(tmp); /* a leftover from an earlier crash */
+    int fd = open(tmp, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
+    if (fd < 0) {
+        snprintf(err, errlen, "open %s: %s", tmp, strerror(errno));
+        return -1;
+    }
+    size_t off = 0;
+    const char *what = "write";
+    if (fchmod(fd, mode & 07777) < 0) {
+        what = "chmod";
+        goto fail;
+    }
+    while (off < len) {
+        ssize_t w = write(fd, data + off, len - off);
+        if (w < 0) {
+            if (errno == EINTR)
+                continue;
+            goto fail;
+        }
+        off += (size_t)w;
+    }
+    if (fsync(fd) < 0) {
+        what = "fsync";
+        goto fail;
+    }
+    if (close(fd) < 0) {
+        fd = -1;
+        what = "close";
+        goto fail;
+    }
+    fd = -1;
+    if (rename(tmp, path) < 0) {
+        snprintf(err, errlen, "rename %s: %s", tmp, strerror(errno));
+        unlink(tmp);
+        return -1;
+    }
+    sync_parent_dir(path);
+    return 0;
+
+fail:
+    snprintf(err, errlen, "%s %s: %s", what, tmp, strerror(errno));
+    if (fd >= 0)
+        close(fd);
+    unlink(tmp);
+    return -1;
+}
+
+int ks_backup_file(const char *path, ks_check_fn ok, char *err, size_t errlen)
+{
+    char bak[PATH_MAX], tmp[PATH_MAX], e[256];
+    struct stat st;
+    if (!suffixed_path(bak, sizeof(bak), path, ".backup") ||
+        !suffixed_path(tmp, sizeof(tmp), path, ".backup.tmp")) {
+        snprintf(err, errlen, "backup %s: path too long", path);
+        return -1;
+    }
+    if (stat(path, &st) < 0) {
+        if (errno == ENOENT)
+            return 0;
+        snprintf(err, errlen, "stat %s: %s", path, strerror(errno));
+        return -1;
+    }
+    size_t len;
+    char *text = ks_read_file(path, BACKUP_MAX_SIZE, &len, err, errlen);
+    if (text == NULL)
+        return -1;
+    if (ok != NULL && !ok(text, len)) {
+        ks_warning("%s looks corrupted: keeping the previous %s", path, bak);
+        free(text);
+        return 0;
+    }
+    int rc = write_atomic(bak, tmp, text, len, st.st_mode, e, sizeof(e));
+    if (rc < 0)
+        snprintf(err, errlen, "%s", e);
+    free(text);
+    return rc;
+}
+
+int ks_write_file_safe(const char *path, const char *data, size_t len,
+                       mode_t mode, ks_check_fn ok, char *err, size_t errlen)
+{
+    char tmp[PATH_MAX], e[256];
+    if (!suffixed_path(tmp, sizeof(tmp), path, ".tmp")) {
+        snprintf(err, errlen, "write %s: path too long", path);
+        return -1;
+    }
+    struct stat st;
+    if (stat(path, &st) == 0)
+        mode = st.st_mode;
+    if (ks_backup_file(path, ok, e, sizeof(e)) < 0)
+        ks_warning("can't back up %s: %s (writing anyway)", path, e);
+    return write_atomic(path, tmp, data, len, mode, err, errlen);
+}
+
+char *ks_read_file_or_backup(const char *path, size_t max_size, ks_check_fn ok,
+                             size_t *len, char *err, size_t errlen)
+{
+    char bak[PATH_MAX], e[256];
+    char *text = ks_read_file(path, max_size, len, err, errlen);
+    int saved = errno;
+    if (text != NULL && (ok == NULL || ok(text, *len)))
+        return text;
+    if (suffixed_path(bak, sizeof(bak), path, ".backup")) {
+        size_t blen;
+        char *b = ks_read_file(bak, max_size, &blen, e, sizeof(e));
+        if (b != NULL && (ok == NULL || ok(b, blen))) {
+            ks_warning("%s is %s: using %s", path,
+                       text != NULL ? "unusable" : "missing or unreadable", bak);
+            free(text);
+            *len = blen;
+            return b;
+        }
+        free(b);
+    }
+    errno = saved;
+    return text;
 }
 
 /* ---- Go-compatible serialization -------------------------------------- */

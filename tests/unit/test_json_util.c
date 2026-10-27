@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "common/json_util.h"
 
+#include <errno.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "tests/harness.h"
@@ -131,6 +133,145 @@ TEST(read_and_write_file)
     CHECK(ks_write_file("/nonexistent/x", "a", 1, 0600, err, sizeof(err)) == -1);
 }
 
+static char *slurp(const char *path)
+{
+    char err[128];
+    size_t len;
+    return ks_read_file(path, 1 << 20, &len, err, sizeof(err));
+}
+
+static bool has_content(const char *path, const char *want)
+{
+    char *s = slurp(path);
+    bool r = s != NULL && strcmp(s, want) == 0;
+    free(s);
+    return r;
+}
+
+static bool mode_is(const char *path, mode_t want)
+{
+    struct stat st;
+    return stat(path, &st) == 0 && (st.st_mode & 07777) == want;
+}
+
+static bool only_two(const char *text, size_t len)
+{
+    return ks_check_usable(text, len) && len == 2;
+}
+
+TEST(safe_write_backs_up_the_previous_file)
+{
+    char dir[] = "/tmp/kisnitch-safe-XXXXXX", path[128], bak[140], tmp[140], err[256];
+    CHECK(mkdtemp(dir) != NULL);
+    snprintf(path, sizeof(path), "%s/f.json", dir);
+    snprintf(bak, sizeof(bak), "%s.backup", path);
+    snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+
+    /* first write: nothing to copy */
+    CHECK_MSG(ks_write_file_safe(path, "one", 3, 0640, ks_check_usable, err, sizeof(err)) == 0,
+              "%s", err);
+    CHECK(has_content(path, "one"));
+    CHECK(access(bak, F_OK) != 0);
+    CHECK(mode_is(path, 0640));
+
+    /* second: the backup holds the previous content, with its mode; an
+     * existing file keeps its mode whatever `mode` says */
+    CHECK(chmod(path, 0600) == 0);
+    CHECK(ks_write_file_safe(path, "two", 3, 0644, ks_check_usable, err, sizeof(err)) == 0);
+    CHECK(has_content(path, "two"));
+    CHECK(has_content(bak, "one"));
+    CHECK(mode_is(bak, 0600));
+    CHECK(mode_is(path, 0600));
+    CHECK(access(tmp, F_OK) != 0);
+
+    /* an empty main file (what a power cut leaves) does not replace a good
+     * backup */
+    CHECK(ks_write_file(path, "", 0, 0600, err, sizeof(err)) == 0);
+    CHECK(ks_write_file_safe(path, "three", 5, 0600, ks_check_usable, err, sizeof(err)) == 0);
+    CHECK(has_content(path, "three"));
+    CHECK(has_content(bak, "one"));
+
+    /* same for NUL bytes, and for a file the validator rejects */
+    CHECK(ks_write_file(path, "a\0b", 3, 0600, err, sizeof(err)) == 0);
+    CHECK(ks_write_file_safe(path, "four", 4, 0600, ks_check_usable, err, sizeof(err)) == 0);
+    CHECK(has_content(bak, "one"));
+    CHECK(ks_write_file_safe(path, "ab", 2, 0600, only_two, err, sizeof(err)) == 0);
+    CHECK(has_content(bak, "one")); /* "four" is not two bytes long */
+    CHECK(ks_write_file_safe(path, "cd", 2, 0600, only_two, err, sizeof(err)) == 0);
+    CHECK(has_content(bak, "ab"));
+
+    /* a failed backup does not stop the write */
+    CHECK(unlink(bak) == 0);
+    CHECK(mkdir(bak, 0700) == 0);
+    CHECK(ks_write_file_safe(path, "ef", 2, 0600, only_two, err, sizeof(err)) == 0);
+    CHECK(has_content(path, "ef"));
+    rmdir(bak);
+
+    unlink(bak);
+    unlink(path);
+    rmdir(dir);
+}
+
+TEST(read_or_backup_falls_back_only_when_the_main_is_unusable)
+{
+    char dir[] = "/tmp/kisnitch-safe-XXXXXX", path[128], bak[140], err[256];
+    size_t len;
+    CHECK(mkdtemp(dir) != NULL);
+    snprintf(path, sizeof(path), "%s/f.conf", dir);
+    snprintf(bak, sizeof(bak), "%s.backup", path);
+
+    /* neither: the same failure as ks_read_file */
+    errno = 0;
+    CHECK(ks_read_file_or_backup(path, 100, ks_check_usable, &len, err, sizeof(err)) == NULL);
+    CHECK_INT_EQ(errno, ENOENT);
+    CHECK_STR_HAS(err, "No such file or directory");
+
+    CHECK(ks_write_file(bak, "old", 3, 0600, err, sizeof(err)) == 0);
+    char *s = ks_read_file_or_backup(path, 100, ks_check_usable, &len, err, sizeof(err));
+    CHECK(s != NULL && strcmp(s, "old") == 0 && len == 3); /* missing */
+    free(s);
+
+    CHECK(ks_write_file(path, "", 0, 0600, err, sizeof(err)) == 0);
+    s = ks_read_file_or_backup(path, 100, ks_check_usable, &len, err, sizeof(err));
+    CHECK(s != NULL && strcmp(s, "old") == 0); /* empty */
+    free(s);
+
+    CHECK(ks_write_file(path, "x\0y", 3, 0600, err, sizeof(err)) == 0);
+    s = ks_read_file_or_backup(path, 100, ks_check_usable, &len, err, sizeof(err));
+    CHECK(s != NULL && strcmp(s, "old") == 0); /* zeroed */
+    free(s);
+
+    CHECK(ks_write_file(path, "new", 3, 0600, err, sizeof(err)) == 0);
+    s = ks_read_file_or_backup(path, 100, ks_check_usable, &len, err, sizeof(err));
+    CHECK(s != NULL && strcmp(s, "new") == 0); /* the main wins */
+    free(s);
+
+    /* no good backup: what the plain read returns */
+    CHECK(ks_write_file(path, "", 0, 0600, err, sizeof(err)) == 0);
+    CHECK(ks_write_file(bak, "", 0, 0600, err, sizeof(err)) == 0);
+    s = ks_read_file_or_backup(path, 100, ks_check_usable, &len, err, sizeof(err));
+    CHECK(s != NULL && len == 0);
+    free(s);
+    unlink(bak);
+    CHECK(ks_write_file(path, "q", 1, 0600, err, sizeof(err)) == 0);
+    s = ks_read_file_or_backup(path, 100, ks_check_json_object, &len, err, sizeof(err));
+    CHECK(s != NULL && strcmp(s, "q") == 0);
+    free(s);
+
+    unlink(bak);
+    unlink(path);
+    rmdir(dir);
+}
+
+TEST(json_object_check)
+{
+    CHECK(ks_check_json_object("{\"a\":1}", 7));
+    CHECK(!ks_check_json_object("[1]", 3));
+    CHECK(!ks_check_json_object("", 0));
+    CHECK(!ks_check_json_object("{\"a\":", 5));
+    CHECK(!ks_check_json_object("{\0}", 3));
+}
+
 int main(void)
 {
     RUN(parse_accepts_trailing_whitespace_only);
@@ -139,5 +280,8 @@ int main(void)
     RUN(equality_is_semantic);
     RUN(subset_semantics);
     RUN(read_and_write_file);
+    RUN(safe_write_backs_up_the_previous_file);
+    RUN(read_or_backup_falls_back_only_when_the_main_is_unusable);
+    RUN(json_object_check);
     return harness_report();
 }

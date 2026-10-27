@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <sys/types.h>
 
 #include "cJSON.h"
@@ -47,5 +48,44 @@ char *ks_json_print_go(const cJSON *v, bool indent);
  * truncating it. Returns 0 or -1 with `err` filled. */
 int ks_write_file(const char *path, const char *data, size_t len, mode_t mode,
                   char *err, size_t errlen);
+
+/* ---- power-loss-safe files ---------------------------------------------
+ *
+ * For configuration and user state. A validator says whether a file's
+ * contents are sound; it is shared by the backup (ks_write_file_safe) and the
+ * read (ks_read_file_or_backup), possibly with different strictness. */
+typedef bool (*ks_check_fn)(const char *text, size_t len);
+
+/* Not empty and without NUL bytes: what a power cut leaves behind is an empty
+ * or zero-filled file. */
+bool ks_check_usable(const char *text, size_t len);
+
+/* Usable, and one JSON object. */
+bool ks_check_json_object(const char *text, size_t len);
+
+/* fflush() + fsync() of the file behind `f`. Returns 0, or -1 with errno set.
+ * Call it before fclose() on files that must survive a power cut. */
+int ks_flush_sync(FILE *f);
+
+/* Copies the current `path` to "<path>.backup" (via "<path>.backup.tmp",
+ * fsync and rename), with the same permissions. A missing `path` is not an
+ * error. If `ok` is not NULL and rejects the contents, the previous backup is
+ * kept and a warning is logged (still returns 0). Returns -1 with `err`
+ * filled when the copy fails. */
+int ks_backup_file(const char *path, ks_check_fn ok, char *err, size_t errlen);
+
+/* Replaces `path` atomically: backs up the current file (ks_backup_file; a
+ * failure only logs a warning), writes "<path>.tmp", fsyncs it, renames it
+ * over `path` and fsyncs the directory. An existing file keeps its
+ * permissions; a new one is created with `mode`. Returns 0 or -1 with `err`
+ * filled. */
+int ks_write_file_safe(const char *path, const char *data, size_t len,
+                       mode_t mode, ks_check_fn ok, char *err, size_t errlen);
+
+/* Like ks_read_file(), but when `path` is missing or `ok` rejects it, tries
+ * "<path>.backup" (with a warning). If the backup is no good either, returns
+ * exactly what ks_read_file(path) would, errno included. */
+char *ks_read_file_or_backup(const char *path, size_t max_size, ks_check_fn ok,
+                             size_t *len, char *err, size_t errlen);
 
 #endif
