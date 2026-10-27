@@ -259,7 +259,7 @@ bool ks_rops_export(const struct ks_rulesdb *rules, const char *node, const char
         ks_warning("exception creating dirs: %s", strerror(errno));
     char *file = g_strdup_printf("%s/%s%s", dir, name, strstr(name, ".json") ? "" : ".json");
     FILE *f = fopen(file, "w");
-    bool ok = f != NULL && fputs(json, f) >= 0;
+    bool ok = f != NULL && fputs(json, f) >= 0 && ks_flush_sync(f) == 0;
     if (f != NULL && fclose(f) != 0)
         ok = false;
     if (!ok)

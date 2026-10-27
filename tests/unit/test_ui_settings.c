@@ -207,6 +207,50 @@ TEST(sync_keeps_other_entries)
     rmdir(d);
 }
 
+TEST(sync_backs_up_and_open_falls_back)
+{
+    char path[128], bak[140], d[128], err[128];
+    path_in(d, sizeof(d), "backup");
+    mkdir(d, 0700);
+    path_in(path, sizeof(path), "backup/settings.conf");
+    snprintf(bak, sizeof(bak), "%s.backup", path);
+
+    struct ks_settings s;
+    CHECK(ks_settings_open(&s, path) == 0);
+    CHECK(ks_settings_set_int(&s, KS_CFG_DEFAULT_TIMEOUT_KEY, 11) == 0);
+    CHECK(access(bak, F_OK) != 0);
+    CHECK(ks_settings_set_int(&s, KS_CFG_DEFAULT_TIMEOUT_KEY, 22) == 0);
+    CHECK(access(bak, F_OK) == 0);
+    ks_settings_close(&s);
+
+    /* a file with a typo is still read as it is, not swapped for the backup */
+    const char *typo = "[global]\noops\ndefault_timeout=33\n";
+    CHECK(ks_write_file(path, typo, strlen(typo), 0600, err, sizeof(err)) == 0);
+    CHECK(ks_settings_open(&s, path) == 0);
+    CHECK_INT_EQ(ks_settings_get_int(&s, KS_CFG_DEFAULT_TIMEOUT_KEY, 0), 33);
+    ks_settings_close(&s);
+
+    /* ... but it does not become the backup */
+    CHECK(ks_settings_open(&s, path) == 0);
+    CHECK(ks_settings_set_int(&s, "global/x", 1) == 0);
+    ks_settings_close(&s);
+    size_t len;
+    char *b = ks_read_file(bak, 1 << 20, &len, err, sizeof(err));
+    CHECK(b != NULL);
+    CHECK_STR_HAS(b, "default_timeout=11\n"); /* the last clean one */
+    free(b);
+
+    /* an empty file (power cut): the backup is used */
+    CHECK(ks_write_file(path, "", 0, 0600, err, sizeof(err)) == 0);
+    CHECK(ks_settings_open(&s, path) == 0);
+    CHECK_INT_EQ(ks_settings_get_int(&s, KS_CFG_DEFAULT_TIMEOUT_KEY, 0), 11);
+    ks_settings_close(&s);
+
+    unlink(bak);
+    unlink(path);
+    rmdir(d);
+}
+
 TEST(defaults_on_first_start)
 {
     char path[128], err[128];
@@ -320,6 +364,7 @@ int main(void)
     RUN(unescaping);
     RUN(keys);
     RUN(sync_keeps_other_entries);
+    RUN(sync_backs_up_and_open_falls_back);
     RUN(defaults_on_first_start);
     RUN(default_path);
     RUN(rewrite_is_stable);

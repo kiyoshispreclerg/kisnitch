@@ -571,13 +571,38 @@ char *ks_settings_serialize(const struct ks_settings *s)
     return ks_pybuf_finish(&b);
 }
 
+/* For a file to become the backup it must read without a single complaint:
+ * every line is a [group], a ;comment or key=value. Reading only asks for
+ * ks_check_usable(), so a typo of the user never swaps in the backup. */
+static bool settings_clean(const char *text, size_t n)
+{
+    if (!ks_check_usable(text, n))
+        return false;
+    for (size_t i = 0; i < n;) {
+        while (i < n && (text[i] == ' ' || text[i] == '\t' || text[i] == '\n' || text[i] == '\r'))
+            i++;
+        if (i >= n)
+            break;
+        size_t e = line_end(text, i, n);
+        const char *line = text + i;
+        size_t ll = e - i;
+        i = e;
+        if (line[0] == ';')
+            continue;
+        if (line[0] == '[' ? memchr(line, ']', ll) == NULL : memchr(line, '=', ll) == NULL)
+            return false;
+    }
+    return true;
+}
+
 static int load_file(struct ks_settings *s)
 {
     char err[256];
     if (s->path == NULL)
         return 0; /* in memory only */
     size_t len;
-    char *text = ks_read_file(s->path, SETTINGS_MAX_SIZE, &len, err, sizeof(err));
+    char *text = ks_read_file_or_backup(s->path, SETTINGS_MAX_SIZE, ks_check_usable, &len,
+                                        err, sizeof(err));
     if (text == NULL) {
         if (access(s->path, F_OK) != 0 && errno == ENOENT)
             return ks_settings_parse(s, "", 0);
@@ -653,25 +678,18 @@ int ks_settings_sync(struct ks_settings *s)
     char *text = ks_settings_serialize(s);
     if (text == NULL)
         return -1;
-    char tmp[PATH_MAX], err[256];
+    char err[256];
     int rc = -1;
-    if (mkdirs(s->path) == 0 &&
-        snprintf(tmp, sizeof(tmp), "%s.XXXXXX", s->path) < (int)sizeof(tmp)) {
-        int fd = mkstemp(tmp);
-        if (fd >= 0) {
-            mode_t um = umask(0);
-            umask(um);
-            fchmod(fd, 0666 & ~um);
-            close(fd);
-            if (ks_write_file(tmp, text, strlen(text), 0666 & ~um, err, sizeof(err)) == 0 &&
-                rename(tmp, s->path) == 0)
-                rc = 0;
-            else
-                unlink(tmp);
-        }
+    if (mkdirs(s->path) == 0) {
+        mode_t um = umask(0);
+        umask(um);
+        rc = ks_write_file_safe(s->path, text, strlen(text), 0666 & ~um, settings_clean,
+                                err, sizeof(err));
+    } else {
+        snprintf(err, sizeof(err), "mkdir: %s", strerror(errno));
     }
     if (rc < 0)
-        ks_error("settings: can't write %s: %s", s->path, strerror(errno));
+        ks_error("settings: can't write %s: %s", s->path, err);
     free(text);
     free_entries(s->pending, s->npending);
     s->pending = NULL;
