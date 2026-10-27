@@ -205,6 +205,11 @@ static int delete_rule_from_disk(struct ks_loader *l, const char *name,
     if (unlink(path) < 0) {
         snprintf(err, errlen, "remove %s: %s", path, strerror(errno));
         ret = -1;
+    } else {
+        /* otherwise a deleted rule's backup would sit there for good */
+        char bak[PATH_MAX];
+        if (snprintf(bak, sizeof(bak), "%s.backup", path) < (int)sizeof(bak))
+            unlink(bak);
     }
     free(path);
     return ret;
@@ -341,12 +346,24 @@ oom:
 
 /* ---- loading ---------------------------------------------------------- */
 
+/* A rule file is sound if it parses: shared by the backup and the fallback read. */
+static bool rule_sound(const char *text, size_t len)
+{
+    char e[512];
+    if (!ks_check_usable(text, len))
+        return false;
+    struct ks_rule *r = ks_rule_parse(text, len, e, sizeof(e));
+    ks_rule_free(r);
+    return r != NULL;
+}
+
 int ks_loader_load_rule(struct ks_loader *l, const char *file, char *err,
                         size_t errlen)
 {
     char e[512];
     size_t len;
-    char *raw = ks_read_file(file, RULE_FILE_MAX_SIZE, &len, e, sizeof(e));
+    char *raw = ks_read_file_or_backup(file, RULE_FILE_MAX_SIZE, rule_sound, &len, e,
+                                       sizeof(e));
     if (raw == NULL) {
         snprintf(err, errlen, "Error while reading %s: %s", file, e);
         return -1;
@@ -700,7 +717,7 @@ int ks_loader_save(struct ks_loader *l, struct ks_rule *r, const char *path,
                  desc, path);
         return -1;
     }
-    int ret = ks_write_file(path, json, strlen(json), 0600, e, sizeof(e));
+    int ret = ks_write_file_safe(path, json, strlen(json), 0600, rule_sound, e, sizeof(e));
     free(json);
     if (ret < 0)
         snprintf(err, errlen, "Error while saving rule %s to %s: %s", desc, path, e);

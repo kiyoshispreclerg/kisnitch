@@ -399,6 +399,48 @@ TEST(add_save_and_delete)
     rm_tree(dir);
 }
 
+TEST(saved_rule_survives_a_truncated_file)
+{
+    char err[512], dir[128], path[256], bak[270];
+    struct ks_evloop *loop = ks_evloop_new();
+    struct ks_loader *l = ks_loader_new(loop, NULL, false);
+    snprintf(dir, sizeof(dir), "%s/crash", tmpdir);
+    CHECK(mkdir(dir, 0700) == 0);
+    CHECK(ks_loader_load(l, dir, err, sizeof(err)) == 0);
+    snprintf(path, sizeof(path), "%s/r1.json", dir);
+    snprintf(bak, sizeof(bak), "%s.backup", path);
+
+    CHECK(ks_loader_add(l, make_rule("r1", "allow", "always", "simple",
+                                     "process.path", "/usr/bin/a"), true,
+                        err, sizeof(err)) == 0);
+    CHECK(access(bak, F_OK) != 0);
+    CHECK(ks_loader_replace(l, make_rule("r1", "deny", "always", "simple",
+                                         "process.path", "/usr/bin/a"), true,
+                            err, sizeof(err)) == 0);
+    struct stat st;
+    CHECK(stat(bak, &st) == 0);
+    CHECK_INT_EQ(st.st_mode & 0777, 0600);
+    size_t len;
+    char *old = ks_read_file(bak, 1 << 20, &len, err, sizeof(err));
+    CHECK(old != NULL);
+    CHECK_STR_HAS(old, "\"action\": \"allow\"");
+    free(old);
+
+    /* a power cut leaves the new file empty: the backup is read instead */
+    CHECK(truncate(path, 0) == 0);
+    CHECK(ks_loader_load_rule(l, path, err, sizeof(err)) == 0);
+    CHECK_STR_EQ(ks_loader_get(l, "r1")->action, "allow");
+
+    /* deleting the rule takes its backup along */
+    CHECK(ks_loader_delete(l, "r1", err, sizeof(err)) == 0);
+    CHECK(access(path, F_OK) != 0);
+    CHECK(access(bak, F_OK) != 0);
+
+    ks_loader_free(l);
+    ks_evloop_free(loop);
+    rm_tree(dir);
+}
+
 TEST(rule_json_round_trip)
 {
     char err[512];
@@ -486,6 +528,7 @@ int main(void)
     RUN(rule_loader_list);
     RUN(live_reload);
     RUN(add_save_and_delete);
+    RUN(saved_rule_survives_a_truncated_file);
     RUN(rule_json_round_trip);
     RUN(rule_create_and_describe);
     RUN(reload_replaces_everything);
