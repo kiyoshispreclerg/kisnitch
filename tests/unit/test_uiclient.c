@@ -279,6 +279,7 @@ static int want_replies;
 static bool replies_reached(void) { return ui.ntf_replies >= want_replies; }
 static bool has_ping(void) { return ui.pings > 0; }
 static bool has_alert(void) { return ui.alerts > 0; }
+static bool no_tasks(void) { return ks_uiclient_task_count(client) == 0; }
 static bool is_disconnected(void) { return !ks_uiclient_connected(client); }
 
 static void write_file(const char *path, const char *s)
@@ -414,33 +415,96 @@ TEST(subscribe_and_notifications)
     CHECK(ks_loader_get(rules, "deny-example") == NULL);
     CHECK(access(file, F_OK) != 0);
 
-    /* TASK_START of a known task: not supported yet -> ERROR */
+    /* TASK_START: the UI's notification IDs are timestamps, and the task's
+     * results come back as replies to that ID */
     Protocol__Notification t = PROTOCOL__NOTIFICATION__INIT;
-    t.id = 1004;
+    char tdata[256];
+    snprintf(tdata, sizeof(tdata),
+             "{\"Name\": \"pid-monitor\", \"Data\": {\"pid\": \"%d\", \"interval\": \"5s\"}}",
+             (int)getpid());
+    t.id = 1700000000001ull;
     t.type = PROTOCOL__ACTION__TASK_START;
-    t.data = "{\"Name\": \"pid-monitor\", \"Data\": {\"pid\": \"1\", \"interval\": \"5s\"}}";
+    t.data = tdata;
     want_replies = 5;
     send_notification(&t);
     CHECK(run_until(replies_reached, 2000));
-    CHECK_INT_EQ(ui.last_reply_id, 1004);
-    CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR);
+    CHECK_INT_EQ(ui.last_reply_id, 1700000000001ull);
+    CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__OK);
+    CHECK(strncmp(ui.last_reply_data, "{\"Statm\":{\"Size\":", 17) == 0);
+    CHECK_INT_EQ(ks_uiclient_task_count(client), 1);
 
-    /* the UI sends its task JSON with lower case keys; Go's decoder matches
-     * "Name" and "Data" without regard to case, so this is the same task */
-    t.id = 1004 + 100;
-    t.data = "{\"name\": \"node-monitor\", \"data\": {\"node\": \"unix:/local\", "
-             "\"interval\": \"5s\"}}";
+    /* the same PID again */
+    t.id = 1700000000002ull;
     want_replies = 6;
     send_notification(&t);
     CHECK(run_until(replies_reached, 2000));
-    CHECK_INT_EQ(ui.last_reply_id, 1104);
+    CHECK_INT_EQ(ui.last_reply_id, 1700000000002ull);
     CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR);
+    char want[128];
+    snprintf(want, sizeof(want), "task with name pid-monitor-%d already exists", (int)getpid());
+    CHECK_STR_EQ(ui.last_reply_data, want);
+
+    /* TASK_STOP: no reply */
+    t.type = PROTOCOL__ACTION__TASK_STOP;
+    send_notification(&t);
+    CHECK(run_until(no_tasks, 2000));
+
+    /* strconv.Atoi's error; a PID that isn't running */
+    t.id = 1700000000003ull;
+    t.type = PROTOCOL__ACTION__TASK_START;
+    t.data = "{\"name\": \"pid-monitor\", \"data\": {\"pid\": \"abc\"}}";
+    want_replies = 7;
+    send_notification(&t);
+    CHECK(run_until(replies_reached, 2000));
+    CHECK_STR_EQ(ui.last_reply_data, "strconv.Atoi: parsing \"abc\": invalid syntax");
+    t.data = "{\"name\": \"pid-monitor\", \"data\": {\"pid\": \"-5\"}}";
+    want_replies = 8;
+    send_notification(&t);
+    CHECK(run_until(replies_reached, 2000));
+    CHECK_STR_EQ(ui.last_reply_data, "The process is no longer running");
+    /* conf["pid"].(string) panics upstream: its message */
+    t.data = "{\"name\": \"pid-monitor\", \"data\": {\"pid\": 12}}";
+    want_replies = 9;
+    send_notification(&t);
+    CHECK(run_until(replies_reached, 2000));
+    CHECK_STR_EQ(ui.last_reply_data, "interface conversion: interface {} is float64, not string");
+
+    /* lower case keys, as the UI sends them (Go's decoder ignores case) */
+    t.id = 1700000000004ull;
+    t.data = "{\"name\": \"node-monitor\", \"data\": {\"node\": \"unix:/local\", "
+             "\"interval\": \"5s\"}}";
+    want_replies = 10;
+    send_notification(&t);
+    CHECK(run_until(replies_reached, 2000));
+    CHECK_INT_EQ(ui.last_reply_id, 1700000000004ull);
+    CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__OK);
+    CHECK(strncmp(ui.last_reply_data, "{\"Uptime\":", 10) == 0);
+
+    t.id = 1700000000005ull;
+    t.data = "{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"5s\", \"state\": 0, "
+             "\"proto\": 0, \"family\": 0}}";
+    want_replies = 11;
+    send_notification(&t);
+    /* the dump looks up the owner of every socket in /proc */
+    CHECK(run_until(replies_reached, 20000));
+    CHECK_INT_EQ(ui.last_reply_id, 1700000000005ull);
+    CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__OK);
+    CHECK(strncmp(ui.last_reply_data, "{\"Table\":[", 10) == 0);
+    CHECK_INT_EQ(ks_uiclient_task_count(client), 2);
+
+    t.type = PROTOCOL__ACTION__TASK_STOP;
+    t.data = "{\"name\": \"sockets-monitor\", \"data\": {}}";
+    send_notification(&t);
+    t.data = "{\"name\": \"node-monitor\", \"data\": {\"node\": \"unix:/local\", "
+             "\"interval\": \"5s\"}}";
+    send_notification(&t);
+    CHECK(run_until(no_tasks, 2000));
 
     /* RELOAD_FW_RULES: phase 8 -> ERROR */
     t.id = 1005;
     t.type = PROTOCOL__ACTION__RELOAD_FW_RULES;
     t.data = "";
-    want_replies = 7;
+    want_replies = 12;
     send_notification(&t);
     CHECK(run_until(replies_reached, 2000));
     CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR);
@@ -455,7 +519,7 @@ TEST(subscribe_and_notifications)
     t.id = 1006;
     t.type = PROTOCOL__ACTION__CHANGE_CONFIG;
     t.data = newcfg;
-    want_replies = 8;
+    want_replies = 13;
     send_notification(&t);
     CHECK(run_until(replies_reached, 2000));
     CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__OK);
@@ -473,7 +537,7 @@ TEST(subscribe_and_notifications)
     /* An invalid configuration is refused */
     t.id = 1007;
     t.data = "{not json";
-    want_replies = 9;
+    want_replies = 14;
     send_notification(&t);
     CHECK(run_until(replies_reached, 2000));
     CHECK_INT_EQ(ui.last_reply_code, PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR);
