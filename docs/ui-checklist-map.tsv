@@ -3,7 +3,7 @@ stats:StatsDialog	ok	título da janela "Kisnitch Network Statistics" (nome do pr
 stats:actionsButton	ok	botão "Actions": exportar/importar regras, exportar eventos para CSV, sair (ks_sw_actions_clicked)
 stats:prefsButton	ok	botão de preferências do cabeçalho
 stats:newRuleButton	ok	botão "New" do cabeçalho
-stats:fwButton	fase 8	editor do firewall de sistema
+stats:fwButton	ok	botão "Firewall" do cabeçalho: abre o diálogo do firewall (ui/fw_dialog.c)
 stats:nodeLabel	ok	rótulo preenchido em tempo de execução
 stats:statusLabel	ok	rótulo preenchido em tempo de execução
 stats:startButton	ok	Start/Stop do cabeçalho
@@ -16,7 +16,7 @@ stats:labelNodeName	ok	rótulo preenchido em tempo de execução
 stats:labelNodeRAM	ok	rótulo preenchido em tempo de execução
 stats:labelNodeSwap	ok	rótulo preenchido em tempo de execução
 stats:labelNodeLoadAvg	ok	rótulo preenchido em tempo de execução
-stats:rulesTreePanel	divergência 66	a árvore vira um combo (aplicações, permanentes, temporárias, alertas); o ramo do firewall vem com a fase 8
+stats:rulesTreePanel	divergência 66	a árvore vira um combo (aplicações, permanentes, temporárias, alertas, firewall); o item "Firewall" mostra as regras de sistema de todos os nós (ui/stats_fw.c), sem os ramos por nó, tabela e cadeia
 stats:cmdRulesBack	ok	botão Voltar da aba (GTK_STOCK_GO_BACK)
 stats:editRuleButton	ok	botão Edit do detalhe de uma regra
 stats:delRuleButton	ok	botão Delete do detalhe de uma regra
@@ -95,14 +95,14 @@ process_details:labelProcPath	ok	rótulo preenchido em tempo de execução
 process_details:labelCwd	ok	rótulo preenchido em tempo de execução
 process_details:labelStatm	ok	rótulo preenchido em tempo de execução
 process_details:cmdAction	ok	botão Start/Pause do monitoramento do processo
-firewall:label_2	fase 8	editor do firewall de sistema
-firewall:sliderFwEnable	fase 8	editor do firewall de sistema
-firewall:cmdAllowINService	fase 8	editor do firewall de sistema
-firewall:cmdAllowOUTService	fase 8	editor do firewall de sistema
-firewall:label_3	fase 8	editor do firewall de sistema
-firewall:lblProfile	fase 8	editor do firewall de sistema
-firewall:cmdHelp	fase 8	editor do firewall de sistema
-firewall_rule:cmdAddStatement	fase 8	editor do firewall de sistema
-firewall_rule:cmdDelStatement	fase 8	editor do firewall de sistema
-firewall_rule:label_3	fase 8	editor do firewall de sistema
-firewall_rule:helpButton	fase 8	editor do firewall de sistema
+firewall:label_2	ok	título "Firewall" do diálogo (ui/fw_dialog.c)
+firewall:sliderFwEnable	ok	um check "Enable" no lugar do slider
+firewall:cmdAllowINService	ok	"Allow service (IN)": o diálogo de regra em modo exclude_service(IN)
+firewall:cmdAllowOUTService	ok	"Allow service (OUT)": exclude_service(OUT)
+firewall:label_3	ok	rótulo "Inbound"
+firewall:lblProfile	ok	escondido, como no upstream (os perfis predefinidos são um TODO lá)
+firewall:cmdHelp	ok	abre a página System-rules do wiki
+firewall_rule:cmdAddStatement	ok	botão "+" (ui/fw_rule_dialog.c); cada condição é um expander, no lugar das páginas do QToolBox
+firewall_rule:cmdDelStatement	ok	botão "-": remove a condição aberta
+firewall_rule:label_3	ok	rótulo "Direction"
+firewall_rule:helpButton	ok	o texto de ajuda num diálogo, em vez de tooltip no cursor

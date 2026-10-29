@@ -12,7 +12,7 @@ Um widget está *coberto* quando o texto dele aparece em `ui/*.c`, ou quando
 | `actionsButton` | QPushButton |  | ok | botão "Actions": exportar/importar regras, exportar eventos para CSV, sair (ks_sw_actions_clicked) |
 | `prefsButton` | QPushButton |  | ok | botão de preferências do cabeçalho |
 | `newRuleButton` | QPushButton | Create a new rule | ok | botão "New" do cabeçalho |
-| `fwButton` | QPushButton |  | fase 8 | editor do firewall de sistema |
+| `fwButton` | QPushButton |  | ok | botão "Firewall" do cabeçalho: abre o diálogo do firewall (ui/fw_dialog.c) |
 | `nodeLabel` | QLabel | <html><head/><body><p><span style=" font-size:11pt; font-weight:600;">hostname - 192.168.1.1</span></p></body></html> | ok | rótulo preenchido em tempo de execução |
 | `label_2` | QLabel | Status | ok | texto presente |
 | `statusLabel` | QLabel | - | ok | rótulo preenchido em tempo de execução |
@@ -32,7 +32,7 @@ Um widget está *coberto* quando o texto dele aparece em `ui/*.c`, ou quando
 | `labelNodeLoadAvg` | QLabel | Load average: 0.0, 0.0, 0.0 | ok | rótulo preenchido em tempo de execução |
 | `labelNodeUptime` | QLabel | Uptime: | ok | texto presente |
 | `labelNodeDetails` | QLabel | daemon: | ok | texto presente |
-| `rulesTreePanel` | QTreeWidget |  | divergência 66 | a árvore vira um combo (aplicações, permanentes, temporárias, alertas); o ramo do firewall vem com a fase 8 |
+| `rulesTreePanel` | QTreeWidget |  | divergência 66 | a árvore vira um combo (aplicações, permanentes, temporárias, alertas, firewall); o item "Firewall" mostra as regras de sistema de todos os nós (ui/stats_fw.c), sem os ramos por nó, tabela e cadeia |
 | `comboRulesFilter` | QComboBox |  | ok? | entrada sem texto |
 | `cmdRulesBack` | QPushButton |  | ok | botão Voltar da aba (GTK_STOCK_GO_BACK) |
 | `enableRuleCheck` | QCheckBox | enable | ok | texto presente |
@@ -354,19 +354,19 @@ Um widget está *coberto* quando o texto dele aparece em `ui/*.c`, ou quando
 |---|---|---|---|---|
 | `Dialog` | QDialog | Firewall | ok | texto presente |
 | `tabWidget` | QTabWidget |  | ok? | entrada sem texto |
-| `label_2` | QLabel | <html><head/><body><p><span style=" font-size:14pt; font-weight:600;">Firewall</span></p></body></html> | fase 8 | editor do firewall de sistema |
-| `sliderFwEnable` | QSlider |  | fase 8 | editor do firewall de sistema |
-| `cmdAllowINService` | QPushButton | Allow service (IN) | fase 8 | editor do firewall de sistema |
-| `cmdAllowOUTService` | QPushButton | Allow service (OUT) | fase 8 | editor do firewall de sistema |
+| `label_2` | QLabel | <html><head/><body><p><span style=" font-size:14pt; font-weight:600;">Firewall</span></p></body></html> | ok | título "Firewall" do diálogo (ui/fw_dialog.c) |
+| `sliderFwEnable` | QSlider |  | ok | um check "Enable" no lugar do slider |
+| `cmdAllowINService` | QPushButton | Allow service (IN) | ok | "Allow service (IN)": o diálogo de regra em modo exclude_service(IN) |
+| `cmdAllowOUTService` | QPushButton | Allow service (OUT) | ok | "Allow service (OUT)": exclude_service(OUT) |
 | `cmdNewRule` | QPushButton | New rule | ok | texto presente |
 | `comboOutput` | QComboBox |  | ok? | entrada sem texto |
-| `label_3` | QLabel | Inbound | fase 8 | editor do firewall de sistema |
+| `label_3` | QLabel | Inbound | ok | rótulo "Inbound" |
 | `comboProfile` | QComboBox |  | ok? | entrada sem texto |
-| `lblProfile` | QLabel | Profile | fase 8 | editor do firewall de sistema |
+| `lblProfile` | QLabel | Profile | ok | escondido, como no upstream (os perfis predefinidos são um TODO lá) |
 | `label_4` | QLabel | Outbound | ok | texto presente |
 | `comboInput` | QComboBox |  | ok? | entrada sem texto |
 | `comboNodes` | QComboBox |  | ok? | entrada sem texto |
-| `cmdHelp` | QPushButton |  | fase 8 | editor do firewall de sistema |
+| `cmdHelp` | QPushButton |  | ok | abre a página System-rules do wiki |
 | `cmdClose` | QPushButton | Close | ok | texto presente |
 
 ## firewall_rule.ui
@@ -380,15 +380,15 @@ Um widget está *coberto* quando o texto dele aparece em `ui/*.c`, ou quando
 | `label` | QLabel | Description | ok | texto presente |
 | `lineDescription` | QLineEdit |  | ok? | entrada sem texto |
 | `tabWidget` | QTabWidget |  | ok? | entrada sem texto |
-| `cmdAddStatement` | QPushButton | Add new condition | fase 8 | editor do firewall de sistema |
-| `cmdDelStatement` | QPushButton | Remove selected condition | fase 8 | editor do firewall de sistema |
-| `label_3` | QLabel | Direction | fase 8 | editor do firewall de sistema |
+| `cmdAddStatement` | QPushButton | Add new condition | ok | botão "+" (ui/fw_rule_dialog.c); cada condição é um expander, no lugar das páginas do QToolBox |
+| `cmdDelStatement` | QPushButton | Remove selected condition | ok | botão "-": remove a condição aberta |
+| `label_3` | QLabel | Direction | ok | rótulo "Direction" |
 | `comboDirection` | QComboBox |  | ok? | entrada sem texto |
 | `label_4` | QLabel | Action | ok | texto presente |
 | `comboVerdict` | QComboBox |  | ok? | entrada sem texto |
 | `comboVerdictParms` | QComboBox |  | ok? | entrada sem texto |
 | `lineVerdictParms` | QLineEdit | depending on the Action (i.e.: target), the syntaxis of the parameters will vary. Some examples: QUEUE -> num 0 (or 1, 2, ...) REDIRECT, TPROXY, DNAT, SNAT, MASQUERADE: to :22 to 192.168.1.254:8080 to 192.168.1.254 to 1024-2048 (masquerade) | ok? | entrada sem texto |
-| `helpButton` | QPushButton |  | fase 8 | editor do firewall de sistema |
+| `helpButton` | QPushButton |  | ok | o texto de ajuda num diálogo, em vez de tooltip no cursor |
 | `cmdDelete` | QPushButton | Delete | ok | texto presente |
 | `cmdReset` | QPushButton | Clear | ok | texto presente |
 | `cmdClose` | QPushButton | Close | ok | texto presente |

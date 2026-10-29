@@ -9,14 +9,15 @@ O objetivo é ser um substituto direto: mesmos arquivos de configuração e de
 regras, e o mesmo protocolo gRPC entre daemon e interface. Assim o daemon do
 Kisnitch funciona com a UI original e vice-versa.
 
-> **Estado:** versão 0.1.0, fase 7 de 11 concluída. O daemon intercepta
-> conexões (nfqueue + nftables), aplica as regras, acompanha o DNS e conversa
-> com a UI original do OpenSnitch e com a nossa. A UI em GTK2 (`kisnitch-gtk`)
-> está completa: popup de permissão, ícone de bandeja, janela de estatísticas,
-> editor de regras e preferências. Ainda faltam o firewall de sistema
-> (`system-fw.json`, fase 8), o monitor de processos eBPF (fase 9, opcional) e
-> o restante (monitor audit, tarefas, TLS entre daemon e UI, i18n; fase 10). O
-> plano completo está em [docs/PORTING.md](docs/PORTING.md).
+> **Estado:** versão 0.1.0, fase 8 de 11 concluída. O daemon intercepta
+> conexões (nfqueue + nftables, ou iptables), aplica as regras, acompanha o
+> DNS, cuida do firewall de sistema (`system-fw.json`) e conversa com a UI
+> original do OpenSnitch e com a nossa. A UI em GTK2 (`kisnitch-gtk`) está
+> completa: popup de permissão, ícone de bandeja, janela de estatísticas,
+> editor de regras, editor do firewall de sistema e preferências. Ainda faltam
+> o monitor de processos eBPF (fase 9, opcional) e o restante (monitor audit,
+> tarefas, TLS entre daemon e UI, i18n; fase 10). O plano completo está em
+> [docs/PORTING.md](docs/PORTING.md).
 
 ## Instalação
 

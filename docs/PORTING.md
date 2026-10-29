@@ -268,9 +268,13 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 - `fw/iptables.c`: backend iptables.
 - `ui/fw_editor.c`: editor de regras de sistema.
 
+> Nota: o modelo do `system-fw.json` ficou em `common/sysfw.c` (a UI edita o mesmo struct); o daemon tem `daemon/fw/sysfw.c` (arquivo e monitoramento), `nft_sys.c` e `nft_exprs.c` (regras de sistema no nftables) e `iptables.c`. O editor são dois diálogos, `ui/fw_dialog.c` e `ui/fw_rule_dialog.c`, com a lógica em `ui/fwrules.c`, e a tabela de regras de sistema da janela de estatísticas está em `ui/stats_fw.c`.
+
 **Aceite:**
-- [ ] Os `system-fw.json` de exemplo do upstream aplicam e produzem o mesmo ruleset que o daemon Go (comparar `nft list ruleset` normalizado).
-- [ ] Troca de backend em tempo de execução sem deixar resíduo.
+- [x] Os `system-fw.json` de exemplo do upstream aplicam e produzem o mesmo ruleset que o daemon Go (comparar `nft list ruleset` normalizado).
+  `tests/integration/sysfw.sh` (dentro de `make test-integration`): `daemon/data/system-fw.json` e `firewall/nftables/testdata/test-sysfw-conf.json` do upstream, mais um corpus com todas as declarações e veredictos (`tests/fixtures/sysfw/exprs.json`), um perfil de entrada bloqueada e o firewall desligado. O ruleset é comparado com o esperado (`tests/fixtures/sysfw/*.nft`) e com o do daemon do upstream na mesma máquina. Verificado em 2026-10-29 contra o `opensnitchd` 1.6.5 instalado (idênticos, descontado o que mudou entre 1.6 e 1.8: tabelas da interceptação e contadores nomeados); contra o 1.8.0 compilado do submódulo no job `interop-ui` do CI. O `system-fw.json` que o daemon grava a partir da UI (`RELOAD_FW_RULES`) é byte a byte o do upstream.
+- [x] Troca de backend em tempo de execução sem deixar resíduo.
+  `sysfw.sh`, seção 3: com o daemon rodando, `"Firewall"` muda de iptables para nftables e de volta no `default-config.json`; a cada troca não sobra nada do anterior (`iptables-save`/`ip6tables-save` sem `NFQUEUE` nem `opensnitch-filter`, sem `table inet opensnitch`), nem depois de parar.
 
 ### Fase 9 — eBPF (opcional, `EBPF=1`)
 
@@ -285,6 +289,11 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 ### Fase 10 — Restante
 
 - Monitor `audit`, tarefas (`tasks.c`), alertas, loggers remotos/syslog, autenticação TLS de nós remotos (`TLS=1`), notificações (`NOTIFY=1`), i18n com gettext (converter os `.ts` do Qt para `.po` com script).
+- Painel simplificado do firewall de sistema (funcionalidade própria do Kisnitch, não do upstream), no estilo do ufw e do painel de firewall do KDE: uma tabela de regras "permitir/negar/rejeitar, entrada/saída, protocolo e porta, endereço de origem/destino, interface", mais a política padrão de entrada e de saída. Requisitos:
+  - Nenhum formato novo: o painel é uma visão do mesmo `system-fw.json` (via `ui/fwrules.c`). Uma regra simples é uma `FwRule` comum nas cadeias `filter_input`/`mangle_output` (`tcp dport`, `ip saddr`/`daddr`, `iifname`/`oifname`, alvo accept/drop/reject), e as políticas usam os perfis do upstream (`ProfileDropInput`, que libera `lo` e `ct established,related`).
+  - Nenhum campo novo no JSON (o daemon Go descarta e reescreve o que não conhece): o painel reconhece pela estrutura quais regras cabem no modelo simples; as demais aparecem como "regra avançada", sem edição ali, e abrem no editor completo da fase 8.
+  - Perfis de aplicativo do ufw (`/etc/ufw/applications.d/`) podem ser lidos como atalhos que só preenchem portas.
+  - Diferenças a documentar: o `limit` do upstream é taxa global, não por IP de origem como o `ufw limit`; um endereço IPv4 casa só IPv4 (para os dois, duas regras).
 
 **Aceite:**
 - [ ] Tabela de funcionalidades em `docs/UPSTREAM.md` 100% marcada como portada, ou com justificativa explícita para o que ficou de fora.
