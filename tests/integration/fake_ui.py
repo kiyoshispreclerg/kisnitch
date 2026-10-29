@@ -8,6 +8,11 @@
 #
 #   fake_ui.py <pb dir> <socket path> <log> <control dir>
 #
+# <socket path> may be a TCP address ("127.0.0.1:50051"). With
+# FAKE_UI_TLS="<cert>:<key>:<ca>" it listens with TLS as the real UI does
+# (grpc.ssl_server_credentials: with a CA, clients must present a
+# certificate it signed; ":"-separated, the CA may be empty).
+#
 # <pb dir> holds ui_pb2.py and ui_pb2_grpc.py (grpc_tools.protoc output).
 # Files in <control dir>, read on each request:
 #   ask            how AskRule answers: "allow" / "deny" (a rule on the
@@ -137,7 +142,15 @@ def main():
     ]
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=8), options=opts)
     ui_pb2_grpc.add_UIServicer_to_server(UI(), server)
-    server.add_insecure_port("unix:" + SOCKET)
+    addr = SOCKET if ":" in SOCKET else "unix:" + SOCKET
+    tls = os.environ.get("FAKE_UI_TLS")
+    if tls:
+        cert, key, ca = tls.split(":")
+        rd = lambda p: open(p, "rb").read() if p else None  # noqa: E731
+        creds = grpc.ssl_server_credentials(((rd(key), rd(cert)),), rd(ca), bool(ca))
+        server.add_secure_port(addr, creds)
+    else:
+        server.add_insecure_port(addr)
     server.start()
     log(rpc="started")
     server.wait_for_termination()

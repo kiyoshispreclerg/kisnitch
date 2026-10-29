@@ -29,6 +29,11 @@ jobs:
         run: make CC=${{ matrix.cc }} test
       - name: unit tests (ASan + UBSan)
         run: make CC=${{ matrix.cc }} asan
+      # TLS between daemon and UI (TLS=1): the gRPC tests with certificates
+      - name: unit tests (TLS=1)
+        run: |
+          sudo apt-get install -y libssl-dev
+          make CC=${{ matrix.cc }} TLS=1 BUILD=build/tls test
       # the downloader task (CURL=1) against a local HTTP server
       - name: unit tests (CURL=1)
         run: |
@@ -46,7 +51,7 @@ jobs:
         build: [plain, asan]
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev nftables curl python3 openssl python3-grpcio python3-grpc-tools xvfb xdotool libnotify-dev python3-gi dbus
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev nftables curl python3 openssl python3-grpcio python3-grpc-tools xvfb xdotool libnotify-dev python3-gi dbus libssl-dev
       - name: integration tests
         run: |
           if [ "${{ matrix.build }}" = asan ]; then

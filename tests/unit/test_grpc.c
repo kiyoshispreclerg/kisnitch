@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "common/grpc/grpc.h"
+#include "common/grpc/tls.h"
 
 #include <fcntl.h>
 #include <poll.h>
@@ -384,6 +385,120 @@ TEST(percent_coding)
     CHECK_STR_EQ(b, "abc");
 }
 
+/* ---- TLS (TLS=1) ------------------------------------------------------------ */
+
+#define CERT(f) KS_FIXTURES_DIR "/tls/" f
+
+static struct ks_tls_ctx *cli_tls, *srv_tls;
+
+/* the two ends over TLS; `host` is the name the client verifies */
+static int setup_tls(const struct ks_tls_client_opts *co, const char *srv_ca, const char *host)
+{
+    reset();
+    char err[256];
+    cli_tls = ks_tls_client_new(co, err, sizeof(err));
+    srv_tls = ks_tls_server_new(CERT("server.pem"), CERT("server.key"), srv_ca, err, sizeof(err));
+    if (cli_tls == NULL || srv_tls == NULL)
+        return -1;
+    int sv[2];
+    if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0, sv) < 0)
+        return -1;
+    struct ks_grpc_conn_opts copts = {.authority = "localhost", .tls = cli_tls, .tls_host = host};
+    struct ks_grpc_conn_opts sopts = {.server = true, .tls = srv_tls};
+    struct ks_grpc_conn_cbs ccbs = {.on_ready = cli_on_ready, .on_closed = on_closed};
+    struct ks_grpc_conn_cbs scbs = {.on_call = srv_on_call, .on_closed = on_closed};
+    ends[0] = ks_grpc_conn_new(sv[0], &copts, &ccbs, (void *)(intptr_t)0);
+    ends[1] = ks_grpc_conn_new(sv[1], &sopts, &scbs, (void *)(intptr_t)1);
+    /* the connections hold their own references */
+    ks_tls_ctx_free(cli_tls);
+    ks_tls_ctx_free(srv_tls);
+    return ends[0] && ends[1] ? 0 : -1;
+}
+
+/* a working connection: an echo, big enough to block the writes */
+static void check_echo(void)
+{
+    WAIT(ready_count == 1);
+    CHECK_INT_EQ(ready_count, 1);
+    size_t len = 300000;
+    uint8_t *big = malloc(len);
+    CHECK(big != NULL);
+    memset(big, 'q', len);
+    memcpy(big + len - 3, "end", 3);
+    CHECK(ks_grpc_unary(ends[0], "/t.S/Echo", 0, big, len, &cli_cbs, NULL) != NULL);
+    WAIT(cli_status != -1);
+    free(big);
+    CHECK_INT_EQ(cli_status, KS_GRPC_OK);
+    CHECK_INT_EQ(cli_last_len, len);
+}
+
+TEST(tls_connections)
+{
+    if (!ks_tls_available()) {
+        printf("SKIP (tls): built without TLS=1\n");
+        return;
+    }
+    /* tls-simple with the CA; the name and the IP address of the cert */
+    struct ks_tls_client_opts co = {.ca_cert = CERT("ca.pem")};
+    CHECK(setup_tls(&co, NULL, "localhost") == 0);
+    check_echo();
+    teardown();
+    CHECK(setup_tls(&co, NULL, "127.0.0.1") == 0);
+    check_echo();
+    teardown();
+
+    /* the server's own certificate as the root (not self-signed) */
+    struct ks_tls_client_opts own = {.server_cert = CERT("server.pem")};
+    CHECK(setup_tls(&own, NULL, "localhost") == 0);
+    check_echo();
+    teardown();
+
+    /* another name, another CA, no roots at all: refused */
+    CHECK(setup_tls(&co, NULL, "example.com") == 0);
+    WAIT(closed_flag[0]);
+    CHECK(closed_flag[0]);
+    CHECK_STR_HAS(closed_reason[0], "x509: ");
+    CHECK_INT_EQ(ready_count, 0);
+    teardown();
+    struct ks_tls_client_opts other = {.ca_cert = CERT("other-ca.pem")};
+    CHECK(setup_tls(&other, NULL, "localhost") == 0);
+    WAIT(closed_flag[0]);
+    CHECK_STR_HAS(closed_reason[0], "x509: ");
+    teardown();
+    struct ks_tls_client_opts none = {0};
+    CHECK(setup_tls(&none, NULL, "localhost") == 0);
+    WAIT(closed_flag[0]);
+    CHECK(closed_flag[0]);
+    teardown();
+    /* SkipVerify takes anything */
+    other.skip_verify = true;
+    CHECK(setup_tls(&other, NULL, "example.com") == 0);
+    check_echo();
+    teardown();
+
+    /* the server with a CA requires a client certificate */
+    CHECK(setup_tls(&co, CERT("ca.pem"), "localhost") == 0);
+    WAIT(closed_flag[0] || closed_flag[1]);
+    CHECK(closed_flag[0] || closed_flag[1]);
+    CHECK_INT_EQ(ready_count, 0);
+    teardown();
+    struct ks_tls_client_opts mutual = {.ca_cert = CERT("ca.pem"),
+                                        .client_cert = CERT("client.pem"),
+                                        .client_key = CERT("client.key"),
+                                        .mutual = true};
+    CHECK(setup_tls(&mutual, CERT("ca.pem"), "localhost") == 0);
+    check_echo();
+    teardown();
+
+    /* a key that isn't the certificate's */
+    char err[256];
+    mutual.client_key = CERT("server.key");
+    CHECK(ks_tls_client_new(&mutual, err, sizeof(err)) == NULL);
+    CHECK_STR_HAS(err, "private key does not match");
+    CHECK(ks_tls_server_new(CERT("server.pem"), CERT("nope.key"), NULL, err, sizeof(err)) == NULL);
+    CHECK(ks_tls_server_new("", "", NULL, err, sizeof(err)) == NULL);
+}
+
 int main(void)
 {
     RUN(unary_roundtrip);
@@ -396,5 +511,6 @@ int main(void)
     RUN(garbage_from_client_closes_server);
     RUN(timeout_header_format);
     RUN(percent_coding);
+    RUN(tls_connections);
     return harness_report();
 }
