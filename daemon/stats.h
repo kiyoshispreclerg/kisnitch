@@ -51,11 +51,16 @@ struct ks_stats {
     size_t max_events; /* 150 */
     size_t max_stats;  /* 25 */
     bool new_events;
+    struct ks_loggers *loggers; /* borrowed (SetLoggers); NULL: none */
 };
 
 /* statistics.New() */
 void ks_stats_init(struct ks_stats *s, struct ks_loader *rules);
 void ks_stats_free(struct ks_stats *s);
+
+/* SetLoggers(): connections are logged to them (NULL: none). */
+struct ks_loggers;
+void ks_stats_set_loggers(struct ks_stats *s, struct ks_loggers *l);
 
 /* SetLimits() */
 void ks_stats_set_limits(struct ks_stats *s, const struct ks_stats_config *cfg);

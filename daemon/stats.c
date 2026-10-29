@@ -14,8 +14,10 @@
 #include <string.h>
 #include <time.h>
 
+#include "common/arena.h"
 #include "common/log.h"
 #include "daemon/config.h"
+#include "daemon/loggers.h"
 #include "daemon/procmon/process.h"
 #include "daemon/protocol.h"
 #include "daemon/rules/loader.h"
@@ -153,10 +155,33 @@ static uint64_t unix_nano(void)
     return (uint64_t)ts.tv_sec * 1000000000u + (uint64_t)ts.tv_nsec;
 }
 
+void ks_stats_set_loggers(struct ks_stats *s, struct ks_loggers *l)
+{
+    s->loggers = l;
+}
+
+/* s.logger.Log(con.Serialize(), action, rname) */
+static void log_connection(struct ks_stats *s, const struct ks_conn *c, struct ks_proc *proc,
+                           const struct ks_rule *match)
+{
+    if (!ks_loggers_active(s->loggers))
+        return;
+    struct ks_arena a = {0};
+    struct ks_log_event ev = {
+        .conn = ks_pb_connection(&a, c, proc),
+        .action = match != NULL ? match->action : "<nil>",
+        .rule = match != NULL ? match->name : "<nil>",
+    };
+    if (ev.conn != NULL && !a.failed)
+        ks_loggers_log(s->loggers, &ev);
+    ks_arena_free(&a);
+}
+
 void ks_stats_on_connection(struct ks_stats *s, const struct ks_conn *c,
                             struct ks_proc *proc, const struct ks_rule *match,
                             bool was_missed)
 {
+    log_connection(s, c, proc, match);
     s->connections++;
     if (was_missed)
         s->rule_misses++;

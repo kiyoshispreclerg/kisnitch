@@ -62,6 +62,8 @@ struct ks_logger_config {
     uint16_t max_connect_attempts; /* MaxConnectAttempts */
 };
 
+extern const struct ks_schema ks_logger_config_schema;
+
 /* ServerConfig */
 struct ks_server_config {
     char *address;                 /* Address */

@@ -49,13 +49,13 @@ static const struct ks_schema_field logger_fields[] = {
     KS_FIELD(struct ks_logger_config, "Workers", KS_T_INT, workers),
     KS_FIELD(struct ks_logger_config, "MaxConnectAttempts", KS_T_UINT16, max_connect_attempts),
 };
-static const struct ks_schema logger_schema = KS_SCHEMA("loggers.LoggerConfig", struct ks_logger_config, logger_fields);
+const struct ks_schema ks_logger_config_schema = KS_SCHEMA("loggers.LoggerConfig", struct ks_logger_config, logger_fields);
 
 static const struct ks_schema_field server_fields[] = {
     KS_FIELD(struct ks_server_config, "Address", KS_T_STRING, address),
     KS_FIELD_SUB(struct ks_server_config, "Authentication", KS_T_STRUCT, auth, auth_schema),
     KS_FIELD(struct ks_server_config, "LogFile", KS_T_STRING, log_file),
-    KS_FIELD_SUB(struct ks_server_config, "Loggers", KS_T_ARRAY, loggers, logger_schema),
+    KS_FIELD_SUB(struct ks_server_config, "Loggers", KS_T_ARRAY, loggers, ks_logger_config_schema),
 };
 static const struct ks_schema server_schema = KS_SCHEMA("config.ServerConfig", struct ks_server_config, server_fields);
 

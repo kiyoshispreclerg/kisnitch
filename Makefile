@@ -33,6 +33,8 @@ DAEMON_LIB_SRC = daemon/config.c \
                  daemon/fw/nft_sys.c \
                  daemon/fw/sysfw.c \
                  daemon/intercept.c \
+                 daemon/loggers.c \
+                 daemon/logformats.c \
                  daemon/netstat.c \
                  daemon/sockdiag.c \
                  daemon/procmon/cache.c \

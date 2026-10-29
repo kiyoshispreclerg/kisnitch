@@ -32,6 +32,7 @@
 #include "daemon/evloop.h"
 #include "daemon/fw/fw.h"
 #include "daemon/fw/sysfw.h"
+#include "daemon/loggers.h"
 #include "daemon/procmon/procmon.h"
 #include "daemon/protocol.h"
 #include "daemon/rules/loader.h"
@@ -123,6 +124,7 @@ struct ks_uiclient {
 
     struct ks_taskmgr *tasks; /* TaskMgr */
     struct ks_taskloader *task_loader; /* TaskMgr.loader */
+    struct ks_loggers *loggers;        /* c.loggers */
 };
 
 /* A RELOAD_FW_RULES notification whose reply waits for the errors of the
@@ -930,6 +932,9 @@ static void on_task_result(void *ctx, const struct ks_task *t, const char *data,
     ks_uiclient_post_alert(c, err ? PROTOCOL__ALERT__TYPE__ERROR : PROTOCOL__ALERT__TYPE__INFO,
                            PROTOCOL__ALERT__WHAT__GENERIC, PROTOCOL__ALERT__ACTION__SHOW_ALERT,
                            PROTOCOL__ALERT__PRIORITY__MEDIUM, err ? "" : data);
+    /* c.loggers.Log(TaskNotification{Data, Name}, nil, nil) */
+    struct ks_log_event ev = {.task_name = t->name, .task_data = err ? "" : data};
+    ks_loggers_log(c->loggers, &ev);
 }
 
 static void add_task(struct ks_uiclient *c, const Protocol__Notification *ntf,
@@ -1508,8 +1513,14 @@ static int reload_configuration(struct ks_uiclient *c, bool reload, struct ks_co
         ks_log_close();
         ks_log_open_file(n->server.log_file);
     }
-    if (!loggers_equal(&o->server.loggers, &n->server.loggers))
-        ks_debug("[config] reloading config.server.loggers (not supported yet)");
+    if (!loggers_equal(&o->server.loggers, &n->server.loggers)) {
+        ks_debug("[config] reloading config.server.loggers");
+        if (c->loggers != NULL) {
+            ks_loggers_stop(c->loggers);
+            ks_loggers_load(c->loggers, &n->server.loggers);
+            ks_stats_set_loggers(c->d.stats, c->loggers);
+        }
+    }
     else
         ks_debug("[config] config.server.loggers not changed");
 
@@ -1732,9 +1743,12 @@ struct ks_uiclient *ks_uiclient_new(const struct ks_uiclient_deps *deps,
     c->config_file = strdup(config_file && config_file[0] ? config_file
                                                           : KS_CONFIG_DEFAULT_FILE);
     c->socket_path = strdup("");
-    if (c->config_file == NULL || c->socket_path == NULL) {
+    /* loggers.NewLoggerManager() and stats.SetLoggers(), from main.go */
+    c->loggers = ks_loggers_new();
+    if (c->config_file == NULL || c->socket_path == NULL || c->loggers == NULL) {
         free(c->config_file);
         free(c->socket_path);
+        free(c->loggers);
         free(c);
         return NULL;
     }
@@ -1751,6 +1765,8 @@ struct ks_uiclient *ks_uiclient_new(const struct ks_uiclient_deps *deps,
         close(c->inotify_fd);
         c->inotify_fd = -1;
     }
+    if (deps->stats != NULL)
+        ks_stats_set_loggers(deps->stats, c->loggers);
     load_disk_configuration(c, false);
     if (socket_path != NULL && socket_path[0] != '\0')
         set_socket_path(c, get_socket_path(c, socket_path));
@@ -1774,6 +1790,10 @@ void ks_uiclient_free(struct ks_uiclient *c)
     c->task_loader = NULL;
     ks_taskmgr_free(c->tasks); /* TaskMgr.Stop() */
     c->tasks = NULL;
+    if (c->d.stats != NULL)
+        ks_stats_set_loggers(c->d.stats, NULL);
+    ks_loggers_free(c->loggers, 1000);
+    c->loggers = NULL;
     stop_poller(c);
     resolve_free(c);
     while (c->fw_reloads != NULL)
