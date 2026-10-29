@@ -44,9 +44,11 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/main.go` (regras) | `daemon/main.c` | parcial | `LoadAliases`, flags `-rules-path` e `-no-live-reload`, carga das regras |
 | `daemon/netstat/*.go` | `daemon/netstat.c` | portado | linhas lidas com as próprias regex do upstream (via `daemon/rules/regex.c`) |
 | `daemon/netlink/socket.go`, `socket_linux.go` | `daemon/sockdiag.c` | portado | `GetSocketInfo`, `SocketGet`, `SocketsDump`, `GetSocketInfoByInode`, `SocketKill`, `KillSocket`, `KillSockets`, `KillAllSockets`, `FlushConnections`; netlink cru, sem libmnl |
+| `daemon/netlink/socket_packet.go` (`SocketDiagPacket`, `PacketDiagMsg.deserialize`) | `daemon/sockdiag.c` (`ks_sock_dump_packet`, `ks_packet_diag_parse`) | portado | a leitura por deslocamentos fixos, com o índice da interface truncado (bugs a relatar) |
+| `daemon/netlink/socket_xdp.go`, `vishvananda/netlink` `SocketDiagXDP` | `daemon/sockdiag.c` (`ks_sock_dump_xdp`) | portado | só os campos que o `sockets-monitor` usa (inode, cookie, interface, UID) |
 | `daemon/netlink/ifaces.go` (`isPrivate`) | `daemon/sockdiag.c` | portado | |
 | `vishvananda/netlink` `ConntrackTableFlush` | `daemon/sockdiag.c` (`conntrack_flush`) | portado | netlink cru; dispensa a libnetfilter_conntrack |
-| `daemon/procmon/process.go`, `details.go` | `daemon/procmon/process.c` | parcial | tudo que o método proc usa; `GetExtraInfo` (descritores, I/O, status, statm, maps) e `Serialize` com as tarefas (`pid-monitor`, fase 10) e os eventos de kernel do ebpf (fase 9), que são os únicos usos |
+| `daemon/procmon/process.go`, `details.go` | `daemon/procmon/process.c` | parcial | tudo que o método proc usa, `GetExtraInfo` (`ks_proc_get_extra_info`: ambiente, descritores, I/O, status, stat, stack, maps, statm) e o `json.Marshal(Process)` das tarefas (`ks_proc_json`, com `time.Time` em RFC 3339 local e os mapas ordenados). Falta `Serialize` (protobuf), só usado pelos eventos de kernel do ebpf (fase 9); `DumpImage` não é usado (ver divergência sobre checksums) |
 | `daemon/procmon/cache.go`, `cache_events.go` | `daemon/procmon/cache.c` | portado | |
 | `daemon/procmon/find.go`, `parse.go` | `daemon/procmon/procmon.c` | parcial | método proc; o caminho do audit na fase 10 |
 | `daemon/procmon/activepids.go`, `netlink/procmon/procmon.go` | `daemon/procmon/procmon.c`, `events.c` | portado | conector de eventos via netlink cru |
@@ -63,8 +65,13 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/dns/ebpfhook.go` (`ListenerEbpf`) | — | pendente | fase 9 (EBPF=1) |
 | `daemon/core/system.go` (`IPv6Enabled`) | `daemon/intercept.c` | portado | |
 | `daemon/ui/client.go` | `daemon/uiclient.c` | parcial | `NewClient`, `Connect`, `poller`, `connect`, `openSocket` (sem TLS: fase 10, divergência 39), `disconnect`, `ping`, `Ask`, `PostAlert`, `DefaultAction`, `DefaultDuration`, `Connected`, `IsAsking`, `InterceptUnknown`, `GetFirewallType`, `monitorConfigWorker`. Conexão: `common/grpc/` |
-| `daemon/ui/notifications.go` | `daemon/uiclient.c` | parcial | `getClientConfig` (com `SystemFirewall`), `Subscribe`, `listenForNotifications`, `sendNotificationReply` e todos os `handleAction*` (o JSON das tarefas aceita `name` e `Name`, como o decodificador do Go; a UI manda minúsculas); `handleActionReloadFw` grava o `system-fw.json` e responde com os erros da recarga (ou OK depois de 2 s). Falta o efeito das tarefas (fase 10), que respondem erro (divergência 41) |
-| `daemon/ui/notifications_tasks.go` | — | pendente | fase 10 (tarefas) |
+| `daemon/ui/notifications.go` | `daemon/uiclient.c` | parcial | `getClientConfig` (com `SystemFirewall`), `Subscribe`, `listenForNotifications`, `sendNotificationReply` e todos os `handleAction*` (o JSON das tarefas aceita `name` e `Name`, como o decodificador do Go; a UI manda minúsculas); `handleActionReloadFw` grava o `system-fw.json` e responde com os erros da recarga (ou OK depois de 2 s). `handleActionTaskStart`/`Stop` com as três tarefas da UI (divergências 41, 86 a 88) |
+| `daemon/ui/notifications_tasks.go` | `daemon/uiclient.c` (`on_task_result`, `add_task`) | parcial | `monitorTaskEvents` (resposta à notificação se o id for > 10000, senão alerta), `monitorSockets`, `monitorNode`, `monitorProcessDetails`; `monitorTaskManager` não tem o que fazer sem canais. Falta o `loggers.Log` dos alertas das tarefas (loggers, fase 10) |
+| `daemon/tasks/main.go`, `base/main.go`, `doc.go` | `daemon/tasks/tasks.c` | parcial | `TaskManager` (`AddTask`, `RemoveTask`, `GetTask`, `StopAll`, `StopTempTasks`, `Stop`), os ids de `base`; cada tarefa é um timer do loop em vez de goroutine e canais. `UpdateTask` não tem uso; `PauseAll`/`ResumeAll` não têm chamadores e as tarefas não os implementam (TODO no upstream) |
+| `daemon/tasks/pidmonitor/main.go` | `daemon/tasks/pidmon.c` | portado | divergência 86 |
+| `daemon/tasks/nodemonitor/main.go` | `daemon/tasks/nodemon.c` | portado | o JSON de `syscall.Sysinfo_t` com os campos de linux/amd64 (`Pad_cgo_0`, `X_f`, `Pad_cgo_1`) ou de 32 bits; a lista de campos veio do pacote `syscall` e falta conferir contra o daemon Go no job `interop-ui` |
+| `daemon/tasks/socketsmonitor/*.go` | `daemon/tasks/sockmon.c` | portado | divergências 86, 87 e 89 |
+| `daemon/tasks/load.go`, `config/*.go`, `looptask`, `downloader`, `iocscanner`, `scheduler` | — | pendente | tarefas lidas de `TasksOptions.ConfigPath` (fase 10) |
 | `daemon/ui/alerts.go` | `daemon/uiclient.c`, `daemon/protocol.c` (`ks_pb_alert_text`) | parcial | alertas de texto e a fila do `alertsDispatcher`; sem gzip (divergência 38). Alertas com processo ou conexão não têm quem os gere ainda (ebpf, fase 9) |
 | `daemon/ui/auth/auth.go` | — | pendente | TLS (`TLS=1`, fase 10) |
 | `daemon/statistics/stats.go`, `event.go` | `daemon/stats.c` | portado | sem workers (contagem no loop); `SetLoggers`/`logger.Log` com os loggers (fase 10); divergência 45 |
@@ -158,7 +165,7 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 37 | `daemon/intercept.c`, `daemon/main.c` | para perguntar à UI, o pacote é reenfileirado na fila `N+1` (`SetRequeueVerdict`) e lido de volta em até 1 s; a goroutine fica bloqueada na resposta | o veredicto do pacote fica pendente pelo id e sai quando a UI responde; não há fila `N+1` | loop único (seção 4 do PORTING.md); o efeito para o resto do tráfego é o mesmo, e a fila `N+1` deixa de ser ocupada |
 | 38 | `daemon/uiclient.c` | `PostAlert` com compressão gzip | sem compressão | evita a zlib; a UI aceita os dois |
 | 39 | `daemon/uiclient.c` | `Server.Authentication.Type` `tls-simple`/`tls-mutual` conecta com TLS | não conecta; avisa a cada segundo ("Invalid client auth options") | TLS vem na fase 10 (`TLS=1`) |
-| 41 | `daemon/uiclient.c` | `TASK_START` de `pid-monitor`, `node-monitor` e `sockets-monitor` inicia a tarefa; `TASK_STOP` a remove | o start responde erro ("not supported yet"); o stop não faz nada | tarefas vêm na fase 10 |
+| 41 | `daemon/uiclient.c`, `daemon/tasks/` | as asserções de tipo dos dados das tarefas (`conf["pid"].(string)`, `conf["node"]`, `conf["interval"]` do `node-monitor`, os campos do `sockets-monitor`) e o `SetID` no `sockets-monitor` nulo (configuração que não é objeto) derrubam o daemon | responde erro com o texto do pânico (`interface conversion: interface {} is nil, not string`) ou `[sockmon] invalid config received: <JSON>` | não derrubar o daemon por mensagem da rede |
 | 42 | `daemon/uiclient.c` | `ENABLE_RULE`/`DISABLE_RULE` com regra sem operador derruba o daemon (ponteiro nulo) | responde erro | não derrubar o daemon por mensagem da rede |
 | 43 | `daemon/uiclient.c` | `unix-abstract:<nome>` disca a rede `unix-abstract`, que o Go não conhece: nunca conecta | conecta no socket abstrato `<nome>` | é o que o endereço quer dizer (a UI converte `unix:@nome` para `unix-abstract:nome` achando que o daemon entende) |
 | 44 | `daemon/stats.c` | `Statistics.daemon_version` é a versão do daemon | é a versão do upstream (`1.8.0`) | a UI espera `x.y.z` (`Utils.check_versions`); com a versão do port ela descartaria as estatísticas |
@@ -184,7 +191,7 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 64 | `ui/statsq.c` | os filtros e os valores de detalhe entram no SQL por interpolação (`LIKE '%{0}%'`, `c.dst_host = '{14}'`): uma aspa simples no filtro quebra a consulta | as aspas simples são dobradas; `%` e `_` continuam sendo curinga | uma aspa no texto de busca não pode derrubar a aba nem injetar SQL |
 | 65 | `ui/stats_win.c`, `ui/qstore.c` | `QTableView` com barra de rolagem própria, número da linha no cabeçalho vertical, seleção guardada por valor da coluna de rastreamento e restaurada a cada atualização | `GtkTreeView` em modo de altura fixa sobre um modelo virtual, sem cabeçalho vertical; ao atualizar a tabela volta à primeira linha visível, mas a seleção se perde | o GTK 2 não tem o equivalente; a atualização só acontece se não houver linhas selecionadas, como no upstream |
 | 66 | `ui/stats_win.c` | a aba Addresses tem a coluna "Network name" (ASN) quando o `pyasn` está disponível; a aba Rules tem uma árvore (aplicações, alertas, nós, firewall) | sem coluna de ASN; um combo (todas, permanentes, temporárias, alertas, e um item por nó, sem o firewall até a fase 8) | o banco de ASN é uma dependência do Python; o combo é o que o próprio upstream mostra quando a árvore está recolhida |
-| 67 | `ui/stats_node.c` | a resposta de erro de `node-monitor` não aparece (só a de `sockets-monitor` vai para o rótulo do netstat); sem resposta o painel fica em "loading node information..." | o texto do erro (por exemplo "task node-monitor is not supported yet" do nosso daemon) aparece no painel | saber por que o painel não carrega |
+| 67 | `ui/stats_node.c` | a resposta de erro de `node-monitor` não aparece (só a de `sockets-monitor` vai para o rótulo do netstat); sem resposta o painel fica em "loading node information..." | o texto do erro do daemon aparece no painel | saber por que o painel não carrega |
 | 68 | `ui/stats_win.c` | `_del_by_field` na aba Users compara `uid` com "name (uid)": o botão de limpar apaga a linha de `users` e nenhum evento | extrai o uid do texto, então apaga também os eventos | bug do upstream |
 | 69 | `ui/stats_menu.c`, `ui/stats_node.c` | "Edit" e "New" abrem o editor de regras; o botão de preferências do nó abre a janela de preferências | desabilitados, com dica | o editor de regras e as preferências são os próximos passos da fase 7 |
 | 70 | `ui/stats_node.c` | um clique no nó guarda o endereço em `LAST_SELECTED_ITEM` mesmo ao sair da aba (o próximo clique no mesmo nó "desmonitora" de novo); o painel fica em um splitter que o usuário abre | sair da aba envia `TASK_STOP` e esquece o nó; o painel aparece ao selecionar o nó e some ao desmarcar | estado coerente; sem arrastar o splitter |
@@ -203,6 +210,10 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 83 | `ui/fwrules.c` | `form_to_protobuf` altera o `STATM_CONF` da classe (`sk['key'] = ...`): depois de uma condição "meta", uma porta tcp+udp sai como `meta <opção anterior>` em vez de `meta l4proto` | as chaves não mudam entre chamadas | bug do upstream (a relatar) |
 | 84 | `ui/fwrules.c` | `ipaddress.ip_network()` monta a lista de todos os endereços da rede (trava com redes IPv6 grandes); erros de `int()` na cota viram exceção não tratada | calcula o primeiro e o último endereço; a mensagem do `ValueError` vira erro do formulário | mesmo resultado sem travar |
 | 85 | `ui/fw_rule_dialog.c` | ao carregar uma regra de porta tcp+udp, a escolha do serviço no combo troca o protocolo para tcp (o `currentIndexChanged` não está bloqueado), e salvar a regra a muda | o protocolo carregado fica; o QToolBox vira uma coluna de expanders, um aberto por vez | o diálogo não deve alterar a regra que só foi aberta |
+| 86 | `daemon/tasks/pidmon.c`, `sockmon.c` | `pidmonitor.New` ignora `stopOnDisconnect` e o `socketsmonitor` o grava num campo que sombreia o do `TaskBase`: só o `node-monitor` é temporário. Ao desconectar, as outras duas seguem mandando ao stream fechado, e depois de reconectar um novo start falha com "already exists" | as três tarefas da UI são temporárias e param ao desconectar | é o que o argumento `true` pede |
+| 87 | `daemon/tasks/tasks.c` | intervalo zero ou negativo: `time.NewTicker` entra em pânico | erro no start (só log, a tarefa fica parada), como um intervalo inválido | não derrubar o daemon |
+| 88 | `daemon/uiclient.c` | o resultado de cada tarefa vai ao stream de notificações que existia quando ela começou | vai ao stream atual (as tarefas da UI param ao desconectar, divergência 86) | mesmo efeito |
+| 89 | `daemon/tasks/sockmon.c` | uma goroutine por socket: a ordem de `Table` varia a cada chamada | a ordem do dump (lista de opções do upstream, depois XDP, depois AF_PACKET) | determinístico; a UI ordena a tabela |
 
 ## Bugs do upstream a relatar
 
@@ -233,6 +244,19 @@ comportamento, a não ser onde a tabela acima diz o contrário.
   port reproduz.
 - O padrão de `/proc/net/packet` aceita só um dígito no índice da interface
   (interfaces >= 10 não são lidas). O port reproduz.
+- Tarefas: `pid-monitor` e `sockets-monitor` nunca param ao desconectar
+  (divergência 86); asserções de tipo sem verificação nos dados das tarefas
+  derrubam o daemon, e o `sockets-monitor` chama `SetID` antes de verificar
+  o erro de `New` (divergência 41).
+- `readDescriptors` escreve o nome do descritor onde deveria ir o inode
+  (`socket:[<fd>] - ...`). O port reproduz.
+- `PacketDiagMsg.deserialize` lê os atributos por deslocamentos fixos e toma
+  o `PACKET_DIAG_INFO` (também de 28 bytes) pelo `PACKET_DIAG_MCLIST`, um
+  byte adiantado e em big-endian: o índice da interface dos sockets
+  AF_PACKET fica só com o byte baixo. O port reproduz.
+- As opções `{IPPROTO_RAW, AF_PACKET}` e `{IPPROTO_UDP, AF_PACKET}` do
+  `sockets-monitor` vão ao kernel como `inet_diag_req_v2`, que o
+  `packet_diag` recusa (protocolo diferente de zero): nunca dão sockets.
 - `IsInStoreByPID` atualiza `LastSeen` numa cópia do item, então consultas
   nunca prolongam a vida de um processo no cache. O port reproduz.
 - No método proc, `FindProcess` não monta a cadeia de pais (`GetParent`):

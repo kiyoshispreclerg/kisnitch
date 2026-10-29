@@ -278,6 +278,8 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
 
 ### Fase 9 — eBPF (opcional, `EBPF=1`)
 
+> Adiada (2026-10-29): a fase 10 foi feita antes. Enquanto isso, `ProcMonitorMethod: ebpf` cai no método `proc`.
+
 - Copiar módulos de `upstream/ebpf_prog/` com `tools/sync-ebpf.sh`.
 - `procmon/ebpf.c`, `dns/ebpf.c`, rastreamento de exec/exit via `libbpf`.
 - Fallback automático para o método `proc` se o kernel não suportar.
@@ -294,6 +296,8 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
   - Nenhum campo novo no JSON (o daemon Go descarta e reescreve o que não conhece): o painel reconhece pela estrutura quais regras cabem no modelo simples; as demais aparecem como "regra avançada", sem edição ali, e abrem no editor completo da fase 8.
   - Perfis de aplicativo do ufw (`/etc/ufw/applications.d/`) podem ser lidos como atalhos que só preenchem portas.
   - Diferenças a documentar: o `limit` do upstream é taxa global, não por IP de origem como o `ufw limit`; um endereço IPv4 casa só IPv4 (para os dois, duas regras).
+
+Progresso: tarefas da UI (`pid-monitor`, `node-monitor`, `sockets-monitor`) em `daemon/tasks/`; faltam as tarefas lidas de arquivo (`TasksOptions`), o audit, os loggers, TLS, notificações, i18n e o painel simplificado.
 
 **Aceite:**
 - [ ] Tabela de funcionalidades em `docs/UPSTREAM.md` 100% marcada como portada, ou com justificativa explícita para o que ficou de fora.

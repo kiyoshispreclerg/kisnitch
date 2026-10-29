@@ -103,7 +103,7 @@ UI veio na fase 6: `ui/server.c` (servidor no loop do GLib) e
 | `ENABLE_INTERCEPTION` | reconfigura o monitor de processos e liga as regras de interceptação | OK / erro |
 | `DISABLE_INTERCEPTION` | para o monitor e tira as regras | OK / erro |
 | `RELOAD_FW_RULES` | regras de sistema: fase 8 | erro |
-| `TASK_START`, `TASK_STOP` | JSON `{"Name", "Data"}`; tarefas conhecidas (`pid-monitor`, `node-monitor`, `sockets-monitor`): fase 10 | erro no start; nada no stop; desconhecidas: nada |
+| `TASK_START`, `TASK_STOP` | JSON `{"Name", "Data"}`; `pid-monitor` (`pid` em texto, `interval`), `node-monitor` (`node`, `interval`), `sockets-monitor` (`interval`, `state`, `proto`, `family`); o start cria a tarefa e o stop a remove (`daemon/tasks/`) | start: erro se a tarefa já existe ou os dados são inválidos; depois, a cada intervalo, uma resposta OK com o JSON da tarefa no mesmo id (id <= 10000: alerta). Stop e tarefas desconhecidas: nada |
 | `LOG_LEVEL`, `STOP` | ignoradas (o upstream também não trata) | nenhuma |
 
 ## Pergunta à UI (AskRule)

@@ -1,6 +1,7 @@
 # Projeto: Kisnitch, port do OpenSnitch para C + GTK2
 
-Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 8 concluída. Próxima: 9.
+Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 10 (em andamento). A fase 9
+(eBPF, opcional) foi adiada por decisão do usuário em 2026-10-29 e fica para depois.
 (O teste diferencial opcional da fase 1 roda no job `diff` do CI ou com `make diff`
 numa máquina com Go.)
 
