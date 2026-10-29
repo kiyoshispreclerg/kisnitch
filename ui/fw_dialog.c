@@ -14,6 +14,7 @@
 
 #include "cJSON.h"
 #include "common/log.h"
+#include "ui/fw_simple.h"
 #include "ui/fwrules.h"
 #include "ui/nodes.h"
 
@@ -34,6 +35,8 @@ struct ks_fw_dlg {
     GPtrArray *node_addrs;
     GArray *sent; /* uint64_t ids */
     struct ks_fwrule_dlg *rule_dlg;
+    struct ks_fws_dlg *simple; /* Kisnitch's simplified panel */
+    GtkWidget *b_simple;
     bool loading;
     guint second_send; /* enable_fw()'s second notification */
     char second_addr[KS_NODE_ADDR_MAX];
@@ -463,7 +466,21 @@ static GtkWidget *stock_button(const char *label, const char *stock)
 
 static void on_rules_changed(void *ud)
 {
+    struct ks_fw_dlg *d = ud;
+    ks_fws_dlg_refresh(d->simple);
+    changed(d);
+}
+
+static void on_simple_changed(void *ud)
+{
     changed(ud);
+}
+
+static void on_simple(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    struct ks_fw_dlg *d = ud;
+    ks_fws_dlg_show(d->simple);
 }
 
 struct ks_fw_dlg *ks_fw_dlg_new(struct ks_service *svc, GtkWindow *parent,
@@ -476,6 +493,7 @@ struct ks_fw_dlg *ks_fw_dlg_new(struct ks_service *svc, GtkWindow *parent,
     d->node_addrs = g_ptr_array_new_with_free_func(g_free);
     d->sent = g_array_new(FALSE, TRUE, sizeof(uint64_t));
     d->rule_dlg = ks_fwrule_dlg_new(svc, parent, on_rules_changed, d);
+    d->simple = ks_fws_dlg_new(svc, parent, d->rule_dlg, on_simple_changed, d);
 
     d->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(d->win), "Firewall");
@@ -530,7 +548,11 @@ struct ks_fw_dlg *ks_fw_dlg_new(struct ks_service *svc, GtkWindow *parent,
     gtk_table_attach(GTK_TABLE(t), d->b_in, 2, 3, 2, 3, GTK_FILL, GTK_FILL, 0, 0);
     gtk_table_attach(GTK_TABLE(t), d->b_out, 2, 3, 3, 4, GTK_FILL, GTK_FILL, 0, 0);
     gtk_table_attach(GTK_TABLE(t), gtk_hseparator_new(), 0, 3, 4, 5, GTK_FILL, GTK_FILL, 0, 0);
-    GtkWidget *nb = gtk_hbox_new(FALSE, 0);
+    GtkWidget *nb = gtk_hbox_new(FALSE, 6);
+    d->b_simple = stock_button("_Rules (simple)", GTK_STOCK_INDEX);
+    gtk_widget_set_tooltip_text(d->b_simple, "Allow, deny or reject by port, address and "
+                                             "interface, in a table (like ufw)");
+    gtk_box_pack_start(GTK_BOX(nb), d->b_simple, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(nb), d->b_new, FALSE, FALSE, 0);
     gtk_table_resize(GTK_TABLE(t), 6, 3);
     gtk_table_attach(GTK_TABLE(t), nb, 0, 3, 5, 6, GTK_FILL, GTK_FILL, 0, 0);
@@ -553,6 +575,7 @@ struct ks_fw_dlg *ks_fw_dlg_new(struct ks_service *svc, GtkWindow *parent,
     g_signal_connect(d->combo_out, "changed", G_CALLBACK(on_out_changed), d);
     g_signal_connect(d->nodes, "changed", G_CALLBACK(on_nodes_changed), d);
     g_signal_connect(d->b_new, "clicked", G_CALLBACK(on_new_rule), d);
+    g_signal_connect(d->b_simple, "clicked", G_CALLBACK(on_simple), d);
     g_signal_connect(d->b_in, "clicked", G_CALLBACK(on_allow_in), d);
     g_signal_connect(d->b_out, "clicked", G_CALLBACK(on_allow_out), d);
     g_signal_connect(help, "clicked", G_CALLBACK(on_help), d);
@@ -570,6 +593,7 @@ void ks_fw_dlg_free(struct ks_fw_dlg *d)
         return;
     if (d->second_send != 0)
         g_source_remove(d->second_send);
+    ks_fws_dlg_free(d->simple);
     ks_fwrule_dlg_free(d->rule_dlg);
     gtk_widget_destroy(d->win);
     g_ptr_array_free(d->node_addrs, TRUE);
@@ -625,6 +649,7 @@ void ks_fw_dlg_load_rule(struct ks_fw_dlg *d, const char *addr, const char *uuid
 
 void ks_fw_dlg_nodes_updated(struct ks_fw_dlg *d)
 {
+    ks_fws_dlg_refresh(d->simple);
     if (nodes_of(d)->len <= 1 && gtk_widget_get_visible(d->win)) {
         load_nodes(d);
         load_fw_policies(d);
