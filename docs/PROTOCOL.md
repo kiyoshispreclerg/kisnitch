@@ -45,6 +45,10 @@ UI veio na fase 6: `ui/server.c` (servidor no loop do GLib) e
   novo. Uma conexão que caiu só é percebida pelo poller (log "Connection to
   the UI service lost."), igual ao upstream.
 
+### TLS (`TLS=1`)
+
+`Server.Authentication.Type` diferente de `simple` no daemon, e `--socket-auth` / `auth/type` na UI, ligam TLS (`common/grpc/tls.c`, OpenSSL). O handshake corre no mesmo fd não bloqueante, antes do prefácio HTTP/2, dentro de `ks_grpc_conn_on_io()`; depois, `nghttp2` lê e escreve através da sessão TLS (um BIO de socket próprio, com `MSG_NOSIGNAL`). Os dois lados negociam ALPN `h2`. Regras de verificação: as do `auth.go` do upstream no cliente e as do `grpc.ssl_server_credentials` no servidor (ver `common/grpc/tls.h`).
+
 ## Framing e cabeçalhos
 
 - Cada mensagem: 1 byte de compressão (sempre 0) + 4 bytes de tamanho
