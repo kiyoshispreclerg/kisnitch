@@ -76,8 +76,15 @@ void ks_i18n_init(const char *localedir, const char *lang)
          * locale ignores it: ask for C.UTF-8 (glibc), which doesn't */
         setenv("LANGUAGE", canonical(lang), 1);
         const char *cur = setlocale(LC_MESSAGES, NULL);
-        if (cur == NULL || strcmp(cur, "C") == 0 || strcmp(cur, "POSIX") == 0)
-            setlocale(LC_MESSAGES, "C.UTF-8");
+        if (cur == NULL || strcmp(cur, "C") == 0 || strcmp(cur, "POSIX") == 0) {
+            /* newer glibc may ignore LANGUAGE under C.UTF-8 as well: prefer
+             * a real locale when one is installed */
+            char want[KS_LANG_MAX + 8];
+            snprintf(want, sizeof(want), "%s.UTF-8", canonical(lang));
+            if (setlocale(LC_MESSAGES, want) == NULL &&
+                setlocale(LC_MESSAGES, "en_US.UTF-8") == NULL)
+                setlocale(LC_MESSAGES, "C.UTF-8");
+        }
     }
     bindtextdomain(KS_I18N_DOMAIN, localedir);
     bind_textdomain_codeset(KS_I18N_DOMAIN, "UTF-8");

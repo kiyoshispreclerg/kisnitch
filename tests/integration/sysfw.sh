@@ -135,13 +135,14 @@ settle() { # [nonempty]
 daemon_start() { # <binary>
     rm -rf "$work/rules" && mkdir -p "$work/rules"
     "$1" -config-file "$work/config.json" -rules-path "$work/rules" -debug \
-        -log-file "$work/daemon.log" >/dev/null 2>&1 &
+        -log-file "$work/daemon.log" >"$work/daemon.out" 2>&1 &
     daemon_pid=$!
     sleep 0.5
     settle nonempty && return 0
     # show why in the CI log
     echo "    --- $1 log ($(kill -0 "$daemon_pid" 2>/dev/null && echo running || echo exited)):"
     tail -n 30 "$work/daemon.log" 2>&1 | sed 's/^/    | /'
+    tail -n 30 "$work/daemon.out" 2>&1 | sed 's/^/    ! /'
     return 1
 }
 
