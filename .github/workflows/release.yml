@@ -3,7 +3,8 @@ name: Release
 # Source zip + .deb for Ubuntu 22.04 and 24.04, Devuan daedalus (Debian 12
 # "bookworm" base) and Devuan excalibur (Debian 13 "trixie" base) on every
 # v* tag, or on demand from the Actions tab, once lint and ASan pass. Each
-# .deb is installed on a clean system of its own target and run before
+# .deb is installed on a clean system of its own target, run, and installed
+# over the original OpenSnitch (tools/replace-test.sh) before
 # anything is published. Tags starting with v0 or containing a hyphen are
 # published as pre-releases.
 on:
@@ -122,9 +123,52 @@ jobs:
       - name: Run it
         run: sh tools/smoke-test.sh
 
+  # The upgrade path of whoever has the original OpenSnitch: installs it from
+  # the distribution with a user's config, rules and GUI settings, installs the
+  # .deb over it and checks that the old packages are gone, nothing of the
+  # user's changed, and the daemon starts and stops through the init script.
+  # (The containers have no systemd as PID 1, so the unit is only checked for
+  # being there; the init script is what runs.)
+  replace:
+    name: replace OpenSnitch (${{ matrix.name }})
+    needs: deb
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu22.04
+            image: ubuntu:22.04
+          - name: ubuntu24.04
+            image: ubuntu:24.04
+          - name: devuan-daedalus
+            image: debian:bookworm
+          - name: devuan-excalibur
+            image: debian:trixie
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+      options: --cap-add=NET_ADMIN
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb-${{ matrix.name }}
+          path: dist
+      - name: Install OpenSnitch, then Kisnitch over it
+        run: |
+          rc=0
+          sh tools/replace-test.sh dist/*.deb || rc=$?
+          if [ "$rc" = 77 ]; then
+            echo "::warning::${{ matrix.name }} has no opensnitch package: replacement not tested"
+          elif [ "$rc" != 0 ]; then
+            exit "$rc"
+          fi
+
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [source, deb, smoke]
+    needs: [source, deb, smoke, replace]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4

@@ -21,13 +21,12 @@ DAEMON_ARGS="-rules-path $RULES"
 [ -x "$DAEMON" ] || exit 0
 . /lib/lsb/init-functions
 
-# the original daemon uses the same files; never run both
-if [ -x /usr/bin/opensnitchd ] && pidof opensnitchd >/dev/null 2>&1; then
-    log_failure_msg "opensnitchd is running; stop it first"
-    exit 1
-fi
-
 do_start() {
+    # the original daemon uses the same files; never run both
+    if pidof opensnitchd >/dev/null 2>&1; then
+        log_failure_msg "opensnitchd is running; stop it first"
+        return 1
+    fi
     [ -d "$RULES" ] || mkdir -p "$RULES"
     start-stop-daemon --start --quiet --oknodo --background --make-pidfile \
         --pidfile "$PIDFILE" --exec "$DAEMON" -- $DAEMON_ARGS
@@ -53,7 +52,13 @@ stop)
     do_stop
     log_end_msg $?
     ;;
-restart|force-status)
+restart|force-reload)
+    log_daemon_msg "Restarting Kisnitch" "$NAME"
+    do_stop
+    do_start
+    log_end_msg $?
+    ;;
+status)
     status_of_proc -p "$PIDFILE" "$DAEMON" "$NAME"
     exit $?
     ;;
