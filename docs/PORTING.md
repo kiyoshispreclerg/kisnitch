@@ -308,6 +308,8 @@ Progresso: tarefas da UI (`pid-monitor`, `node-monitor`, `sockets-monitor`) e as
 ### Fase 11 — Empacotamento e endurecimento
 
 - Units para systemd, OpenRC e runit; PKGBUILD e pacote Debian.
+
+Progresso: unidade systemd (`packaging/systemd/`) e script sysvinit (`packaging/sysvinit/`, Devuan) feitos; pacote Debian (`tools/build-deb.sh`) com `Conflicts`/`Replaces`/`Provides` de `opensnitch` e `python3-opensnitch-ui`, scripts `packaging/debian/` (criam só o que falta em `/etc/opensnitchd`, ativam o systemd ou o sysvinit conforme o sistema), padrões em `data/defaults/` (cópia de `upstream/daemon/data`). Falta: OpenRC, runit, PKGBUILD, teste de instalação por cima de um OpenSnitch real, fuzzing contínuo, revisão de privilégios.
 - `make install` respeitando `PREFIX` e `DESTDIR`.
 - Fuzzing contínuo dos parsers, análise estática, revisão de privilégios (capabilities mínimas se viável).
 

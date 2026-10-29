@@ -24,7 +24,7 @@ pkg=$work/pkg
 
 make clean
 make -j"$(nproc)" PREFIX=/usr
-make PREFIX=/usr DESTDIR="$pkg" install
+make PREFIX=/usr DESTDIR="$pkg" install install-sysv
 strip --strip-unneeded "$pkg/usr/sbin/kisnitchd" "$pkg/usr/bin/kisnitch-gtk"
 find "$pkg" -type d -exec chmod 755 {} +
 
@@ -45,8 +45,11 @@ Version: $version-1
 Architecture: $arch
 Maintainer: $maint
 Installed-Size: $size
-Depends: $depends
+Depends: $depends, init-system-helpers
+Recommends: logrotate
 Conflicts: opensnitch, python3-opensnitch-ui
+Replaces: opensnitch, python3-opensnitch-ui
+Provides: opensnitch, python3-opensnitch-ui
 Section: net
 Priority: optional
 Homepage: https://github.com/${GITHUB_REPOSITORY:-kisnitch/kisnitch}
@@ -55,7 +58,14 @@ Description: interactive application firewall (OpenSnitch port to C and GTK 2)
  connections with nfqueue and nftables, and a GTK 2 interface that asks
  which application may connect where. It speaks OpenSnitch's protocol and
  reads its rules and configuration paths, without systemd.
+ .
+ It replaces the original OpenSnitch packages and uses their files in place:
+ /etc/opensnitchd (configuration, rules, tasks) and ~/.config/opensnitch are
+ not migrated or modified. Runs under systemd or sysvinit.
 CTL
+printf '/etc/init.d/kisnitch\n/etc/logrotate.d/kisnitch\n/etc/xdg/autostart/kisnitch.desktop\n' \
+	> "$pkg/DEBIAN/conffiles"
+install -m 755 packaging/debian/postinst packaging/debian/prerm packaging/debian/postrm "$pkg/DEBIAN/"
 
 deb=$out/kisnitch_${version}-1_${arch}.deb
 dpkg-deb --root-owner-group --build "$pkg" "$deb"

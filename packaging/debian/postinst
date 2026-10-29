@@ -1,0 +1,37 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+configure)
+    # Same paths as the original OpenSnitch: its files are used in place and
+    # only what is missing is created.
+    defaults=/usr/share/kisnitch/defaults
+    install -d -m 755 /etc/opensnitchd /etc/opensnitchd/rules /etc/opensnitchd/tasks
+    for f in default-config.json system-fw.json network_aliases.json; do
+        [ -e "/etc/opensnitchd/$f" ] || cp "$defaults/$f" "/etc/opensnitchd/$f"
+    done
+    [ -e /etc/opensnitchd/tasks/tasks.json ] || cp "$defaults/tasks/tasks.json" /etc/opensnitchd/tasks/
+    if ! ls /etc/opensnitchd/rules/*.json >/dev/null 2>&1; then
+        cp "$defaults"/rules/*.json /etc/opensnitchd/rules/
+    fi
+
+    if [ -d /run/systemd/system ]; then
+        if [ -x /usr/bin/deb-systemd-helper ]; then
+            deb-systemd-helper unmask kisnitch.service >/dev/null || true
+            if deb-systemd-helper --quiet was-enabled kisnitch.service; then
+                deb-systemd-helper enable kisnitch.service >/dev/null || true
+            else
+                deb-systemd-helper update-state kisnitch.service >/dev/null || true
+            fi
+        fi
+        systemctl --system daemon-reload >/dev/null || true
+        if [ -n "$2" ]; then action=restart; else action=start; fi
+        deb-systemd-invoke "$action" kisnitch.service >/dev/null || true
+    else
+        update-rc.d kisnitch defaults >/dev/null || true
+        if [ -n "$2" ]; then action=restart; else action=start; fi
+        invoke-rc.d kisnitch "$action" || true
+    fi
+    ;;
+esac
+exit 0

@@ -1,0 +1,12 @@
+/var/log/opensnitchd.log {
+	rotate 7
+	maxsize 50M
+	# the daemon keeps the file open
+	copytruncate
+	missingok
+	notifempty
+	delaycompress
+	compress
+	create 640 root root
+	weekly
+}

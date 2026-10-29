@@ -38,9 +38,16 @@ done
 echo "== data"
 for f in /usr/share/applications/kisnitch.desktop \
 	/usr/share/metainfo/io.github.kisnitch.metainfo.xml \
-	/usr/share/icons/hicolor/scalable/apps/kisnitch.svg; do
+	/usr/share/icons/hicolor/scalable/apps/kisnitch.svg \
+	/etc/opensnitchd/default-config.json /etc/opensnitchd/system-fw.json \
+	/etc/init.d/kisnitch /etc/xdg/autostart/kisnitch.desktop; do
 	[ -f "$f" ] || fail "$f is missing"
 done
+
+echo "== service files"
+[ -x /etc/init.d/kisnitch ] && sh -n /etc/init.d/kisnitch || fail "init script"
+[ -f /usr/lib/systemd/system/kisnitch.service ] || fail "systemd unit is missing"
+ls /etc/opensnitchd/rules/*.json >/dev/null 2>&1 || fail "no default rules in /etc/opensnitchd/rules"
 
 echo "== window"
 # Without a daemon it just waits for one: still running after 5 s means ok.

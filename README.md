@@ -31,8 +31,15 @@ sudo apt install ./kisnitch_<version>-1_<system>_amd64.deb
 ```
 
 The package installs `kisnitchd`, `kisnitch-gtk`, the `.desktop` file, the
-icons and the AppStream metadata. It does not need systemd and conflicts with
-`opensnitch` and `python3-opensnitch-ui`, so remove those first. Each package
+icons and the AppStream metadata, a systemd unit (`kisnitch.service`) and a
+sysvinit script (`/etc/init.d/kisnitch`, for Devuan and other systems without
+systemd; the package enables and starts whichever the system uses). It
+replaces `opensnitch` and `python3-opensnitch-ui` (apt removes them when you
+install it) and uses their files where they are: `/etc/opensnitchd` (config,
+rules, tasks) and `~/.config/opensnitch` are neither migrated nor changed;
+only what is missing is created. Purging the old package afterwards deletes
+`/etc/opensnitchd`, so purge it before, or keep a copy. A GUI session of the
+old OpenSnitch keeps running until you log out; close it first. Each package
 is installed and smoke-tested on a clean system of its own target before it
 is published. Releases starting with `v0` are marked as pre-releases.
 

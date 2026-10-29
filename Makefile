@@ -149,7 +149,7 @@ $(BUILD)/ui/i18n.o: CPPFLAGS += -DKS_LOCALEDIR='"$(DATADIR)/locale"'
 FORCE:
 .PHONY: FORCE
 
-.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui ui-checklist clean test-integration install install-data install-mo uninstall
+.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui ui-checklist clean test-integration install install-data install-mo install-service install-sysv uninstall
 
 all: $(BUILD)/kisnitchd $(BUILD)/kisnitch-gtk $(MOFILES)
 
@@ -258,7 +258,23 @@ install-mo:
 			$(DESTDIR)$(DATADIR)/locale/$$l/LC_MESSAGES/kisnitch.mo || exit 1; \
 	done
 
-install: all install-data install-mo
+# The systemd unit and the default /etc/opensnitchd files (the package's
+# postinst copies those that are missing: the files of an existing OpenSnitch
+# install are never touched). The XDG autostart entry starts the GUI at login.
+install-service:
+	install -Dm644 packaging/systemd/kisnitch.service $(DESTDIR)$(SYSTEMDDIR)/kisnitch.service
+	install -Dm644 data/defaults/default-config.json data/defaults/system-fw.json \
+		data/defaults/network_aliases.json -t $(DESTDIR)$(DATADIR)/kisnitch/defaults
+	install -Dm644 data/defaults/rules/*.json -t $(DESTDIR)$(DATADIR)/kisnitch/defaults/rules
+	install -Dm644 data/defaults/tasks/tasks.json -t $(DESTDIR)$(DATADIR)/kisnitch/defaults/tasks
+	install -Dm644 data/kisnitch.desktop $(DESTDIR)$(SYSCONFDIR)/xdg/autostart/kisnitch.desktop
+
+# For systems without systemd (Devuan): the init script and the log rotation.
+install-sysv:
+	install -Dm755 packaging/sysvinit/kisnitch $(DESTDIR)$(SYSCONFDIR)/init.d/kisnitch
+	install -Dm644 packaging/logrotate/kisnitch $(DESTDIR)$(SYSCONFDIR)/logrotate.d/kisnitch
+
+install: all install-data install-mo install-service
 	install -Dm755 $(BUILD)/kisnitchd $(DESTDIR)$(SBINDIR)/kisnitchd
 	install -Dm755 $(BUILD)/kisnitch-gtk $(DESTDIR)$(BINDIR)/kisnitch-gtk
 
@@ -268,6 +284,9 @@ uninstall:
 	rm -f $(DESTDIR)$(DATADIR)/metainfo/io.github.kisnitch.metainfo.xml
 	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kisnitch.svg
 	@for s in $(ICON_SIZES); do rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/kisnitch.png; done
+	rm -f $(DESTDIR)$(SYSTEMDDIR)/kisnitch.service $(DESTDIR)$(SYSCONFDIR)/xdg/autostart/kisnitch.desktop
+	rm -rf $(DESTDIR)$(DATADIR)/kisnitch
+	rm -f $(DESTDIR)$(SYSCONFDIR)/init.d/kisnitch $(DESTDIR)$(SYSCONFDIR)/logrotate.d/kisnitch
 	@for l in $(PO_LANGS); do rm -f $(DESTDIR)$(DATADIR)/locale/$$l/LC_MESSAGES/kisnitch.mo; done
 
 # ---- tests of the windows (they need a display: tests/integration/stats_gui.sh) ---
