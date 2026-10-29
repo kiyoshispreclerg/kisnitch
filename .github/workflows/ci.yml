@@ -19,9 +19,10 @@ jobs:
       matrix:
         cc: [gcc, clang]
     steps:
-      # The upstream/ submodule isn't needed: the tests use the copies in
-      # tests/fixtures/upstream/.
+      # some unit tests read upstream/daemon/data/system-fw.json
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - run: sudo apt-get update && sudo apt-get install -y gettext libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev
       - name: build
         run: make CC=${{ matrix.cc }}
@@ -51,6 +52,8 @@ jobs:
         build: [plain, asan]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - run: sudo apt-get update && sudo apt-get install -y gettext libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev nftables curl python3 openssl python3-grpcio python3-grpc-tools xvfb xdotool libnotify-dev python3-gi dbus libssl-dev
       - name: integration tests
         run: |
@@ -64,6 +67,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - run: sudo apt-get update && sudo apt-get install -y gettext libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev valgrind
       - run: make valgrind
 

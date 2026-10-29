@@ -138,7 +138,11 @@ daemon_start() { # <binary>
         -log-file "$work/daemon.log" >/dev/null 2>&1 &
     daemon_pid=$!
     sleep 0.5
-    settle nonempty
+    settle nonempty && return 0
+    # show why in the CI log
+    echo "    --- $1 log ($(kill -0 "$daemon_pid" 2>/dev/null && echo running || echo exited)):"
+    tail -n 30 "$work/daemon.log" 2>&1 | sed 's/^/    | /'
+    return 1
 }
 
 daemon_stop() {

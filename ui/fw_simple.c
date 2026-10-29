@@ -110,7 +110,7 @@ static void load_rules(struct ks_fws_dlg *d, const char *keep_uuid)
         const struct ks_fws_row *r = &rows.v[i];
         GtkTreeIter it;
         gtk_list_store_append(d->store, &it);
-        char pos[16], port[KS_FWS_TEXT_MAX + 16];
+        char pos[24], port[KS_FWS_TEXT_MAX + 16];
         snprintf(pos, sizeof(pos), "%zu", i + 1);
         if (r->kind == KS_FWS_ROW_SIMPLE) {
             const struct ks_fws_rule *s = &r->rule;
