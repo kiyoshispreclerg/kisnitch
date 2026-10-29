@@ -71,7 +71,7 @@ snap() {
 	{
 		find /etc/opensnitchd -type f
 		find /root/.config/opensnitch -type f
-	} | sort | xargs sha256sum
+	} | sort | xargs sha256sum | LC_ALL=C sort
 }
 snap > /tmp/before.sums
 wc -l < /tmp/before.sums | sed 's/$/ files recorded/'
@@ -93,7 +93,7 @@ dpkg -s kisnitch >/dev/null || fail "kisnitch is not installed"
 echo "== the user's files"
 snap > /tmp/after.sums
 # everything the user had stays identical; the package may add what was missing
-lost=$(comm -23 /tmp/before.sums /tmp/after.sums)
+lost=$(LC_ALL=C comm -23 /tmp/before.sums /tmp/after.sums)
 [ -z "$lost" ] || fail "files of the user were changed or removed: $lost"
 for f in default-config.json system-fw.json network_aliases.json; do
 	[ -f /etc/opensnitchd/$f ] || fail "/etc/opensnitchd/$f is missing"
@@ -129,6 +129,6 @@ echo "== purge"
 apt-get purge -y kisnitch >/dev/null 2>&1 || fail "purge failed"
 [ ! -e /etc/init.d/kisnitch ] || fail "the init script survived the purge"
 snap > /tmp/purged.sums
-lost=$(comm -23 /tmp/before.sums /tmp/purged.sums)
+lost=$(LC_ALL=C comm -23 /tmp/before.sums /tmp/purged.sums)
 [ -z "$lost" ] || fail "the purge touched the user's files: $lost"
 echo "OK"
