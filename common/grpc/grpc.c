@@ -5,6 +5,7 @@
  * Copyright (C) 2026 the Kisnitch contributors.
  */
 #include "common/grpc/grpc.h"
+#include "common/grpc/tls.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -96,6 +97,8 @@ struct ks_grpc_call {
 
 struct ks_grpc_conn {
     int fd;
+    void *tls;    /* the TLS session, NULL for none */
+    bool hs_done; /* the TLS handshake finished */
     nghttp2_session *session;
     struct ks_grpc_conn_opts opts;
     char *authority;
@@ -303,6 +306,8 @@ static void flush(struct ks_grpc_conn *c)
 {
     if (c->depth > 0 || c->closed || c->failing || c->session == NULL)
         return;
+    if (c->tls != NULL && !c->hs_done)
+        return; /* the handshake decides what to wait for */
     c->depth++;
     int rv = nghttp2_session_send(c->session);
     c->depth--;
@@ -723,6 +728,20 @@ static ssize_t send_cb(nghttp2_session *session, const uint8_t *data, size_t len
     (void)session;
     (void)flags;
     struct ks_grpc_conn *c = user_data;
+    if (c->tls != NULL) {
+        char err[256] = "";
+        long n = ks_tls_write(c->tls, data, length, err, sizeof(err));
+        if (n > 0) {
+            c->blocked = false;
+            return n;
+        }
+        if (n == KS_TLS_WANT_WRITE || n == KS_TLS_WANT_READ) {
+            c->blocked = true;
+            return NGHTTP2_ERR_WOULDBLOCK;
+        }
+        conn_fail(c, err[0] ? err : "EOF");
+        return NGHTTP2_ERR_CALLBACK_FAILURE;
+    }
     for (;;) {
         ssize_t n = send(c->fd, data, length, MSG_NOSIGNAL);
         if (n >= 0) {
@@ -755,6 +774,8 @@ struct ks_grpc_conn *ks_grpc_conn_new(int fd, const struct ks_grpc_conn_opts *op
     c->data = data;
     c->authority = strdup(opts->authority ? opts->authority : "localhost");
     if (c->authority == NULL)
+        goto fail;
+    if (opts->tls != NULL && (c->tls = ks_tls_session_new(opts->tls, fd, opts->tls_host)) == NULL)
         goto fail;
     c->opts.authority = c->authority;
     c->last_rx = ks_grpc_now();
@@ -800,6 +821,7 @@ fail:
     if (c) {
         if (c->session)
             nghttp2_session_del(c->session);
+        ks_tls_session_free(c->tls);
         free(c->authority);
         free(c);
     }
@@ -819,6 +841,7 @@ void ks_grpc_conn_free(struct ks_grpc_conn *c)
     }
     if (c->session)
         nghttp2_session_del(c->session);
+    ks_tls_session_free(c->tls);
     close(c->fd);
     free(c->authority);
     free(c);
@@ -845,16 +868,52 @@ void ks_grpc_conn_on_io(struct ks_grpc_conn *c, bool readable, bool writable)
         return;
     if (writable)
         c->blocked = false;
+    if (c->tls != NULL && !c->hs_done) {
+        char err[256] = "";
+        int r = ks_tls_handshake(c->tls, err, sizeof(err));
+        if (r == KS_TLS_WANT_READ || r == KS_TLS_WANT_WRITE) {
+            set_want_write(c, r == KS_TLS_WANT_WRITE);
+            return;
+        }
+        if (r != KS_TLS_OK) {
+            conn_fail(c, err[0] ? err : "tls: handshake failed");
+            finish_close(c);
+            return;
+        }
+        c->hs_done = true;
+        readable = true; /* data may have come with the handshake */
+    }
     if (readable) {
         uint8_t buf[16384];
-        for (int i = 0; i < 64 && !c->failing; i++) {
-            ssize_t n = recv(c->fd, buf, sizeof(buf), 0);
-            if (n < 0) {
-                if (errno == EINTR)
-                    continue;
-                if (errno != EAGAIN && errno != EWOULDBLOCK)
-                    conn_fail(c, strerror(errno));
-                break;
+        /* TLS: what's decrypted already must be read now, or the fd may
+         * never wake us for it */
+        for (int i = 0; (i < 64 || (c->tls != NULL && ks_tls_pending(c->tls))) && !c->failing;
+             i++) {
+            ssize_t n;
+            if (c->tls != NULL) {
+                char err[256] = "";
+                long r = ks_tls_read(c->tls, buf, sizeof(buf), err, sizeof(err));
+                if (r == KS_TLS_WANT_READ)
+                    break;
+                if (r == KS_TLS_WANT_WRITE) {
+                    c->blocked = true;
+                    set_want_write(c, true);
+                    break;
+                }
+                if (r == KS_TLS_ERROR) {
+                    conn_fail(c, err);
+                    break;
+                }
+                n = r; /* > 0, or 0 for EOF */
+            } else {
+                n = recv(c->fd, buf, sizeof(buf), 0);
+                if (n < 0) {
+                    if (errno == EINTR)
+                        continue;
+                    if (errno != EAGAIN && errno != EWOULDBLOCK)
+                        conn_fail(c, strerror(errno));
+                    break;
+                }
             }
             if (n == 0) {
                 conn_fail(c, "EOF");

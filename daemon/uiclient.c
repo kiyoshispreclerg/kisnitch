@@ -27,6 +27,7 @@
 #include "common/arena.h"
 #include "common/duration.h"
 #include "common/grpc/grpc.h"
+#include "common/grpc/tls.h"
 #include "common/log.h"
 #include "common/vendor/cjson/cJSON.h"
 #include "daemon/evloop.h"
@@ -125,6 +126,7 @@ struct ks_uiclient {
     struct ks_taskmgr *tasks; /* TaskMgr */
     struct ks_taskloader *task_loader; /* TaskMgr.loader */
     struct ks_loggers *loggers;        /* c.loggers */
+    struct ks_tls_ctx *tls;            /* auth.New() of the last openSocket(), NULL: simple */
 };
 
 /* A RELOAD_FW_RULES notification whose reply waits for the errors of the
@@ -277,9 +279,24 @@ static void on_conn_closed(struct ks_grpc_conn *conn, const char *reason, void *
     drop_conn(c);
 }
 
+/* net.SplitHostPort() */
+static int split_host_port(const char *addr, char *host, size_t hlen, char *port,
+                           size_t plen);
+
 static int start_conn(struct ks_uiclient *c, int fd, const char *authority)
 {
     struct ks_grpc_conn_opts o = {.authority = authority};
+    /* TLS: grpc-go verifies the host of the dial target, or the whole
+     * target if it has no port (a unix socket's path: only SkipVerify
+     * gets through) */
+    char host[256], port[64];
+    if (c->tls != NULL) {
+        o.tls = c->tls;
+        if (c->is_unix || split_host_port(c->socket_path, host, sizeof(host), port,
+                                          sizeof(port)) < 0)
+            snprintf(host, sizeof(host), "%s", c->socket_path);
+        o.tls_host = host;
+    }
     if (!c->is_unix) {
         o.keepalive_time_ns = KS_UI_KEEPALIVE_TIME_NS;
         o.keepalive_timeout_ns = KS_UI_KEEPALIVE_TIMEOUT_NS;
@@ -476,10 +493,23 @@ static int open_tcp(struct ks_uiclient *c, char *err, size_t errlen)
 static int open_socket(struct ks_uiclient *c, char *err, size_t errlen)
 {
     const char *auth = nz(c->config.server.auth.type);
+    ks_tls_ctx_free(c->tls);
+    c->tls = NULL;
     if (auth[0] != '\0' && strcmp(auth, "simple") != 0) {
-        snprintf(err, errlen, "Invalid client auth options: %s authentication is not "
-                              "supported yet (TLS=1, phase 10)", auth);
-        return -1;
+        /* auth.New(): anything but simple is TLS; tls-mutual adds the
+         * client certificate */
+        const struct ks_tls_options *t = &c->config.server.auth.tls;
+        struct ks_tls_client_opts o = {.ca_cert = t->ca_cert,
+                                       .server_cert = t->server_cert,
+                                       .client_cert = t->client_cert,
+                                       .client_key = t->client_key,
+                                       .skip_verify = t->skip_verify,
+                                       .mutual = strcmp(auth, "tls-mutual") == 0};
+        char e[256];
+        if ((c->tls = ks_tls_client_new(&o, e, sizeof(e))) == NULL) {
+            snprintf(err, errlen, "Invalid client auth options: %s", e);
+            return -1;
+        }
     }
     int rv = c->is_unix ? open_unix(c, err, errlen) : open_tcp(c, err, errlen);
     return rv < 0 ? -2 : 0;
@@ -1796,6 +1826,8 @@ void ks_uiclient_free(struct ks_uiclient *c)
         ks_stats_set_loggers(c->d.stats, NULL);
     ks_loggers_free(c->loggers, 1000);
     c->loggers = NULL;
+    ks_tls_ctx_free(c->tls);
+    c->tls = NULL;
     stop_poller(c);
     resolve_free(c);
     while (c->fw_reloads != NULL)

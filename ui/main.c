@@ -23,6 +23,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "common/grpc/tls.h"
 #include "common/log.h"
 #include "ui/desktop.h"
 #include "ui/notify.h"
@@ -237,7 +238,10 @@ static void usage(FILE *out)
             "  --socket ADDR      gRPC address to listen on (default " DEFAULT_SOCKET ",\n"
             "                     or global/server_address in settings.conf).\n"
             "                     unix:///path, unix-abstract:name, unix:@name, [::]:50051\n"
-            "  --socket-auth T    simple (TLS: not yet supported)\n"
+            "  --socket-auth T    simple, tls-simple or tls-mutual (TLS needs a TLS=1 build)\n"
+            "  --tls-ca-cert F    CA certificate: nodes must present a certificate it signed\n"
+            "  --tls-cert F       server certificate\n"
+            "  --tls-key F        server key\n"
             "  --max-clients N    max number of connected nodes\n"
             "  --max-workers N    accepted for compatibility (no worker threads here)\n"
             "  --background       start without showing anything\n"
@@ -248,6 +252,7 @@ static void usage(FILE *out)
 int main(int argc, char **argv)
 {
     const char *socket_arg = NULL, *auth = NULL;
+    const char *tls_ca = NULL, *tls_cert = NULL, *tls_key = NULL;
     int max_clients = 0;
     bool debug = false;
     for (int i = 1; i < argc; i++) {
@@ -262,8 +267,16 @@ int main(int argc, char **argv)
         } else if (strcmp(a, "--max-clients") == 0 && v) {
             max_clients = atoi(v);
             i++;
-        } else if ((strcmp(a, "--max-workers") == 0 || strcmp(a, "--tls-ca-cert") == 0 ||
-                    strcmp(a, "--tls-cert") == 0 || strcmp(a, "--tls-key") == 0) && v) {
+        } else if (strcmp(a, "--tls-ca-cert") == 0 && v) {
+            tls_ca = v;
+            i++;
+        } else if (strcmp(a, "--tls-cert") == 0 && v) {
+            tls_cert = v;
+            i++;
+        } else if (strcmp(a, "--tls-key") == 0 && v) {
+            tls_key = v;
+            i++;
+        } else if (strcmp(a, "--max-workers") == 0 && v) {
             i++;
         } else if (strcmp(a, "--debug") == 0) {
             debug = true;
@@ -310,14 +323,30 @@ int main(int argc, char **argv)
 
     if (auth == NULL)
         auth = ks_settings_raw(&app.settings, KS_CFG_AUTH_TYPE);
+    /* add_secure_port() with get_tls_credentials(ca, cert, key): the
+     * arguments, or the settings */
+    struct ks_tls_ctx *tls = NULL;
     if (auth != NULL && auth[0] != '\0' && strcmp(auth, "simple") != 0) {
-        fprintf(stderr, "auth type %s: TLS is not supported yet\n", auth);
-        return 1;
+        char *s_ca = tls_ca ? NULL : ks_settings_get_string(&app.settings, "auth/cacert");
+        char *s_cert = tls_cert ? NULL : ks_settings_get_string(&app.settings, "auth/cert");
+        char *s_key = tls_key ? NULL : ks_settings_get_string(&app.settings, "auth/certkey");
+        char terr[256];
+        tls = ks_tls_server_new(tls_cert ? tls_cert : s_cert, tls_key ? tls_key : s_key,
+                                tls_ca ? tls_ca : s_ca, terr, sizeof(terr));
+        free(s_ca);
+        free(s_cert);
+        free(s_key);
+        if (tls == NULL) {
+            fprintf(stderr, "Invalid TLS credentials. Review the server key and cert files: %s\n",
+                    terr);
+            return 1;
+        }
     }
 
     create_socket_dirs();
     if (single_instance(&app) < 0) {
         printf("GUI already running, opening its window and exiting.\n");
+        ks_tls_ctx_free(tls);
         return 0;
     }
 
@@ -348,6 +377,7 @@ int main(int argc, char **argv)
         .address = addr,
         .max_msg = ks_ui_max_msg_length(maxlen),
         .max_clients = max_clients,
+        .tls = tls,
     };
     free(maxlen);
 
@@ -386,6 +416,7 @@ int main(int argc, char **argv)
     ks_notify_uninit();
 
     ks_ui_server_free(app.server);
+    ks_tls_ctx_free(tls);
     ks_prompt_free(app.prompt);
     ks_tray_free(app.tray);
     ks_stats_win_free(app.stats);

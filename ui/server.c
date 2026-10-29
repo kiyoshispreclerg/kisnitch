@@ -54,6 +54,7 @@ struct ks_ui_server {
     int64_t timer_at;
     size_t max_msg;
     int max_clients;
+    struct ks_tls_ctx *tls;
 };
 
 size_t ks_ui_max_msg_length(const char *s)
@@ -219,6 +220,7 @@ static gboolean on_accept(gint lfd, GIOCondition cond, gpointer data)
             .max_recv = srv->max_msg,
             .keepalive_time_ns = KEEPALIVE_TIME_NS,
             .keepalive_timeout_ns = KEEPALIVE_TIMEOUT_NS,
+            .tls = srv->tls,
         };
         static const struct ks_grpc_conn_cbs cbs = {
             .on_call = conn_on_call,
@@ -388,6 +390,7 @@ struct ks_ui_server *ks_ui_server_new(const struct ks_ui_server_opts *opts,
     srv->svc = svc;
     srv->max_msg = opts->max_msg ? opts->max_msg : KS_GRPC_MAX_RECV_DEFAULT;
     srv->max_clients = opts->max_clients;
+    srv->tls = opts->tls;
     const char *a = opts->address;
     int rc;
     if (strncmp(a, "unix-abstract:", 14) == 0) {

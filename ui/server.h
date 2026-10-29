@@ -26,11 +26,13 @@
 #include "ui/service.h"
 
 struct ks_ui_server;
+struct ks_tls_ctx;
 
 struct ks_ui_server_opts {
     const char *address;
     size_t max_msg;  /* 0: 4 MiB */
     int max_clients; /* 0: no limit (grpc.max_allowed_incoming_connections) */
+    struct ks_tls_ctx *tls; /* add_secure_port(): borrowed, NULL for insecure */
 };
 
 /* NULL with `err` filled if the address can't be listened on. */

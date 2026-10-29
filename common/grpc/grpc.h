@@ -98,6 +98,10 @@ struct ks_grpc_conn_opts {
      * nothing arrives within `keepalive_timeout_ns` more, close. 0 = off. */
     int64_t keepalive_time_ns;
     int64_t keepalive_timeout_ns;
+    /* TLS (common/grpc/tls.h), NULL for none: the handshake runs before
+     * the HTTP/2 preface. `tls_host` (client) is the name verified. */
+    struct ks_tls_ctx *tls;
+    const char *tls_host;
 };
 
 /* Takes ownership of `fd` (connected or connecting, non-blocking) also on

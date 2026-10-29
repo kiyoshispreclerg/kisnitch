@@ -12,8 +12,8 @@ SBINDIR    ?= $(PREFIX)/sbin
 SYSCONFDIR ?= /etc
 DESTDIR    ?=
 
-# Optional features (0 = off, 1 = on). TLS and EBPF aren't wired yet
-# (TLS: phase 10, EBPF: phase 9).
+# Optional features (0 = off, 1 = on). TLS=1: TLS between daemon and UI
+# (OpenSSL). EBPF isn't wired yet (phase 9).
 TLS    ?= 0
 EBPF   ?= 0
 NOTIFY ?= 0
@@ -86,4 +86,11 @@ ifeq ($(NOTIFY),1)
 GTK_PKGS   += libnotify
 GTK_CFLAGS := $(patsubst -I%,-isystem %,$(shell $(PKG_CONFIG) --cflags $(GTK_PKGS))) -DKS_HAVE_NOTIFY
 GTK_LIBS   := $(shell $(PKG_CONFIG) --libs $(GTK_PKGS)) -lm
+endif
+
+ifeq ($(TLS),1)
+TLS_CFLAGS := $(shell $(PKG_CONFIG) --cflags openssl)
+TLS_LIBS   := $(shell $(PKG_CONFIG) --libs openssl)
+CPPFLAGS += -DKS_HAVE_TLS $(TLS_CFLAGS)
+LDLIBS   += $(TLS_LIBS)
 endif

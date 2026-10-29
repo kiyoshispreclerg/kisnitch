@@ -13,6 +13,7 @@ COMMON_SRC = common/log.c \
              common/hash.c \
              common/strmap.c \
              common/grpc/grpc.c \
+             common/grpc/tls.c \
              common/pb_util.c \
              common/sysfw.c
 # Third-party and generated code: built with the base warnings only.
@@ -270,6 +271,11 @@ test-integration: all $(INTEGRATION_TESTS) $(BUILD)/tests/test_stats_gui
 	KISNITCH_GTK=$(CURDIR)/$(BUILD)/kisnitch-gtk tests/integration/stats_win.sh || fail=1; \
 	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd tests/integration/sysfw.sh || fail=1; \
 	STATS_GUI_TEST=$(CURDIR)/$(BUILD)/tests/test_stats_gui tests/integration/stats_gui.sh || fail=1; \
+	if $(PKG_CONFIG) --exists openssl; then \
+		$(MAKE) --no-print-directory TLS=1 BUILD=$(BUILD)/tls all && \
+		KISNITCHD=$(CURDIR)/$(BUILD)/tls/kisnitchd KISNITCH_GTK=$(CURDIR)/$(BUILD)/tls/kisnitch-gtk \
+			tests/integration/tls.sh || fail=1; \
+	else echo "SKIP (tls): openssl not found"; fi; \
 	if $(PKG_CONFIG) --exists libnotify; then \
 		$(MAKE) --no-print-directory NOTIFY=1 BUILD=$(BUILD)/notify $(BUILD)/notify/tests/test_notify && \
 		NOTIFY_TEST=$(CURDIR)/$(BUILD)/notify/tests/test_notify tests/integration/notify.sh || fail=1; \

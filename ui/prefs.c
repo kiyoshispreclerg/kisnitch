@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include "common/log.h"
+#include "common/grpc/tls.h"
 #include "ui/db.h"
 #include "ui/notify.h"
 #include "ui/prefs_node.h"
@@ -553,9 +554,9 @@ static bool save_ui_config(struct ks_prefs *p)
     free(saved);
 
     int ai = gtk_combo_box_get_active(GTK_COMBO_BOX(p->c_auth));
-    if (ai > 0) {
-        /* TLS for the UI's server comes with phase 10: main refuses to start with it */
-        set_error(p, "TLS is not supported yet (phase 10), the server stays on Simple");
+    if (ai > 0 && !ks_tls_available()) {
+        /* main would refuse to start with it */
+        set_error(p, "TLS is not supported by this build (TLS=1), the server stays on Simple");
         gtk_combo_box_set_active(GTK_COMBO_BOX(p->c_auth), 0);
         ai = 0;
     }
