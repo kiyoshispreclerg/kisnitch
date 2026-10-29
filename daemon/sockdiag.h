@@ -52,6 +52,32 @@ size_t ks_socket_info(const char *proto, const struct ks_ip *src_ip,
                       unsigned dst_port, int64_t *uid, int64_t *inodes,
                       size_t max);
 
+/* An AF_PACKET socket from SocketDiagPacket(0) (PacketDiagMsg). */
+struct ks_packet_sock {
+    uint8_t family, type;
+    uint16_t num; /* the protocol (ETH_P_ALL...), host order */
+    uint32_t inode, uid;
+    uint32_t cookie[2];
+    uint32_t index; /* Mclist.Index: see ks_packet_diag_parse() */
+};
+
+/* PacketDiagMsg.deserialize, quirks included: upstream reads the attributes
+ * at fixed byte offsets and takes the first one (PACKET_DIAG_INFO) for a
+ * PACKET_DIAG_MCLIST, so `index` is the low byte of the interface index.
+ * `b` is the message payload (after the nlmsghdr). */
+void ks_packet_diag_parse(const uint8_t *b, size_t len, struct ks_packet_sock *out);
+
+/* SocketDiagPacket(0): every AF_PACKET socket. Returns 0 (possibly with
+ * none), or -1 with `err` filled. */
+int ks_sock_dump_packet(struct ks_packet_sock **out, size_t *n, char *err, size_t errlen);
+
+/* An AF_XDP socket from vishvananda/netlink's SocketDiagXDP(). */
+struct ks_xdp_sock {
+    uint32_t inode, uid, ifindex;
+    uint32_t cookie[2];
+};
+int ks_sock_dump_xdp(struct ks_xdp_sock **out, size_t *n, char *err, size_t errlen);
+
 /* GetSocketInfoByInode: searches TCP and UDP, IPv4 and IPv6. 0 if found. */
 int ks_sock_find_by_inode(uint32_t inode, struct ks_sock *out);
 

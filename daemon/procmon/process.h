@@ -32,6 +32,27 @@ struct ks_tree_item {
     int pid;
 };
 
+/* procDescriptors: an entry of /proc/<pid>/fd. */
+struct ks_proc_fd {
+    char *name;    /* Name */
+    char *symlink; /* SymLink */
+    int64_t size;  /* Size */
+    int64_t mtime_sec; /* ModTime; KS_GO_ZERO_TIME if the target can't be lstat'ed */
+    long mtime_nsec;
+};
+
+/* What GetExtraInfo reads (only the "pid-monitor" task does). Each field
+ * keeps its last value when its file can't be read, as upstream. */
+struct ks_proc_extra {
+    int64_t statm[6]; /* Statm: Size, Resident, Shared, Text, Lib, Data (bytes) */
+    int64_t statm_dt; /* Statm.Dt */
+    int64_t io[6];    /* IOStats: RChar, WChar, SyscallRead, SyscallWrite, ReadBytes, WriteBytes */
+    char *status, *stat, *stack, *maps; /* Status, Stat, Stack, Maps (NULL: "") */
+    struct ks_proc_fd *fds; /* Descriptors (NULL with has_fds false: null) */
+    size_t nfds;
+    bool has_fds;
+};
+
 struct ks_proc {
     int refs;
     struct ks_process view; /* for the rules engine; see ks_proc_sync() */
@@ -53,6 +74,7 @@ struct ks_proc {
     struct ks_proc *parent;
     struct ks_tree_item *tree; /* Tree */
     size_t ntree;
+    struct ks_proc_extra *extra; /* owned; NULL until ks_proc_get_extra_info() */
     char dir[32]; /* "/proc/<pid>" */
 };
 
@@ -99,5 +121,23 @@ void ks_proc_reset_checksums(struct ks_proc *p);
 
 /* Looks up an environment variable (NULL if absent). */
 const char *ks_proc_getenv(const struct ks_proc *p, const char *name);
+
+/* A copy of `p` (strings, arguments, environment, checksums, tree; the
+ * parent is shared by reference), like the struct copy upstream's
+ * PIDMonitor makes of a cached process. NULL on OOM. */
+struct ks_proc *ks_proc_clone(const struct ks_proc *p);
+
+/* GetExtraInfo: environment, descriptors, I/O, status, stat, stack, maps
+ * and statm. Reads relative to `procfs` ("/proc" normally). */
+void ks_proc_get_extra_info(struct ks_proc *p);
+void ks_proc_get_extra_info_at(struct ks_proc *p, const char *procfs);
+
+/* json.Marshal(p), parents included. Returns a malloc'd string owned by
+ * the caller, NULL on OOM. The cJSON forms are owned by the caller;
+ * ks_proc_zero_cjson() is a zero Process{}. */
+char *ks_proc_json(const struct ks_proc *p);
+struct cJSON;
+struct cJSON *ks_proc_to_cjson(const struct ks_proc *p);
+struct cJSON *ks_proc_zero_cjson(void);
 
 #endif

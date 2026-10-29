@@ -13,7 +13,9 @@
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_conntrack.h>
 #include <linux/netlink.h>
+#include <linux/packet_diag.h>
 #include <linux/sock_diag.h>
+#include <linux/xdp_diag.h>
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -173,6 +175,241 @@ int ks_sock_dump(uint8_t family, uint8_t proto, struct ks_sock **out,
                  size_t *n, char *err, size_t errlen)
 {
     return request(family, proto, 0, out, n, err, errlen);
+}
+
+/* One NLM_F_DUMP request on NETLINK_SOCK_DIAG; `cb` gets each reply's
+ * payload. Returns 0, or -1 with `err` filled (an NLMSG_ERROR included). */
+typedef int (*dump_cb)(const uint8_t *data, size_t len, void *ctx);
+
+static int dump(void *req, size_t reqlen, dump_cb cb, void *ctx, char *err, size_t errlen)
+{
+    int fd = socket(AF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC, NETLINK_SOCK_DIAG);
+    if (fd < 0) {
+        snprintf(err, errlen, "socket: %s", strerror(errno));
+        return -1;
+    }
+    struct sockaddr_nl sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.nl_family = AF_NETLINK;
+    if (sendto(fd, req, reqlen, 0, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+        snprintf(err, errlen, "sendto: %s", strerror(errno));
+        close(fd);
+        return -1;
+    }
+    int ret = 0;
+    union {
+        struct nlmsghdr nh;
+        char buf[32768];
+    } u;
+    for (bool done = false; !done;) {
+        ssize_t len = recv(fd, u.buf, sizeof(u.buf), 0);
+        if (len < 0) {
+            if (errno == EINTR)
+                continue;
+            snprintf(err, errlen, "recv: %s", strerror(errno));
+            ret = -1;
+            break;
+        }
+        if (len == 0)
+            break;
+        for (struct nlmsghdr *nh = &u.nh; NLMSG_OK(nh, (size_t)len);
+             nh = NLMSG_NEXT(nh, len)) {
+            if (nh->nlmsg_type == NLMSG_DONE) {
+                done = true;
+                break;
+            }
+            if (nh->nlmsg_type == NLMSG_ERROR) {
+                const struct nlmsgerr *e = NLMSG_DATA(nh);
+                if (nh->nlmsg_len >= NLMSG_LENGTH(sizeof(*e)) && e->error != 0) {
+                    snprintf(err, errlen, "%s", strerror(-e->error));
+                    ret = -1;
+                }
+                done = true;
+                break;
+            }
+            if (cb(NLMSG_DATA(nh), nh->nlmsg_len - NLMSG_HDRLEN, ctx) < 0) {
+                snprintf(err, errlen, "out of memory");
+                ret = -1;
+                done = true;
+                break;
+            }
+        }
+    }
+    close(fd);
+    return ret;
+}
+
+/* Go's readBuffer over a message: reads past the end give zeros here
+ * (upstream would panic; the kernel always sends enough). */
+struct rbuf {
+    const uint8_t *b;
+    size_t len, pos;
+};
+
+static uint8_t rb_byte(struct rbuf *r)
+{
+    uint8_t v = r->pos < r->len ? r->b[r->pos] : 0;
+    r->pos++;
+    return v;
+}
+
+static uint32_t rb_native32(struct rbuf *r)
+{
+    uint8_t x[4];
+    for (int i = 0; i < 4; i++)
+        x[i] = rb_byte(r);
+    uint32_t v;
+    memcpy(&v, x, 4);
+    return v;
+}
+
+static uint32_t rb_be32(struct rbuf *r)
+{
+    uint32_t v = 0;
+    for (int i = 0; i < 4; i++)
+        v = v << 8 | rb_byte(r);
+    return v;
+}
+
+void ks_packet_diag_parse(const uint8_t *b, size_t len, struct ks_packet_sock *out)
+{
+    struct rbuf r = {b, len, 0};
+    memset(out, 0, sizeof(*out));
+    out->family = rb_byte(&r);
+    out->type = rb_byte(&r);
+    uint8_t n0 = rb_byte(&r), n1 = rb_byte(&r);
+    uint8_t nb[2] = {n0, n1};
+    memcpy(&out->num, nb, 2);
+    out->inode = rb_native32(&r);
+    out->cookie[0] = rb_native32(&r);
+    out->cookie[1] = rb_native32(&r);
+
+    /* the low byte of the next attribute's nla_len: 28 is
+     * sizePktDiagMclist, but it's PACKET_DIAG_INFO's size too */
+    if (rb_byte(&r) == 28) {
+        out->index = rb_be32(&r);
+        r.pos += 4 + 2 + 2 + 16; /* Count, Type, Alen, Addr */
+    }
+    rb_byte(&r);               /* "8, size of next msg" */
+    if (rb_byte(&r) == PACKET_DIAG_UID) {
+        rb_byte(&r);
+        out->uid = rb_native32(&r);
+    }
+}
+
+struct packet_ctx {
+    struct ks_packet_sock *v;
+    size_t n, cap;
+};
+
+static int packet_cb(const uint8_t *data, size_t len, void *ctx)
+{
+    struct packet_ctx *c = ctx;
+    if (c->n == c->cap) {
+        size_t cap = c->cap ? c->cap * 2 : 16;
+        struct ks_packet_sock *v = realloc(c->v, cap * sizeof(*v));
+        if (v == NULL)
+            return -1;
+        c->v = v;
+        c->cap = cap;
+    }
+    ks_packet_diag_parse(data, len, &c->v[c->n++]);
+    return 0;
+}
+
+int ks_sock_dump_packet(struct ks_packet_sock **out, size_t *n, char *err, size_t errlen)
+{
+    struct {
+        struct nlmsghdr nh;
+        struct packet_diag_req r;
+    } req;
+    memset(&req, 0, sizeof(req));
+    req.nh.nlmsg_len = sizeof(req);
+    req.nh.nlmsg_type = SOCK_DIAG_BY_FAMILY;
+    req.nh.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+    req.nh.nlmsg_seq = 1;
+    req.r.sdiag_family = AF_PACKET;
+    req.r.pdiag_show = PACKET_SHOW_INFO | PACKET_SHOW_MCLIST;
+    struct packet_ctx c = {0};
+    int ret = dump(&req, sizeof(req), packet_cb, &c, err, errlen);
+    if (ret < 0) {
+        free(c.v);
+        c.v = NULL;
+        c.n = 0;
+    }
+    *out = c.v;
+    *n = c.n;
+    return ret;
+}
+
+struct xdp_ctx {
+    struct ks_xdp_sock *v;
+    size_t n, cap;
+};
+
+static int xdp_cb(const uint8_t *data, size_t len, void *ctx)
+{
+    struct xdp_ctx *c = ctx;
+    if (len < sizeof(struct xdp_diag_msg))
+        return 0;
+    if (c->n == c->cap) {
+        size_t cap = c->cap ? c->cap * 2 : 8;
+        struct ks_xdp_sock *v = realloc(c->v, cap * sizeof(*v));
+        if (v == NULL)
+            return -1;
+        c->v = v;
+        c->cap = cap;
+    }
+    struct ks_xdp_sock *s = &c->v[c->n++];
+    memset(s, 0, sizeof(*s));
+    struct xdp_diag_msg m;
+    memcpy(&m, data, sizeof(m));
+    s->inode = m.xdiag_ino;
+    s->cookie[0] = m.xdiag_cookie[0];
+    s->cookie[1] = m.xdiag_cookie[1];
+    size_t off = NLMSG_ALIGN(sizeof(m));
+    while (off + sizeof(struct nlattr) <= len) {
+        struct nlattr a;
+        memcpy(&a, data + off, sizeof(a));
+        if (a.nla_len < sizeof(a) || off + a.nla_len > len)
+            break;
+        const uint8_t *payload = data + off + NLA_HDRLEN;
+        size_t plen = a.nla_len - NLA_HDRLEN;
+        if (a.nla_type == XDP_DIAG_INFO && plen >= sizeof(struct xdp_diag_info)) {
+            struct xdp_diag_info info;
+            memcpy(&info, payload, sizeof(info));
+            s->ifindex = info.ifindex;
+        } else if (a.nla_type == XDP_DIAG_UID && plen >= 4) {
+            memcpy(&s->uid, payload, 4);
+        }
+        off += NLA_ALIGN(a.nla_len);
+    }
+    return 0;
+}
+
+int ks_sock_dump_xdp(struct ks_xdp_sock **out, size_t *n, char *err, size_t errlen)
+{
+    struct {
+        struct nlmsghdr nh;
+        struct xdp_diag_req r;
+    } req;
+    memset(&req, 0, sizeof(req));
+    req.nh.nlmsg_len = sizeof(req);
+    req.nh.nlmsg_type = SOCK_DIAG_BY_FAMILY;
+    req.nh.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+    req.nh.nlmsg_seq = 1;
+    req.r.sdiag_family = AF_XDP;
+    req.r.xdiag_show = XDP_SHOW_INFO | XDP_SHOW_RING_CFG | XDP_SHOW_UMEM | XDP_SHOW_STATS;
+    struct xdp_ctx c = {0};
+    int ret = dump(&req, sizeof(req), xdp_cb, &c, err, errlen);
+    if (ret < 0) {
+        free(c.v);
+        c.v = NULL;
+        c.n = 0;
+    }
+    *out = c.v;
+    *n = c.n;
+    return ret;
 }
 
 /* inodes = append([]int{inode}, inodes...) */

@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
 
@@ -43,6 +44,17 @@ bool ks_json_is_subset(const cJSON *sub, const cJSON *super);
  * \ufffd), so files we write match the ones upstream writes byte for byte.
  * Returns a malloc'd string owned by the caller, or NULL on OOM. */
 char *ks_json_print_go(const cJSON *v, bool indent);
+
+/* Adds a Go integer (int64/uint64) as a raw number, which cJSON's double
+ * would round past 2^53; ks_json_print_go() prints it as is. */
+cJSON *ks_json_add_int(cJSON *obj, const char *name, int64_t v);
+cJSON *ks_json_add_uint(cJSON *obj, const char *name, uint64_t v);
+
+/* What time.Time.MarshalJSON writes (RFC 3339 with nanoseconds, local
+ * time), without the quotes. `sec` KS_GO_ZERO_TIME is Go's zero time. */
+#define KS_GO_ZERO_TIME INT64_MIN
+#define KS_GO_TIME_STRLEN 40
+void ks_go_time_rfc3339nano(int64_t sec, long nsec, char *buf, size_t len);
 
 /* json.Marshal of a Go string: the quoted, escaped string. Returns a malloc'd
  * string owned by the caller, or NULL on OOM. */

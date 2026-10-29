@@ -38,6 +38,8 @@
 #include "daemon/rules/rule.h"
 #include "daemon/sockdiag.h"
 #include "daemon/stats.h"
+#include "daemon/tasks/monitors.h"
+#include "daemon/tasks/tasks.h"
 
 /* Method paths of service protocol.UI. */
 #define RPC_PING          "/protocol.UI/Ping"
@@ -46,10 +48,9 @@
 #define RPC_NOTIFICATIONS "/protocol.UI/Notifications"
 #define RPC_POST_ALERT    "/protocol.UI/PostAlert"
 
-/* Task names (Name in each package of daemon/tasks/), handled from phase 10 on. */
-#define TASK_PID_MONITOR     "pid-monitor"
-#define TASK_NODE_MONITOR    "node-monitor"
-#define TASK_SOCKETS_MONITOR "sockets-monitor"
+/* monitorTaskEvents: the notification IDs the UI sends are timestamps; a
+ * task with a lower ID was loaded from disk and reports through alerts. */
+#define TASK_UI_MIN_ID 10000
 
 /* uint64(time.Time{}.UnixNano()): the Id getClientConfig() sends, from a
  * zero time.Time (the multiplication overflows int64 in Go). */
@@ -118,6 +119,8 @@ struct ks_uiclient {
     int inotify_fd;
 
     struct fw_reload *fw_reloads; /* RELOAD_FW_RULES waiting for errors */
+
+    struct ks_taskmgr *tasks; /* TaskMgr */
 };
 
 /* A RELOAD_FW_RULES notification whose reply waits for the errors of the
@@ -909,15 +912,56 @@ static void handle_delete_rules(struct ks_uiclient *c, const Protocol__Notificat
     send_reply(c, ntf, "", failed ? err : NULL);
 }
 
-/* TASK_START / TASK_STOP: the JSON is parsed as upstream does; the tasks
- * themselves arrive with phase 10. */
+/* monitorTaskEvents(): a task's result or error goes back as a reply to
+ * the notification that started it, or as an alert for the tasks loaded
+ * from disk. */
+static void on_task_result(void *ctx, const struct ks_task *t, const char *data,
+                           const char *err)
+{
+    struct ks_uiclient *c = ctx;
+    if (c->notifications != NULL && t->id > TASK_UI_MIN_ID) {
+        Protocol__Notification ntf = PROTOCOL__NOTIFICATION__INIT;
+        ntf.id = t->id; /* the reply's type is 0 (only logged) */
+        send_reply(c, &ntf, data, err);
+        return;
+    }
+    ks_uiclient_post_alert(c, err ? PROTOCOL__ALERT__TYPE__ERROR : PROTOCOL__ALERT__TYPE__INFO,
+                           PROTOCOL__ALERT__WHAT__GENERIC, PROTOCOL__ALERT__ACTION__SHOW_ALERT,
+                           PROTOCOL__ALERT__PRIORITY__MEDIUM, err ? "" : data);
+}
+
+static void add_task(struct ks_uiclient *c, const Protocol__Notification *ntf,
+                     struct ks_task *t)
+{
+    char err[512];
+    if (t == NULL) {
+        send_reply(c, ntf, "", "out of memory");
+        return;
+    }
+    t->id = ntf->id;
+    if (ks_taskmgr_add(c->tasks, t, err, sizeof(err)) < 0)
+        send_reply(c, ntf, "", err);
+}
+
+/* conf["pid"].(string) and strconv.Atoi: 0 and the PID, or -1 with the
+ * error to reply (upstream panics on the assertion). */
+static int task_pid(const cJSON *data, long long *pid, char *err, size_t errlen)
+{
+    const cJSON *p = cJSON_GetObjectItem(data, "pid");
+    if (ks_task_assert(p, "string", err, errlen) != NULL)
+        return -1;
+    return ks_task_atoi(p->valuestring, pid, err, errlen);
+}
+
+/* TASK_START / TASK_STOP: handleActionTaskStart/Stop. */
 static void handle_task(struct ks_uiclient *c, const Protocol__Notification *ntf, bool start)
 {
     cJSON *j = cJSON_Parse(ntf->data);
     /* TaskNotification{Name, Data}: Go's decoder takes "name" (what the UI
      * sends) as well as "Name"; cJSON's non-case-sensitive lookup does the same */
     const cJSON *name = j ? cJSON_GetObjectItem(j, "Name") : NULL;
-    if (j == NULL || (name != NULL && !cJSON_IsString(name) && !cJSON_IsNull(name))) {
+    if (j == NULL || !cJSON_IsObject(j) ||
+        (name != NULL && !cJSON_IsString(name) && !cJSON_IsNull(name))) {
         if (start) {
             ks_error("parsing TaskStart, err: invalid JSON, %s", ntf->data);
             send_reply(c, ntf, "", "invalid task notification");
@@ -931,17 +975,59 @@ static void handle_task(struct ks_uiclient *c, const Protocol__Notification *ntf
         return;
     }
     const char *n = cJSON_IsString(name) ? name->valuestring : "";
-    bool known = strcmp(n, TASK_PID_MONITOR) == 0 || strcmp(n, TASK_NODE_MONITOR) == 0 ||
-                 strcmp(n, TASK_SOCKETS_MONITOR) == 0;
-    if (!known) {
-        ks_debug("%s, unknown task: %s", start ? "TaskStart" : "TaskStop", ntf->data);
-    } else if (start) {
-        char e[300];
-        snprintf(e, sizeof(e), "task %s is not supported yet", n);
-        ks_warning("[tasks] %s", e);
-        send_reply(c, ntf, "", e);
+    const cJSON *data = cJSON_GetObjectItem(j, "Data");
+    const char *what = start ? "TaskStart" : "TaskStop";
+    char err[512], tname[600];
+    long long pid;
+
+    if (strcmp(n, KS_TASK_PID_MONITOR) == 0) {
+        if (!cJSON_IsObject(data)) {
+            ks_error("[pidmon] %s.Data, PID err (string expected): %s", what, ntf->data);
+        } else if (task_pid(data, &pid, err, sizeof(err)) < 0) {
+            ks_error("[pidmon] %s.Data, PID err: %s, %s", what, err, ntf->data);
+            send_reply(c, ntf, "", err);
+        } else if (start) {
+            /* monitorProcessDetails() */
+            char dir[48];
+            struct stat st;
+            snprintf(dir, sizeof(dir), "/proc/%lld", pid);
+            const cJSON *iv = cJSON_GetObjectItem(data, "interval");
+            if (pid < INT_MIN || pid > INT_MAX || stat(dir, &st) < 0)
+                send_reply(c, ntf, "", "The process is no longer running");
+            else
+                add_task(c, ntf,
+                         ks_pidmon_new((int)pid, cJSON_IsString(iv) ? iv->valuestring : "",
+                                       true));
+        } else {
+            snprintf(tname, sizeof(tname), "%s-%lld", KS_TASK_PID_MONITOR, pid);
+            ks_taskmgr_remove(c->tasks, tname, err, sizeof(err));
+        }
+    } else if (strcmp(n, KS_TASK_NODE_MONITOR) == 0) {
+        const cJSON *node = cJSON_GetObjectItem(data, "node");
+        const cJSON *iv = cJSON_GetObjectItem(data, "interval");
+        if (!cJSON_IsObject(data)) {
+            ks_error("[nodemon] %s.Data, \"node\" err (string expected): %s", what, ntf->data);
+        } else if (ks_task_assert(node, "string", err, sizeof(err)) != NULL ||
+                   (start && ks_task_assert(iv, "string", err, sizeof(err)) != NULL)) {
+            /* conf["node"].(string) panics upstream */
+            ks_error("[nodemon] %s.Data: %s, %s", what, err, ntf->data);
+            send_reply(c, ntf, "", err);
+        } else if (start) {
+            add_task(c, ntf, ks_nodemon_new(node->valuestring, iv->valuestring, true));
+        } else {
+            snprintf(tname, sizeof(tname), "%s-%s", KS_TASK_NODE_MONITOR, node->valuestring);
+            ks_taskmgr_remove(c->tasks, tname, err, sizeof(err));
+        }
+    } else if (strcmp(n, KS_TASK_SOCKETS_MONITOR) == 0) {
+        struct ks_sockmon_config cfg;
+        if (!start)
+            ks_taskmgr_remove(c->tasks, KS_TASK_SOCKETS_MONITOR, err, sizeof(err));
+        else if (ks_sockmon_config_parse(data, &cfg, err, sizeof(err)) < 0)
+            send_reply(c, ntf, "", err);
+        else
+            add_task(c, ntf, ks_sockmon_new(&cfg, true));
     } else {
-        ks_debug("[tasks] TaskStop %s: no such task running", n);
+        ks_debug("%s, unknown task: %s", what, ntf->data);
     }
     cJSON_Delete(j);
 }
@@ -1126,7 +1212,8 @@ static void stop_notifications(struct ks_uiclient *c)
         ks_grpc_call_close_send(call);
     ks_info("Stop receiving notifications");
     disconnect(c);
-    /* TaskMgr.StopTempTasks(): no tasks yet (phase 10) */
+    if (c->tasks != NULL)
+        ks_taskmgr_stop_temp(c->tasks);
 }
 
 static void ntf_on_message(struct ks_grpc_call *call, const uint8_t *msg, size_t len,
@@ -1624,6 +1711,11 @@ static void on_config_event(int fd, uint32_t events, void *data)
         load_disk_configuration(c, true);
 }
 
+size_t ks_uiclient_task_count(const struct ks_uiclient *c)
+{
+    return c->tasks ? ks_taskmgr_count(c->tasks) : 0;
+}
+
 struct ks_uiclient *ks_uiclient_new(const struct ks_uiclient_deps *deps,
                                     const char *socket_path, const char *config_file)
 {
@@ -1657,7 +1749,12 @@ struct ks_uiclient *ks_uiclient_new(const struct ks_uiclient_deps *deps,
     if (socket_path != NULL && socket_path[0] != '\0')
         set_socket_path(c, get_socket_path(c, socket_path));
     /* procmon.EventsCache.SetComputeChecksums() and rules.EnableChecksums()
-     * already ran in reloadConfiguration(). TaskMgr: phase 10. */
+     * already ran in reloadConfiguration(). */
+    c->tasks = ks_taskmgr_new(deps->loop, on_task_result, c);
+    if (c->tasks == NULL) {
+        ks_uiclient_free(c);
+        return NULL;
+    }
     return c;
 }
 
@@ -1665,6 +1762,8 @@ void ks_uiclient_free(struct ks_uiclient *c)
 {
     if (c == NULL)
         return;
+    ks_taskmgr_free(c->tasks); /* TaskMgr.Stop() */
+    c->tasks = NULL;
     stop_poller(c);
     resolve_free(c);
     while (c->fw_reloads != NULL)

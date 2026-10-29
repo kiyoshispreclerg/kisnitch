@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2026 the Kisnitch contributors.
  */
+#define _DEFAULT_SOURCE /* tm_gmtoff */
 #include "common/json_util.h"
 
 #include <errno.h>
@@ -11,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "common/log.h"
@@ -466,6 +468,8 @@ static void put_go_value(struct sbuf *b, const cJSON *v, bool indent, int depth)
         sb_str(b, "true");
     } else if (cJSON_IsNumber(v)) {
         put_go_number(b, v->valuedouble);
+    } else if (cJSON_IsRaw(v)) {
+        sb_str(b, v->valuestring != NULL ? v->valuestring : "null");
     } else if (cJSON_IsString(v)) {
         put_go_string(b, v->valuestring);
     } else if (cJSON_IsArray(v) || cJSON_IsObject(v)) {
@@ -498,6 +502,56 @@ char *ks_json_print_go(const cJSON *v, bool indent)
         return NULL;
     }
     return b.p;
+}
+
+cJSON *ks_json_add_int(cJSON *obj, const char *name, int64_t v)
+{
+    char buf[24];
+    snprintf(buf, sizeof(buf), "%lld", (long long)v);
+    return cJSON_AddRawToObject(obj, name, buf);
+}
+
+cJSON *ks_json_add_uint(cJSON *obj, const char *name, uint64_t v)
+{
+    char buf[24];
+    snprintf(buf, sizeof(buf), "%llu", (unsigned long long)v);
+    return cJSON_AddRawToObject(obj, name, buf);
+}
+
+void ks_go_time_rfc3339nano(int64_t sec, long nsec, char *buf, size_t len)
+{
+    /* The zero time.Time (no file info) is UTC; the others are in time.Local. */
+    if (sec == KS_GO_ZERO_TIME) {
+        snprintf(buf, len, "0001-01-01T00:00:00Z");
+        return;
+    }
+    time_t t = (time_t)sec;
+    struct tm tm;
+    if (localtime_r(&t, &tm) == NULL) {
+        snprintf(buf, len, "0001-01-01T00:00:00Z");
+        return;
+    }
+    /* "2006-01-02T15:04:05.999999999Z07:00": the fraction without trailing
+     * zeros (none at all if it's 0), "Z" for a zero offset. */
+    char frac[24] = "";
+    if (nsec > 0) {
+        snprintf(frac, sizeof(frac), ".%09ld", nsec);
+        size_t n = strlen(frac);
+        while (n > 1 && frac[n - 1] == '0')
+            frac[--n] = '\0';
+    }
+    char zone[40];
+    long off = tm.tm_gmtoff;
+    if (off == 0) {
+        snprintf(zone, sizeof(zone), "Z");
+    } else {
+        char sign = off < 0 ? '-' : '+';
+        if (off < 0)
+            off = -off;
+        snprintf(zone, sizeof(zone), "%c%02ld:%02ld", sign, off / 3600, (off / 60) % 60);
+    }
+    snprintf(buf, len, "%04d-%02d-%02dT%02d:%02d:%02d%s%s", tm.tm_year + 1900,
+             tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, frac, zone);
 }
 
 char *ks_json_quote_go(const char *s)

@@ -78,6 +78,8 @@ bool ks_uiclient_is_asking(const struct ks_uiclient *c);
  * says otherwise), the configured one while not. */
 const char *ks_uiclient_default_action(const struct ks_uiclient *c);
 bool ks_uiclient_intercept_unknown(const struct ks_uiclient *c);
+/* Tasks running (TaskMgr), for tests. */
+size_t ks_uiclient_task_count(const struct ks_uiclient *c);
 /* The configuration in use (c.config). */
 const struct ks_config *ks_uiclient_config(const struct ks_uiclient *c);
 

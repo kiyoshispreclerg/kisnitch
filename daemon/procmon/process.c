@@ -14,14 +14,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
+#include "cJSON.h"
 #include "common/hash.h"
 #include "common/json_util.h"
 #include "common/log.h"
+#include "daemon/dns/cache.h"
 #include "daemon/procmon/cache.h"
+#include "daemon/sockdiag.h"
 
 #define PROC_FILE_MAX (16u * 1024 * 1024)
 /* Guards against parent loops (PID reuse races). */
@@ -136,6 +140,22 @@ static void free_tree(struct ks_proc *p)
     p->ntree = 0;
 }
 
+static void free_extra(struct ks_proc_extra *x)
+{
+    if (x == NULL)
+        return;
+    free(x->status);
+    free(x->stat);
+    free(x->stack);
+    free(x->maps);
+    for (size_t i = 0; i < x->nfds; i++) {
+        free(x->fds[i].name);
+        free(x->fds[i].symlink);
+    }
+    free(x->fds);
+    free(x);
+}
+
 void ks_proc_unref(struct ks_proc *p)
 {
     /* Iterative, so a long chain of parents can't blow the stack. */
@@ -151,6 +171,7 @@ void ks_proc_unref(struct ks_proc *p)
         free(p->checksum_md5);
         free(p->checksum_sha1);
         free_tree(p);
+        free_extra(p->extra);
         free(p);
         p = parent;
     }
@@ -654,4 +675,448 @@ void ks_proc_compute_checksum(struct ks_proc *p, const char *algo)
         ks_debug("[hashing %s] Unable to open path: %s", algo, paths[i]);
     }
     ks_proc_sync(p);
+}
+
+/* ---- copies ----------------------------------------------------------- */
+
+struct ks_proc *ks_proc_clone(const struct ks_proc *p)
+{
+    struct ks_proc *c = ks_proc_new_empty(p->pid, p->comm);
+    if (c == NULL)
+        return NULL;
+    c->ppid = p->ppid;
+    c->starttime = p->starttime;
+    set_str(&c->path, p->path);
+    set_str(&c->root, p->root);
+    set_str(&c->real_path, p->real_path);
+    set_str(&c->cwd, p->cwd);
+    bool oom = false;
+    if (p->nargs > 0) {
+        if ((c->args = calloc(p->nargs, sizeof(*c->args))) == NULL)
+            oom = true;
+        for (size_t i = 0; !oom && i < p->nargs; i++, c->nargs++)
+            if ((c->args[i] = strdup(p->args[i])) == NULL)
+                oom = true;
+    }
+    if (!oom && p->nenv > 0) {
+        if ((c->env = calloc(p->nenv, sizeof(*c->env))) == NULL)
+            oom = true;
+        for (size_t i = 0; !oom && i < p->nenv; i++) {
+            char *n = strdup(p->env[i].name), *v = strdup(p->env[i].value);
+            if (n == NULL || v == NULL) {
+                free(n);
+                free(v);
+                oom = true;
+                break;
+            }
+            c->env[i].name = n;
+            c->env[i].value = v;
+            c->nenv++;
+        }
+    }
+    if (!oom && p->checksum_md5 != NULL && (c->checksum_md5 = strdup(p->checksum_md5)) == NULL)
+        oom = true;
+    if (!oom && p->checksum_sha1 != NULL &&
+        (c->checksum_sha1 = strdup(p->checksum_sha1)) == NULL)
+        oom = true;
+    for (size_t i = 0; !oom && i < p->ntree; i++)
+        if (tree_add(c, p->tree[i].path, p->tree[i].pid) < 0)
+            oom = true;
+    if (oom) {
+        ks_proc_unref(c);
+        return NULL;
+    }
+    c->parent = ks_proc_ref(p->parent);
+    ks_proc_sync(c);
+    return c;
+}
+
+/* ---- GetExtraInfo ----------------------------------------------------- */
+
+/* strconv.ParseInt(s, 10, 64): 0 on syntax errors, clamped on overflow. */
+static int64_t parse_int64(const char *s)
+{
+    bool neg = false;
+    if (*s == '+' || *s == '-')
+        neg = *s++ == '-';
+    if (*s == '\0')
+        return 0;
+    uint64_t v = 0;
+    bool over = false;
+    for (; *s != '\0'; s++) {
+        if (*s < '0' || *s > '9')
+            return 0;
+        if (v > (UINT64_MAX - 9) / 10)
+            over = true;
+        else
+            v = v * 10 + (uint64_t)(*s - '0');
+    }
+    if (neg)
+        return over || v > (uint64_t)INT64_MAX + 1 ? INT64_MIN : (int64_t)(0 - v);
+    return over || v > (uint64_t)INT64_MAX ? INT64_MAX : (int64_t)v;
+}
+
+/* Reads a whole file into *dst; keeps the old value if it can't be read. */
+static void read_into(const char *path, char **dst)
+{
+    char err[128];
+    size_t len;
+    char *data = ks_read_file(path, PROC_FILE_MAX, &len, err, sizeof(err));
+    if (data == NULL)
+        return;
+    free(*dst);
+    *dst = data;
+}
+
+/* netlink.TCPStatesMap */
+static const char *tcp_state_name(uint8_t st)
+{
+    static const char *const names[] = {
+        "invalid",   "established", "syn_sent",   "syn_recv", "fin_wait1", "fin_wait2",
+        "time_wait", "close",       "close_wait", "last_ack", "listen",    "closing",
+    };
+    return st < sizeof(names) / sizeof(names[0]) ? names[st] : "";
+}
+
+/* `socket:\[([0-9]+)\]`: the inode of a socket link, -1 if not one. */
+static int64_t socket_inode(const char *link, char *digits, size_t len)
+{
+    for (const char *s = strstr(link, "socket:["); s != NULL; s = strstr(s + 1, "socket:[")) {
+        const char *d = s + 8, *e = d;
+        while (*e >= '0' && *e <= '9')
+            e++;
+        if (e > d && *e == ']') {
+            snprintf(digits, len, "%.*s", (int)(e - d), d);
+            /* GetSocketInfoByInode: strconv.ParseUint(inode, 10, 32) */
+            if (e - d > 10)
+                return -2;
+            unsigned long long v = strtoull(digits, NULL, 10);
+            return v > UINT32_MAX ? -2 : (int64_t)v;
+        }
+    }
+    return -1;
+}
+
+static void read_descriptors(struct ks_proc_extra *x, const char *dir)
+{
+    char fd_dir[320];
+    snprintf(fd_dir, sizeof(fd_dir), "%s/fd/", dir);
+    DIR *d = opendir(fd_dir);
+    if (d == NULL)
+        return;
+    for (size_t i = 0; i < x->nfds; i++) {
+        free(x->fds[i].name);
+        free(x->fds[i].symlink);
+    }
+    free(x->fds);
+    x->fds = NULL;
+    x->nfds = 0;
+    x->has_fds = false; /* p.Descriptors = nil */
+    size_t cap = 0;
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0)
+            continue;
+        char path[640];
+        snprintf(path, sizeof(path), "%s%s", fd_dir, e->d_name);
+        char *link = read_link(path);
+        if (link == NULL)
+            continue;
+        char digits[32];
+        int64_t inode = socket_inode(link, digits, sizeof(digits));
+        struct ks_sock so;
+        if (inode >= 0 && ks_sock_find_by_inode((uint32_t)inode, &so) == 0) {
+            char src[64], dst[64], text[512];
+            ks_ip_string(&so.src, src, sizeof(src));
+            ks_ip_string(&so.dst, dst, sizeof(dst));
+            char *host = ks_dns_host_or(&so.dst, dst);
+            /* upstream prints the descriptor's name where the inode was */
+            snprintf(text, sizeof(text), "socket:[%s] - %u:%s -> %s:%u, state: %s", e->d_name,
+                     (unsigned)so.sport, src, host ? host : dst, (unsigned)so.dport,
+                     tcp_state_name(so.state));
+            free(host);
+            char *t = strdup(text);
+            if (t != NULL) {
+                free(link);
+                link = t;
+            }
+        }
+        if (x->nfds == cap) {
+            cap = cap ? cap * 2 : 16;
+            struct ks_proc_fd *nf = realloc(x->fds, cap * sizeof(*nf));
+            if (nf == NULL) {
+                free(link);
+                break;
+            }
+            x->fds = nf;
+        }
+        struct ks_proc_fd *f = &x->fds[x->nfds];
+        memset(f, 0, sizeof(*f));
+        f->mtime_sec = KS_GO_ZERO_TIME;
+        if ((f->name = strdup(e->d_name)) == NULL) {
+            free(link);
+            break;
+        }
+        f->symlink = link;
+        /* os.Lstat(link): the link's target as a path */
+        struct stat st;
+        if (lstat(link, &st) == 0) {
+            f->size = (int64_t)st.st_size;
+            f->mtime_sec = (int64_t)st.st_mtim.tv_sec;
+            f->mtime_nsec = st.st_mtim.tv_nsec;
+        }
+        x->nfds++;
+        x->has_fds = true;
+    }
+    closedir(d);
+}
+
+static void read_io_stats(struct ks_proc_extra *x, const char *dir)
+{
+    char path[320], err[128];
+    size_t len;
+    snprintf(path, sizeof(path), "%s/io", dir);
+    char *data = ks_read_file(path, PROC_FILE_MAX, &len, err, sizeof(err));
+    if (data == NULL)
+        return;
+    static const char *const keys[6] = {"rchar:",  "wchar:",       "syscr:",
+                                        "syscw:", "read_bytes:", "write_bytes:"};
+    memset(x->io, 0, sizeof(x->io)); /* p.IOStats = &procIOstats{} */
+    char *save = NULL;
+    for (char *line = strtok_r(data, "\n", &save); line != NULL;
+         line = strtok_r(NULL, "\n", &save)) {
+        /* strings.Split(line, " "): the key, then the value up to the
+         * next space */
+        char *sp = strchr(line, ' ');
+        if (sp == NULL)
+            continue;
+        *sp = '\0';
+        char *val = sp + 1, *end = strchr(val, ' ');
+        if (end != NULL)
+            *end = '\0';
+        for (int i = 0; i < 6; i++)
+            if (strcmp(line, keys[i]) == 0)
+                x->io[i] = parse_int64(val);
+    }
+    free(data);
+}
+
+static void read_statm(struct ks_proc_extra *x, const char *dir)
+{
+    char path[320], err[128];
+    size_t len;
+    snprintf(path, sizeof(path), "%s/statm", dir);
+    char *data = ks_read_file(path, PROC_FILE_MAX, &len, err, sizeof(err));
+    if (data == NULL)
+        return;
+    long long v[7] = {0};
+    sscanf(data, "%lld %lld %lld %lld %lld %lld %lld", &v[0], &v[1], &v[2], &v[3], &v[4],
+           &v[5], &v[6]);
+    free(data);
+    int64_t page = (int64_t)sysconf(_SC_PAGESIZE);
+    for (int i = 0; i < 6; i++)
+        x->statm[i] = (int64_t)v[i] * page;
+    x->statm_dt = (int64_t)v[6] * page;
+}
+
+void ks_proc_get_extra_info_at(struct ks_proc *p, const char *procfs)
+{
+    if (p->extra == NULL && (p->extra = calloc(1, sizeof(*p->extra))) == NULL)
+        return;
+    struct ks_proc_extra *x = p->extra;
+    /* procfs is "/proc", or a short directory in the tests */
+    char dir[256], path[320];
+    snprintf(dir, sizeof(dir), "%s/%d", procfs, p->pid);
+
+    snprintf(path, sizeof(path), "%s/environ", dir);
+    ks_proc_read_env_file(p, path);
+    read_descriptors(x, dir);
+    read_io_stats(x, dir);
+    /* readStatus */
+    snprintf(path, sizeof(path), "%s/status", dir);
+    read_into(path, &x->status);
+    snprintf(path, sizeof(path), "%s/stat", dir);
+    read_into(path, &x->stat);
+    snprintf(path, sizeof(path), "%s/stack", dir);
+    read_into(path, &x->stack);
+    snprintf(path, sizeof(path), "%s/maps", dir);
+    read_into(path, &x->maps);
+    read_statm(x, dir);
+}
+
+void ks_proc_get_extra_info(struct ks_proc *p)
+{
+    ks_proc_get_extra_info_at(p, "/proc");
+}
+
+/* ---- json.Marshal ----------------------------------------------------- */
+
+static int env_cmp(const void *a, const void *b)
+{
+    const struct ks_env_var *x = *(const struct ks_env_var *const *)a;
+    const struct ks_env_var *y = *(const struct ks_env_var *const *)b;
+    return strcmp(x->name, y->name);
+}
+
+static cJSON *int_object(const char *const *names, const int64_t *values, size_t n)
+{
+    cJSON *o = cJSON_CreateObject();
+    for (size_t i = 0; o != NULL && i < n; i++)
+        if (ks_json_add_int(o, names[i], values[i]) == NULL) {
+            cJSON_Delete(o);
+            return NULL;
+        }
+    return o;
+}
+
+static bool add_str(cJSON *o, const char *name, const char *v)
+{
+    return cJSON_AddStringToObject(o, name, v != NULL ? v : "") != NULL;
+}
+
+static const char *const statm_names[7] = {"Size", "Resident", "Shared", "Text",
+                                           "Lib",  "Data",     "Dt"};
+static const char *const io_names[6] = {"RChar",     "WChar",     "SyscallRead",
+                                        "SyscallWrite", "ReadBytes", "WriteBytes"};
+
+static cJSON *descriptors_json(const struct ks_proc_extra *x)
+{
+    if (x == NULL || !x->has_fds)
+        return cJSON_CreateNull();
+    cJSON *a = cJSON_CreateArray();
+    for (size_t i = 0; a != NULL && i < x->nfds; i++) {
+        const struct ks_proc_fd *f = &x->fds[i];
+        cJSON *o = cJSON_CreateObject();
+        char t[KS_GO_TIME_STRLEN];
+        ks_go_time_rfc3339nano(f->mtime_sec, f->mtime_nsec, t, sizeof(t));
+        if (o == NULL || !add_str(o, "ModTime", t) || !add_str(o, "Name", f->name) ||
+            !add_str(o, "SymLink", f->symlink) || ks_json_add_int(o, "Size", f->size) == NULL ||
+            !cJSON_AddItemToArray(a, o)) {
+            cJSON_Delete(o);
+            cJSON_Delete(a);
+            return NULL;
+        }
+    }
+    return a;
+}
+
+static cJSON *proc_json(const struct ks_proc *p, int depth)
+{
+    if (p == NULL || depth > MAX_PARENTS)
+        return cJSON_CreateNull();
+    cJSON *o = cJSON_CreateObject();
+    if (o == NULL)
+        return NULL;
+    const struct ks_proc_extra *x = p->extra;
+    int64_t statm[7] = {0}, io[6] = {0}, net[2] = {0};
+    if (x != NULL) {
+        memcpy(statm, x->statm, sizeof(x->statm));
+        statm[6] = x->statm_dt;
+        memcpy(io, x->io, sizeof(io));
+    }
+    static const char *const net_names[2] = {"ReadBytes", "WriteBytes"};
+    bool ok = cJSON_AddItemToObject(o, "Statm", int_object(statm_names, statm, 7)) &&
+              cJSON_AddItemToObject(o, "Parent", proc_json(p->parent, depth + 1)) &&
+              cJSON_AddItemToObject(o, "IOStats", int_object(io_names, io, 6)) &&
+              cJSON_AddItemToObject(o, "NetStats", int_object(net_names, net, 2));
+
+    /* Env: a Go map, so sorted by name */
+    cJSON *env = ok ? cJSON_AddObjectToObject(o, "Env") : NULL;
+    ok = env != NULL;
+    if (ok && p->nenv > 0) {
+        const struct ks_env_var **sorted = malloc(p->nenv * sizeof(*sorted));
+        ok = sorted != NULL;
+        for (size_t i = 0; ok && i < p->nenv; i++)
+            sorted[i] = &p->env[i];
+        if (ok)
+            qsort(sorted, p->nenv, sizeof(*sorted), env_cmp);
+        for (size_t i = 0; ok && i < p->nenv; i++)
+            ok = add_str(env, sorted[i]->name, sorted[i]->value);
+        free(sorted);
+    }
+    cJSON *sums = ok ? cJSON_AddObjectToObject(o, "Checksums") : NULL;
+    ok = sums != NULL;
+    if (ok && p->checksum_md5 != NULL)
+        ok = add_str(sums, KS_HASH_MD5, p->checksum_md5);
+    if (ok && p->checksum_sha1 != NULL)
+        ok = add_str(sums, KS_HASH_SHA1, p->checksum_sha1);
+
+    ok = ok && add_str(o, "Status", x ? x->status : NULL) &&
+         add_str(o, "Stat", x ? x->stat : NULL) && add_str(o, "Stack", x ? x->stack : NULL) &&
+         add_str(o, "Maps", x ? x->maps : NULL) && add_str(o, "Comm", p->comm) &&
+         add_str(o, "Path", p->path) && add_str(o, "Root", p->root) &&
+         add_str(o, "RealPath", p->real_path) && add_str(o, "CWD", p->cwd);
+
+    /* Tree: []*protocol.StringInt, whose JSON tags are "key,omitempty" and
+     * "value,omitempty" */
+    cJSON *tree = ok ? cJSON_AddArrayToObject(o, "Tree") : NULL;
+    ok = tree != NULL;
+    for (size_t i = 0; ok && i < p->ntree; i++) {
+        cJSON *t = cJSON_CreateObject();
+        ok = t != NULL && cJSON_AddItemToArray(tree, t);
+        if (!ok) {
+            cJSON_Delete(t);
+            break;
+        }
+        if (p->tree[i].path[0] != '\0')
+            ok = add_str(t, "key", p->tree[i].path);
+        if (ok && p->tree[i].pid != 0)
+            ok = ks_json_add_uint(t, "value", (uint32_t)p->tree[i].pid) != NULL;
+    }
+    ok = ok && cJSON_AddItemToObject(o, "Descriptors", descriptors_json(x));
+    cJSON *args = ok ? cJSON_AddArrayToObject(o, "Args") : NULL;
+    ok = args != NULL;
+    for (size_t i = 0; ok && i < p->nargs; i++) {
+        cJSON *a = cJSON_CreateString(p->args[i]);
+        ok = a != NULL && cJSON_AddItemToArray(args, a);
+        if (!ok)
+            cJSON_Delete(a);
+    }
+    ok = ok && ks_json_add_int(o, "Starttime", p->starttime) && ks_json_add_int(o, "ID", p->pid) &&
+         ks_json_add_int(o, "PPID", p->ppid) && ks_json_add_int(o, "UID", 0);
+    if (!ok) {
+        cJSON_Delete(o);
+        return NULL;
+    }
+    return o;
+}
+
+cJSON *ks_proc_to_cjson(const struct ks_proc *p)
+{
+    return proc_json(p, 0);
+}
+
+cJSON *ks_proc_zero_cjson(void)
+{
+    /* Process{}: nil pointers, maps and slices are null */
+    static const char *const fields[] = {"Statm", "Parent", "IOStats", "NetStats", "Env",
+                                         "Checksums"};
+    static const char *const strs[] = {"Status", "Stat", "Stack", "Maps", "Comm",
+                                       "Path",   "Root", "RealPath", "CWD"};
+    static const char *const tail[] = {"Starttime", "ID", "PPID", "UID"};
+    cJSON *o = cJSON_CreateObject();
+    bool ok = o != NULL;
+    for (size_t i = 0; ok && i < sizeof(fields) / sizeof(fields[0]); i++)
+        ok = cJSON_AddNullToObject(o, fields[i]) != NULL;
+    for (size_t i = 0; ok && i < sizeof(strs) / sizeof(strs[0]); i++)
+        ok = add_str(o, strs[i], "");
+    ok = ok && cJSON_AddNullToObject(o, "Tree") && cJSON_AddNullToObject(o, "Descriptors") &&
+         cJSON_AddNullToObject(o, "Args");
+    for (size_t i = 0; ok && i < sizeof(tail) / sizeof(tail[0]); i++)
+        ok = ks_json_add_int(o, tail[i], 0) != NULL;
+    if (!ok) {
+        cJSON_Delete(o);
+        return NULL;
+    }
+    return o;
+}
+
+char *ks_proc_json(const struct ks_proc *p)
+{
+    cJSON *j = ks_proc_to_cjson(p);
+    if (j == NULL)
+        return NULL;
+    char *s = ks_json_print_go(j, false);
+    cJSON_Delete(j);
+    return s;
 }
