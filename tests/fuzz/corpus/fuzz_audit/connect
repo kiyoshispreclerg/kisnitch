@@ -1,0 +1,4 @@
+type=SYSCALL msg=audit(1700000000.123:4567): arch=c000003e syscall=42 success=no exit=-115 ppid=1000 pid=4242 uid=1000 comm="curl" exe="/usr/bin/curl" key="opensnitch"
+type=SOCKADDR msg=audit(1700000000.123:4567): saddr=020001BB01010101
+type=CWD msg=audit(1700000000.123:4567): cwd=2F686F6D65
+type=EOE msg=audit(1700000000.123:4567): 
