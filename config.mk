@@ -12,11 +12,13 @@ SBINDIR    ?= $(PREFIX)/sbin
 SYSCONFDIR ?= /etc
 DESTDIR    ?=
 
-# Optional features (0 = off, 1 = on). Not wired yet: they gain meaning in
-# later phases (TLS: 10, EBPF: 9, NOTIFY: 10).
+# Optional features (0 = off, 1 = on). TLS, EBPF and NOTIFY aren't wired
+# yet: they gain meaning in later phases (TLS: 10, EBPF: 9, NOTIFY: 10).
 TLS    ?= 0
 EBPF   ?= 0
 NOTIFY ?= 0
+# CURL=1: the "downloader" task (daemon/tasks/downloader.c) with libcurl.
+CURL   ?= 0
 
 CC         ?= cc
 AR         ?= ar
@@ -70,4 +72,11 @@ SANITIZE ?= 0
 ifeq ($(SANITIZE),1)
 OPTFLAGS = -O1 -g -fno-omit-frame-pointer
 SANFLAGS = -fsanitize=address,undefined -fno-sanitize-recover=all
+endif
+
+ifeq ($(CURL),1)
+CURL_CFLAGS := $(shell $(PKG_CONFIG) --cflags libcurl)
+CURL_LIBS   := $(shell $(PKG_CONFIG) --libs libcurl)
+CPPFLAGS += -DKS_HAVE_CURL $(CURL_CFLAGS)
+LDLIBS   += $(CURL_LIBS)
 endif

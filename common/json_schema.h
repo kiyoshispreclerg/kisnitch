@@ -3,7 +3,7 @@
  * Table-driven mapping between JSON and C structs, following the rules of
  * Go's encoding/json for the types upstream uses (string, bool, int, uint16,
  * uint32, uint64 with the ",string" option, *int32, nested structs, pointers
- * to structs and slices of structs).
+ * to structs, slices of structs, []string and []int).
  *
  * Decoding:
  *   - Missing keys keep the zero value; unknown keys are ignored.
@@ -45,6 +45,8 @@ enum ks_ftype {
     KS_T_STRUCT,    /* nested struct described by `sub` */
     KS_T_PTR,       /* pointer to a struct described by `sub` (NULL = nil) */
     KS_T_ARRAY,     /* struct ks_array of `sub` elements (Go slice) */
+    KS_T_STRS,      /* struct ks_strs ([]string) */
+    KS_T_INTS,      /* struct ks_ints ([]int) */
 };
 
 struct ks_schema;
@@ -73,6 +75,18 @@ struct ks_opt_int32 {
  * schema's C type; `non_nil` distinguishes [] from null. Owns `items`. */
 struct ks_array {
     void *items;
+    size_t len;
+    bool non_nil;
+};
+
+/* []string and []int: a null element is "" or 0, as Go decodes it. */
+struct ks_strs {
+    char **v;
+    size_t len;
+    bool non_nil;
+};
+struct ks_ints {
+    int64_t *v;
     size_t len;
     bool non_nil;
 };

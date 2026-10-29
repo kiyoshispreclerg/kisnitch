@@ -38,6 +38,7 @@
 #include "daemon/rules/rule.h"
 #include "daemon/sockdiag.h"
 #include "daemon/stats.h"
+#include "daemon/tasks/disk.h"
 #include "daemon/tasks/monitors.h"
 #include "daemon/tasks/tasks.h"
 
@@ -121,6 +122,7 @@ struct ks_uiclient {
     struct fw_reload *fw_reloads; /* RELOAD_FW_RULES waiting for errors */
 
     struct ks_taskmgr *tasks; /* TaskMgr */
+    struct ks_taskloader *task_loader; /* TaskMgr.loader */
 };
 
 /* A RELOAD_FW_RULES notification whose reply waits for the errors of the
@@ -1630,10 +1632,14 @@ static int reload_configuration(struct ks_uiclient *c, bool reload, struct ks_co
     } else {
         ks_debug("[config] not flushing established connections");
     }
-    if (!seq(n->tasks.config_path, o->tasks.config_path))
-        ks_debug("[config] reloading TasksOptions.ConfigFile from %s (tasks are not "
-                 "supported yet)", nz(n->tasks.config_path));
-    else
+    if (!seq(n->tasks.config_path, o->tasks.config_path)) {
+        ks_debug("[config] reloading TasksOptions.ConfigFile from %s", nz(n->tasks.config_path));
+        /* upstream's TaskMgr is still nil when the configuration is first
+         * read (a crash with a ConfigPath set); the first load is in
+         * ks_uiclient_new() */
+        if (c->task_loader != NULL)
+            ks_taskloader_load(c->task_loader, nz(n->tasks.config_path));
+    } else
         ks_debug("[config] config.TasksOptions not changed");
     return what;
 }
@@ -1751,10 +1757,12 @@ struct ks_uiclient *ks_uiclient_new(const struct ks_uiclient_deps *deps,
     /* procmon.EventsCache.SetComputeChecksums() and rules.EnableChecksums()
      * already ran in reloadConfiguration(). */
     c->tasks = ks_taskmgr_new(deps->loop, on_task_result, c);
-    if (c->tasks == NULL) {
+    if (c->tasks == NULL ||
+        (c->task_loader = ks_taskloader_new(c->tasks, deps->loop)) == NULL) {
         ks_uiclient_free(c);
         return NULL;
     }
+    ks_taskloader_load(c->task_loader, nz(c->config.tasks.config_path));
     return c;
 }
 
@@ -1762,6 +1770,8 @@ void ks_uiclient_free(struct ks_uiclient *c)
 {
     if (c == NULL)
         return;
+    ks_taskloader_free(c->task_loader);
+    c->task_loader = NULL;
     ks_taskmgr_free(c->tasks); /* TaskMgr.Stop() */
     c->tasks = NULL;
     stop_poller(c);

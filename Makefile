@@ -42,8 +42,13 @@ DAEMON_LIB_SRC = daemon/config.c \
                  daemon/protocol.c \
                  daemon/queue.c \
                  daemon/stats.c \
+                 daemon/tasks/downloader.c \
+                 daemon/tasks/iocscanner.c \
+                 daemon/tasks/load.c \
+                 daemon/tasks/looper.c \
                  daemon/tasks/nodemon.c \
                  daemon/tasks/pidmon.c \
+                 daemon/tasks/scheduler.c \
                  daemon/tasks/sockmon.c \
                  daemon/tasks/tasks.c \
                  daemon/uiclient.c \

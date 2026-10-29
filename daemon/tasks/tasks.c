@@ -53,6 +53,16 @@ void ks_task_free(struct ks_task *t)
     free(t);
 }
 
+void ks_task_emit(struct ks_task *t, const char *data, const char *err)
+{
+    t->mgr->sink(t->mgr->ctx, t, err ? NULL : data, err);
+}
+
+struct ks_evloop *ks_task_loop(const struct ks_task *t)
+{
+    return t->mgr->loop;
+}
+
 int ks_task_parse_interval(const char *s, int64_t *ns, char *err, size_t errlen)
 {
     if (s == NULL || s[0] == '\0')
@@ -150,7 +160,13 @@ int ks_taskmgr_add(struct ks_taskmgr *m, struct ks_task *t, char *err, size_t er
         ks_debug("[tasks] Failed to start task %s: %s", t->name, serr);
         return 0;
     }
-    t->timer = ks_evloop_add_timer(m->loop, 0, t->interval_ns > 0 ? t->interval_ns : 0,
+    if (t->ops->run == NULL) { /* it runs on its own */
+        t->running = true;
+        ks_debug("Task Added: %s", t->name);
+        return 0;
+    }
+    int64_t first = t->delay_first && t->interval_ns > 0 ? t->interval_ns : 0;
+    t->timer = ks_evloop_add_timer(m->loop, first, t->interval_ns > 0 ? t->interval_ns : 0,
                                    on_tick, t);
     if (t->timer == NULL) {
         ks_debug("[tasks] Failed to start task %s: out of memory", t->name);

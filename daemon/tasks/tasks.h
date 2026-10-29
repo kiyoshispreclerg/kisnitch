@@ -47,7 +47,8 @@ struct ks_task_ops {
     /* Start(): 0, or -1 with `err` filled. A task that fails to start stays
      * in the manager without running, as upstream. NULL: nothing to do. */
     int (*start)(struct ks_task *t, char *err, size_t errlen);
-    /* One iteration. */
+    /* One iteration. NULL: the task schedules its own work and reports
+     * with ks_task_emit(). */
     enum ks_task_status (*run)(struct ks_task *t, char **data, char *err, size_t errlen);
     void (*free)(void *priv);
 };
@@ -57,6 +58,7 @@ struct ks_task {
     uint64_t id;     /* SetID: the notification ID, or KS_TASK_ID_* */
     bool temporary;  /* IsTemporary: stopped when the UI disconnects */
     int64_t interval_ns; /* set by start(); <= 0: run once */
+    bool delay_first;    /* the first iteration waits one interval (a ticker) */
     const struct ks_task_ops *ops;
     void *priv;
 
@@ -75,6 +77,11 @@ typedef void (*ks_task_sink)(void *ctx, const struct ks_task *t, const char *dat
  * failure). NULL on OOM. */
 struct ks_task *ks_task_new(const char *name, const struct ks_task_ops *ops, void *priv);
 void ks_task_free(struct ks_task *t);
+
+/* Sends a result or an error of `t` to the sink, from the loop's thread
+ * (for tasks that work asynchronously). */
+void ks_task_emit(struct ks_task *t, const char *data, const char *err);
+struct ks_evloop *ks_task_loop(const struct ks_task *t);
 
 /* The interval of a task: "" is "5s"; time.ParseDuration's errors, and a
  * non-positive interval (time.NewTicker panics with it) is an error too. */

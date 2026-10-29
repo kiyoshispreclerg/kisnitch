@@ -24,6 +24,14 @@ void ks_schema_free_array(const struct ks_schema *elem, struct ks_array *arr)
     memset(arr, 0, sizeof(*arr));
 }
 
+static void free_strs(struct ks_strs *a)
+{
+    for (size_t i = 0; i < a->len; i++)
+        free(a->v[i]);
+    free(a->v);
+    memset(a, 0, sizeof(*a));
+}
+
 void ks_schema_free(const struct ks_schema *s, void *obj)
 {
     for (size_t i = 0; i < s->n; i++) {
@@ -49,6 +57,15 @@ void ks_schema_free(const struct ks_schema *s, void *obj)
         case KS_T_ARRAY:
             ks_schema_free_array(f->sub, AT(obj, f));
             break;
+        case KS_T_STRS:
+            free_strs(AT(obj, f));
+            break;
+        case KS_T_INTS: {
+            struct ks_ints *a = AT(obj, f);
+            free(a->v);
+            memset(a, 0, sizeof(*a));
+            break;
+        }
         case KS_T_BOOL:
         case KS_T_INT:
         case KS_T_UINT16:
@@ -212,6 +229,70 @@ static int decode_array(struct dctx *c, const struct ks_schema *elem,
     return 0;
 }
 
+static int decode_string(struct dctx *c, const char *path, const cJSON *v, char **out)
+{
+    if (!cJSON_IsString(v))
+        return type_error(c, path, "string", v);
+    /* encoding/json replaces invalid UTF-8 with U+FFFD. */
+    size_t slen = strlen(v->valuestring);
+    char *dup = ks_utf8_valid(v->valuestring, slen) ? strdup(v->valuestring)
+                                                    : ks_utf8_sanitize(v->valuestring, slen, NULL);
+    if (dup == NULL)
+        return oom(c);
+    free(*out);
+    *out = dup;
+    return 0;
+}
+
+static int decode_scalars(struct dctx *c, const struct ks_schema_field *f, const cJSON *v,
+                          void *p, const char *path)
+{
+    bool strs = f->type == KS_T_STRS;
+    struct ks_strs *as = p;
+    struct ks_ints *ai = p;
+    if (strs)
+        free_strs(as);
+    else {
+        free(ai->v);
+        memset(ai, 0, sizeof(*ai));
+    }
+    if (cJSON_IsNull(v))
+        return 0;
+    if (!cJSON_IsArray(v))
+        return type_error(c, path, strs ? "array of string" : "array of int", v);
+    size_t n = (size_t)cJSON_GetArraySize(v);
+    if (strs)
+        as->non_nil = true;
+    else
+        ai->non_nil = true;
+    if (n == 0)
+        return 0;
+    if (strs ? (as->v = calloc(n, sizeof(*as->v))) == NULL
+             : (ai->v = calloc(n, sizeof(*ai->v))) == NULL)
+        return oom(c);
+    size_t i = 0;
+    const cJSON *item;
+    cJSON_ArrayForEach(item, v) {
+        char sub[PATH_MAX_LEN];
+        JOIN_PATH(sub, "%s[%zu]", path, i);
+        if (strs) {
+            as->len = i + 1;
+            if (!cJSON_IsNull(item) && decode_string(c, sub, item, &as->v[i]) < 0)
+                return -1;
+            if (as->v[i] == NULL && (as->v[i] = strdup("")) == NULL)
+                return oom(c);
+        } else {
+            ai->len = i + 1;
+            if (!cJSON_IsNull(item) &&
+                decode_int(c, sub, item, -9223372036854775808.0, 9223372036854775808.0,
+                           "int", &ai->v[i]) < 0)
+                return -1;
+        }
+        i++;
+    }
+    return 0;
+}
+
 static int decode_field(struct dctx *c, const struct ks_schema_field *f,
                         const cJSON *v, void *base, const char *path)
 {
@@ -220,24 +301,12 @@ static int decode_field(struct dctx *c, const struct ks_schema_field *f,
 
     /* `null` is a no-op except for pointers and slices. */
     if (cJSON_IsNull(v) && f->type != KS_T_OPT_INT32 && f->type != KS_T_ARRAY &&
-        f->type != KS_T_PTR)
+        f->type != KS_T_PTR && f->type != KS_T_STRS && f->type != KS_T_INTS)
         return 0;
 
     switch (f->type) {
-    case KS_T_STRING: {
-        if (!cJSON_IsString(v))
-            return type_error(c, path, "string", v);
-        /* encoding/json replaces invalid UTF-8 with U+FFFD. */
-        size_t slen = strlen(v->valuestring);
-        char *dup = ks_utf8_valid(v->valuestring, slen)
-                        ? strdup(v->valuestring)
-                        : ks_utf8_sanitize(v->valuestring, slen, NULL);
-        if (dup == NULL)
-            return oom(c);
-        free(*(char **)p);
-        *(char **)p = dup;
-        return 0;
-    }
+    case KS_T_STRING:
+        return decode_string(c, path, v, p);
     case KS_T_BOOL:
         if (!cJSON_IsBool(v))
             return type_error(c, path, "bool", v);
@@ -294,6 +363,9 @@ static int decode_field(struct dctx *c, const struct ks_schema_field *f,
     }
     case KS_T_ARRAY:
         return decode_array(c, f->sub, v, p, path);
+    case KS_T_STRS:
+    case KS_T_INTS:
+        return decode_scalars(c, f, v, p, path);
     }
     return 0;
 }
@@ -456,6 +528,36 @@ static cJSON *encode_field(const struct ks_schema_field *f, const void *base)
     }
     case KS_T_ARRAY:
         return encode_array(f->sub, p);
+    case KS_T_STRS: {
+        const struct ks_strs *a = p;
+        if (!a->non_nil)
+            return cJSON_CreateNull();
+        cJSON *out = cJSON_CreateArray();
+        for (size_t i = 0; out != NULL && i < a->len; i++) {
+            cJSON *item = cJSON_CreateString(a->v[i] != NULL ? a->v[i] : "");
+            if (item == NULL || !cJSON_AddItemToArray(out, item)) {
+                cJSON_Delete(item);
+                cJSON_Delete(out);
+                return NULL;
+            }
+        }
+        return out;
+    }
+    case KS_T_INTS: {
+        const struct ks_ints *a = p;
+        if (!a->non_nil)
+            return cJSON_CreateNull();
+        cJSON *out = cJSON_CreateArray();
+        for (size_t i = 0; out != NULL && i < a->len; i++) {
+            cJSON *item = cJSON_CreateNumber((double)a->v[i]);
+            if (item == NULL || !cJSON_AddItemToArray(out, item)) {
+                cJSON_Delete(item);
+                cJSON_Delete(out);
+                return NULL;
+            }
+        }
+        return out;
+    }
     }
     return NULL;
 }
@@ -538,6 +640,22 @@ bool ks_schema_equal(const struct ks_schema *s, const void *a, const void *b)
                     return false;
             break;
         }
+        case KS_T_STRS: {
+            const struct ks_strs *x = pa, *y = pb;
+            if (x->non_nil != y->non_nil || x->len != y->len)
+                return false;
+            for (size_t j = 0; j < x->len; j++)
+                if (!str_equal(x->v[j], y->v[j]))
+                    return false;
+            break;
+        }
+        case KS_T_INTS: {
+            const struct ks_ints *x = pa, *y = pb;
+            if (x->non_nil != y->non_nil || x->len != y->len ||
+                (x->len > 0 && memcmp(x->v, y->v, x->len * sizeof(*x->v)) != 0))
+                return false;
+            break;
+        }
         }
     }
     return true;
@@ -604,6 +722,31 @@ static int copy_fields(const struct ks_schema *s, void *dst, const void *src)
                 if (copy_fields(f->sub, (char *)ad->items + j * f->sub->size,
                                 (const char *)as->items + j * f->sub->size) < 0)
                     return -1;
+            break;
+        }
+        case KS_T_STRS: {
+            const struct ks_strs *as = ps;
+            struct ks_strs *ad = pd;
+            ad->non_nil = as->non_nil;
+            if (as->len == 0)
+                break;
+            if ((ad->v = calloc(as->len, sizeof(*ad->v))) == NULL)
+                return -1;
+            for (size_t j = 0; j < as->len; j++, ad->len++)
+                if ((ad->v[j] = strdup(as->v[j] != NULL ? as->v[j] : "")) == NULL)
+                    return -1;
+            break;
+        }
+        case KS_T_INTS: {
+            const struct ks_ints *as = ps;
+            struct ks_ints *ad = pd;
+            ad->non_nil = as->non_nil;
+            if (as->len == 0)
+                break;
+            if ((ad->v = malloc(as->len * sizeof(*ad->v))) == NULL)
+                return -1;
+            memcpy(ad->v, as->v, as->len * sizeof(*ad->v));
+            ad->len = as->len;
             break;
         }
         }
