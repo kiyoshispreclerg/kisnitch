@@ -155,11 +155,16 @@ static void status_changed(struct ks_service *svc)
         svc->ops.status_changed(svc->ud);
 }
 
-static void message(struct ks_service *svc, const char *title, const char *body)
+static void message_u(struct ks_service *svc, const char *title, const char *body, int urgency)
 {
     ks_info("[service] %s: %s", title, body);
     if (svc->ops.message)
-        svc->ops.message(svc->ud, title, body);
+        svc->ops.message(svc->ud, title, body, urgency);
+}
+
+static void message(struct ks_service *svc, const char *title, const char *body)
+{
+    message_u(svc, title, body, KS_URGENCY_NORMAL);
 }
 
 /* _update_fw_status() */
@@ -572,7 +577,13 @@ static void on_alert(struct callctx *cc, struct ks_grpc_call *call, const uint8_
             title = "Error";
         if (a->type == PROTOCOL__ALERT__TYPE__WARNING)
             title = "Warning";
-        message(svc, title, body);
+        /* the alert's priority is the notification's urgency */
+        int urgency = KS_URGENCY_NORMAL;
+        if (a->priority == PROTOCOL__ALERT__PRIORITY__LOW)
+            urgency = KS_URGENCY_LOW;
+        else if (a->priority == PROTOCOL__ALERT__PRIORITY__HIGH)
+            urgency = KS_URGENCY_CRITICAL;
+        message_u(svc, title, body, urgency);
         char node[KS_NODE_ADDR_MAX];
         ks_nodes_peer_addr(cc->peer, node, sizeof(node));
         ks_statsdb_alert(&svc->stats, node,

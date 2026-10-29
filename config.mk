@@ -12,11 +12,12 @@ SBINDIR    ?= $(PREFIX)/sbin
 SYSCONFDIR ?= /etc
 DESTDIR    ?=
 
-# Optional features (0 = off, 1 = on). TLS, EBPF and NOTIFY aren't wired
-# yet: they gain meaning in later phases (TLS: 10, EBPF: 9, NOTIFY: 10).
+# Optional features (0 = off, 1 = on). TLS and EBPF aren't wired yet
+# (TLS: phase 10, EBPF: phase 9).
 TLS    ?= 0
 EBPF   ?= 0
 NOTIFY ?= 0
+# NOTIFY=1: desktop notifications (ui/notify.c) with libnotify.
 # CURL=1: the "downloader" task (daemon/tasks/downloader.c) with libcurl.
 CURL   ?= 0
 
@@ -79,4 +80,10 @@ CURL_CFLAGS := $(shell $(PKG_CONFIG) --cflags libcurl)
 CURL_LIBS   := $(shell $(PKG_CONFIG) --libs libcurl)
 CPPFLAGS += -DKS_HAVE_CURL $(CURL_CFLAGS)
 LDLIBS   += $(CURL_LIBS)
+endif
+
+ifeq ($(NOTIFY),1)
+GTK_PKGS   += libnotify
+GTK_CFLAGS := $(patsubst -I%,-isystem %,$(shell $(PKG_CONFIG) --cflags $(GTK_PKGS))) -DKS_HAVE_NOTIFY
+GTK_LIBS   := $(shell $(PKG_CONFIG) --libs $(GTK_PKGS)) -lm
 endif

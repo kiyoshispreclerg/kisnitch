@@ -45,13 +45,17 @@ struct ks_ask {
     void *ctx; /* the call's context (internal) */
 };
 
+/* DesktopNotifications.URGENCY_* */
+enum { KS_URGENCY_LOW, KS_URGENCY_NORMAL, KS_URGENCY_CRITICAL };
+
 struct ks_service_ops {
     /* Show the pop-up for `ask`; it must end with ks_service_answer(). */
     void (*prompt)(void *ud, struct ks_ask *ask);
     /* The connection or interception state changed (see the getters). */
     void (*status_changed)(void *ud);
-    /* A message for the tray / desktop notifications. */
-    void (*message)(void *ud, const char *title, const char *body);
+    /* A message for the tray / desktop notifications. `urgency` is
+     * KS_URGENCY_* (the alert's priority; normal for the others). */
+    void (*message)(void *ud, const char *title, const char *body, int urgency);
     /* The daemon's version differs from ours (once). */
     void (*version_warning)(void *ud, const char *daemon_version, const char *ui_version);
     /* A Ping's statistics were stored (_on_update_stats); `refresh` says

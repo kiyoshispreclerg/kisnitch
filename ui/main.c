@@ -25,6 +25,7 @@
 
 #include "common/log.h"
 #include "ui/desktop.h"
+#include "ui/notify.h"
 #include "ui/prompt.h"
 #include "ui/res.h"
 #include "ui/server.h"
@@ -82,13 +83,22 @@ static void on_open_window(void *ud)
         ks_stats_win_show(a->stats);
 }
 
-static void on_message(void *ud, const char *title, const char *body)
+/* the "Open" button of a notification */
+static void on_notification_open(void *ud)
 {
-    (void)title;
-    (void)body;
+    on_open_window(ud);
+}
+
+/* _show_systray_message() / show_systray_msg(): a desktop notification if
+ * they're enabled, of the "system" type and available; the tray icon
+ * turns to "alert" either way (GTK 2's status icon has no messages) */
+static void on_message(void *ud, const char *title, const char *body, int urgency)
+{
     struct app *a = ud;
-    /* desktop notifications come with phase 10 (NOTIFY=1); the message
-     * went to the log, and the tray shows the alert icon */
+    if (ks_settings_get_bool(&a->settings, "notifications/enabled", true) &&
+        ks_settings_get_int(&a->settings, "notifications/type", KS_NOTIFICATION_TYPE_SYSTEM) ==
+            KS_NOTIFICATION_TYPE_SYSTEM)
+        ks_notify_show(title, body, urgency, on_notification_open, a);
     if (a->tray)
         ks_tray_alert(a->tray);
 }
@@ -371,7 +381,9 @@ int main(int argc, char **argv)
 
     g_unix_signal_add(SIGINT, on_signal, &app);
     g_unix_signal_add(SIGTERM, on_signal, &app);
+    ks_notify_init();
     gtk_main();
+    ks_notify_uninit();
 
     ks_ui_server_free(app.server);
     ks_prompt_free(app.prompt);

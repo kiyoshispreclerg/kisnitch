@@ -89,6 +89,7 @@ UI_GTK_SRC = ui/main.c \
              ui/fw_dialog.c \
              ui/fw_rule_dialog.c \
              ui/fw_simple.c \
+             ui/notify.c \
              ui/prompt.c \
              ui/rules_editor.c \
              ui/prefs.c \
@@ -241,6 +242,13 @@ $(BUILD)/tests/test_stats_gui: tests/gui/test_stats_gui.c tests/harness.h $(GUI_
 		-MMD -MP $(ALL_LDFLAGS) -o $@ $< $(GUI_OBJS) $(LIBUI) $(LIBCOMMON) $(LDLIBS) $(UI_LIBS) \
 		$(GTK_LIBS)
 
+# Desktop notifications: only meaningful with NOTIFY=1 (tests/integration/notify.sh).
+$(BUILD)/tests/test_notify: tests/gui/test_notify.c tests/harness.h $(BUILD)/ui/notify.o $(LIBCOMMON)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(UI_CFLAGS) $(GTK_CFLAGS) $(TEST_CPPFLAGS) $(ALL_CFLAGS) $(WARNFLAGS) \
+		-MMD -MP $(ALL_LDFLAGS) -o $@ $< $(BUILD)/ui/notify.o $(LIBCOMMON) $(LDLIBS) $(UI_LIBS) \
+		$(GTK_LIBS)
+
 # ---- integration tests (network namespaces; see tests/integration/) ------
 # As root they use a new network namespace; otherwise an unprivileged user
 # namespace, where the kernel allows it. Never the host's network.
@@ -261,6 +269,10 @@ test-integration: all $(INTEGRATION_TESTS) $(BUILD)/tests/test_stats_gui
 	KISNITCH_GTK=$(CURDIR)/$(BUILD)/kisnitch-gtk tests/integration/stats_win.sh || fail=1; \
 	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd tests/integration/sysfw.sh || fail=1; \
 	STATS_GUI_TEST=$(CURDIR)/$(BUILD)/tests/test_stats_gui tests/integration/stats_gui.sh || fail=1; \
+	if $(PKG_CONFIG) --exists libnotify; then \
+		$(MAKE) --no-print-directory NOTIFY=1 BUILD=$(BUILD)/notify $(BUILD)/notify/tests/test_notify && \
+		NOTIFY_TEST=$(CURDIR)/$(BUILD)/notify/tests/test_notify tests/integration/notify.sh || fail=1; \
+	else echo "SKIP (notifications): libnotify not found"; fi; \
 	if [ $$fail -ne 0 ]; then echo "*** integration tests FAILED"; exit 1; fi; \
 	echo "*** all integration tests passed"
 

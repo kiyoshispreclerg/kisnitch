@@ -15,6 +15,7 @@
 
 #include "common/log.h"
 #include "ui/db.h"
+#include "ui/notify.h"
 #include "ui/prefs_node.h"
 #include "ui/rulesdb.h"
 #include "ui/tray.h"
@@ -394,8 +395,9 @@ static void load_settings(struct ks_prefs *p)
 
     set_active(p->notif_group, ks_settings_get_bool(c, KEY_NOTIF_ENABLED, true));
     int ntype = ks_settings_get_int(c, KEY_NOTIF_TYPE, NOTIFICATION_TYPE_SYSTEM);
-    set_active(p->radio_sys, ntype == NOTIFICATION_TYPE_SYSTEM);
-    set_active(p->radio_qt, ntype != NOTIFICATION_TYPE_SYSTEM);
+    bool sys = ntype == NOTIFICATION_TYPE_SYSTEM && ks_notify_available();
+    set_active(p->radio_sys, sys);
+    set_active(p->radio_qt, !sys);
 
     /* database */
     p->db_type_loaded = ks_settings_get_int(c, KS_CFG_DEFAULT_DB_TYPE_KEY, 0);
@@ -945,6 +947,32 @@ static GtkWidget *build_popups(struct ks_prefs *p)
     return page(t);
 }
 
+#define NOTIFS_UNAVAILABLE                                                                 \
+    "System notifications are not available: they need a build with NOTIFY=1 and a "      \
+    "notification daemon."
+
+/* _cb_radio_system_notifications */
+static void on_radio_sys(GtkToggleButton *b, gpointer ud)
+{
+    struct ks_prefs *p = ud;
+    if (gtk_toggle_button_get_active(b) && !ks_notify_available()) {
+        set_active(p->radio_qt, true);
+        set_error(p, NOTIFS_UNAVAILABLE);
+    }
+}
+
+/* _cb_test_notifs_clicked */
+static void on_test_notifs(GtkButton *b, gpointer ud)
+{
+    struct ks_prefs *p = ud;
+    gtk_widget_set_sensitive(GTK_WIDGET(b), FALSE);
+    if (!ks_notify_available())
+        set_error(p, NOTIFS_UNAVAILABLE);
+    else if (is_active(p->radio_sys))
+        ks_notify_show("title", "body", KS_URGENCY_NORMAL, NULL, NULL);
+    gtk_widget_set_sensitive(GTK_WIDGET(b), TRUE);
+}
+
 static GtkWidget *build_ui(struct ks_prefs *p)
 {
     GtkWidget *vbox = gtk_vbox_new(FALSE, 8);
@@ -1012,8 +1040,8 @@ static GtkWidget *build_ui(struct ks_prefs *p)
     p->radio_qt = gtk_radio_button_new_with_label(
         gtk_radio_button_get_group(GTK_RADIO_BUTTON(p->radio_sys)), "Use the tray icon's alert");
     GtkWidget *test = gtk_button_new_with_label("Test");
-    gtk_widget_set_sensitive(test, FALSE);
-    gtk_widget_set_tooltip_text(test, "Desktop notifications come with phase 10.");
+    g_signal_connect(test, "clicked", G_CALLBACK(on_test_notifs), p);
+    g_signal_connect(p->radio_sys, "toggled", G_CALLBACK(on_radio_sys), p);
     gtk_box_pack_start(GTK_BOX(b3), p->notif_group, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(b3), p->radio_sys, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(b3), p->radio_qt, FALSE, FALSE, 0);
