@@ -32,6 +32,7 @@ static struct {
     int nasks;
     int status_changes;
     char last_title[256], last_body[1024];
+    int last_urgency;
     int messages;
     char daemon_version[32];
     int version_warnings;
@@ -50,9 +51,10 @@ static void gui_status(void *ud)
     gui.status_changes++;
 }
 
-static void gui_message(void *ud, const char *title, const char *body)
+static void gui_message(void *ud, const char *title, const char *body, int urgency)
 {
     (void)ud;
+    gui.last_urgency = urgency;
     gui.messages++;
     snprintf(gui.last_title, sizeof(gui.last_title), "%s", title);
     snprintf(gui.last_body, sizeof(gui.last_body), "%s", body);
@@ -293,6 +295,7 @@ TEST(subscribe_and_ping)
     /* PostAlert */
     Protocol__Alert alert = PROTOCOL__ALERT__INIT;
     alert.type = PROTOCOL__ALERT__TYPE__WARNING;
+    alert.priority = PROTOCOL__ALERT__PRIORITY__HIGH;
     alert.action = PROTOCOL__ALERT__ACTION__SHOW_ALERT;
     alert.data_case = PROTOCOL__ALERT__DATA_TEXT;
     alert.text = (char *)(uintptr_t) "something happened";
@@ -302,6 +305,7 @@ TEST(subscribe_and_ping)
     CHECK_INT_EQ(r.status, KS_GRPC_OK);
     CHECK_STR_EQ(gui.last_title, "Warning");
     CHECK_STR_EQ(gui.last_body, "something happened");
+    CHECK_INT_EQ(gui.last_urgency, KS_URGENCY_CRITICAL); /* HIGH priority */
     CHECK_INT_EQ(ks_db_count(ks_service_db(svc), "alerts"), 1);
 
     /* unknown method */

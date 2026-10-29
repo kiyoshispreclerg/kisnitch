@@ -46,7 +46,7 @@ jobs:
         build: [plain, asan]
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev nftables curl python3 openssl python3-grpcio python3-grpc-tools xvfb xdotool
+      - run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev nftables curl python3 openssl python3-grpcio python3-grpc-tools xvfb xdotool libnotify-dev python3-gi dbus
       - name: integration tests
         run: |
           if [ "${{ matrix.build }}" = asan ]; then
