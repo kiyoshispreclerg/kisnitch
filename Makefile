@@ -37,6 +37,7 @@ DAEMON_LIB_SRC = daemon/config.c \
                  daemon/logformats.c \
                  daemon/netstat.c \
                  daemon/sockdiag.c \
+                 daemon/procmon/audit.c \
                  daemon/procmon/cache.c \
                  daemon/procmon/events.c \
                  daemon/procmon/process.c \

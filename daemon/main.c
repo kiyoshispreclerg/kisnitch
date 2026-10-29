@@ -402,7 +402,8 @@ int main(int argc, char **argv)
         ks_info("Reloading proc monitor (%s) (ebpf mods path: %s)...", opt.procmon_method,
                 cfg.ebpf.modules_path);
         char merr[256];
-        if (ks_procmon_reconfigure(d.loop, opt.procmon_method, merr, sizeof(merr)) >
+        if (ks_procmon_reconfigure(d.loop, opt.procmon_method, cfg.audit.audisp_socket_path,
+                                   merr, sizeof(merr)) >
             KS_MONITOR_NO_ERROR) {
             char msg[400];
             snprintf(msg, sizeof(msg),

@@ -40,13 +40,13 @@ enum {
 /* procmon.GetMonitorMethod(): "" until a method was configured. */
 const char *ks_procmon_get_method(void);
 
-/* monitor.ReconfigureMonitorMethod(): End(), then Init() with `method`.
- * Only "proc" exists so far: the others fail (KS_MONITOR_EBPF_ERR,
- * KS_MONITOR_AUDITD_ERR, message in `err`) and fall back to the proc
- * monitors, and the configured method is rolled back, as upstream does
- * when a method fails to start. Returns the error kind. */
-int ks_procmon_reconfigure(struct ks_evloop *loop, const char *method, char *err,
-                           size_t errlen);
+/* monitor.ReconfigureMonitorMethod(): End(), then Init() with `method`
+ * ("audit" connects to `audit_path`, Audit.AudispSocketPath). "ebpf"
+ * isn't there yet (KS_MONITOR_EBPF_ERR); a method that fails to start
+ * falls back to the proc monitors and the configured method is rolled
+ * back, as upstream does. Returns the error kind. */
+int ks_procmon_reconfigure(struct ks_evloop *loop, const char *method, const char *audit_path,
+                           char *err, size_t errlen);
 /* monitor.Init(): cache cleanups on `loop` (once) and, if the kernel
  * allows it (needs CAP_NET_ADMIN), the exec/exit event listener. */
 int ks_procmon_monitor_init(struct ks_evloop *loop, char *err, size_t errlen);

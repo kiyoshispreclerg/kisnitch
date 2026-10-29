@@ -21,6 +21,7 @@
 
 #include "common/log.h"
 #include "daemon/netstat.h"
+#include "daemon/procmon/audit.h"
 #include "daemon/procmon/events.h"
 #include "daemon/sockdiag.h"
 
@@ -167,6 +168,21 @@ int ks_procmon_pid_from_inode(int64_t inode, const char *key)
         ks_inodes_add(key, "", pid);
         return pid;
     }
+    if (strcmp(ks_procmon_get_method(), KS_PROCMON_METHOD_AUDIT) == 0) {
+        /* getPIDFromAuditEvents: the PIDs, then the parents, of the
+         * processes that opened sockets */
+        for (int parent = 0; parent < 2; parent++) {
+            for (size_t i = 0; i < ks_audit_count(); i++) {
+                const struct ks_audit_event *ev = ks_audit_event_at(i);
+                int apid = parent ? ev->ppid : ev->pid;
+                if (inode_found("/proc/", expect, key, apid)) {
+                    ks_debug("PID found via audit events: %lld us, position: %zu",
+                             (long long)(now_ns() - start) / 1000, i);
+                    return apid;
+                }
+            }
+        }
+    }
     pid = ks_procmon_lookup_pid_in_proc("/proc/", expect, key);
     ks_debug("new pid lookup took (%d): %lld us", pid,
              (long long)(now_ns() - start) / 1000);
@@ -295,6 +311,7 @@ void ks_procmon_on_exit(int pid)
 /* procmon.monitorMethod ("" until the first ReconfigureMonitorMethod) and
  * monitor.cacheMonitorsRunning. */
 static char monitor_method[16];
+static char audit_socket[108]; /* Audit.AudispSocketPath */
 static bool cache_monitors_running;
 static struct ks_evloop *monitor_loop;
 
@@ -331,8 +348,14 @@ int ks_procmon_monitor_init(struct ks_evloop *loop, char *err, size_t errlen)
         snprintf(err, errlen, "the ebpf method is not available yet (EBPF=1, phase 9)");
         ks_warning("error starting ebpf monitor method: %s", err);
     } else if (strcmp(monitor_method, KS_PROCMON_METHOD_AUDIT) == 0) {
+        if (ks_audit_start(loop, audit_socket, err, errlen) == 0) {
+            /* upstream returns an AuditdErr kind here too, which makes
+             * ReconfigureMonitorMethod roll the method back to proc with
+             * the reader still running: audit never takes effect */
+            ks_info("Process monitor method audit");
+            return KS_MONITOR_NO_ERROR;
+        }
         what = KS_MONITOR_AUDITD_ERR;
-        snprintf(err, errlen, "the audit method is not available yet (phase 10)");
         ks_warning("error starting audit monitor method: %s", err);
     }
     start_proc_monitors();
@@ -347,12 +370,15 @@ void ks_procmon_monitor_end(void)
 {
     ks_debug("monitor.End()");
     ks_proc_events_stop();
+    if (strcmp(monitor_method, KS_PROCMON_METHOD_AUDIT) == 0)
+        ks_audit_stop();
 }
 
 /* monitor.ReconfigureMonitorMethod() */
-int ks_procmon_reconfigure(struct ks_evloop *loop, const char *method, char *err,
-                           size_t errlen)
+int ks_procmon_reconfigure(struct ks_evloop *loop, const char *method, const char *audit_path,
+                           char *err, size_t errlen)
 {
+    snprintf(audit_socket, sizeof(audit_socket), "%s", audit_path != NULL ? audit_path : "");
     char old[sizeof(monitor_method)];
     snprintf(old, sizeof(old), "%s", monitor_method[0] ? monitor_method
                                                          : KS_PROCMON_METHOD_PROC);
@@ -378,6 +404,7 @@ int ks_procmon_init(struct ks_evloop *loop)
 void ks_procmon_end(void)
 {
     ks_proc_events_stop();
+    ks_audit_stop();
     ks_procmon_cache_reset();
     cache_monitors_running = false;
     monitor_loop = NULL;

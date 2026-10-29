@@ -1044,7 +1044,8 @@ static void handle_enable_interception(struct ks_uiclient *c,
 {
     ks_info("[notification] starting interception");
     char err[256];
-    if (ks_procmon_reconfigure(c->d.loop, nz(c->config.proc_monitor_method), err,
+    if (ks_procmon_reconfigure(c->d.loop, nz(c->config.proc_monitor_method),
+                               c->config.audit.audisp_socket_path, err,
                                sizeof(err)) > KS_MONITOR_NO_ERROR) {
         ks_warning("[notification] error enabling monitor (%s): %s",
                    nz(c->config.proc_monitor_method), err);
@@ -1624,7 +1625,8 @@ static int reload_configuration(struct ks_uiclient *c, bool reload, struct ks_co
 
     /* 4. reload procmon if needed */
     if (reload_proc) {
-        what = ks_procmon_reconfigure(c->d.loop, nz(n->proc_monitor_method), err, errlen);
+        what = ks_procmon_reconfigure(c->d.loop, nz(n->proc_monitor_method),
+                                      n->audit.audisp_socket_path, err, errlen);
         /* fall back to the last known good method */
         if (what == KS_MONITOR_EBPF_ERR || what == KS_MONITOR_AUDITD_ERR) {
             char *m = strdup(ks_procmon_get_method());
