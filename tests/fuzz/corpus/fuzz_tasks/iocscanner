@@ -1,0 +1,1 @@
+{"interval": "5s", "schedule": [{"weekday": [1], "time": ["09:00:00", "9:5"]}], "tools": [{"name": "yara", "cmd": ["yara"], "options": {"rules": ["*.yar"], "exclusions": {"dirs": ["/x"]}}}]}

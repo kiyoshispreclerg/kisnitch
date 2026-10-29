@@ -29,6 +29,11 @@ jobs:
         run: make CC=${{ matrix.cc }} test
       - name: unit tests (ASan + UBSan)
         run: make CC=${{ matrix.cc }} asan
+      # the downloader task (CURL=1) against a local HTTP server
+      - name: unit tests (CURL=1)
+        run: |
+          sudo apt-get install -y libcurl4-openssl-dev
+          make CC=${{ matrix.cc }} CURL=1 BUILD=build/curl test
 
   # Phase 3+: the daemon in a network namespace (nftables, nfqueue, curl).
   # As root: the runners don't allow unprivileged user namespaces.

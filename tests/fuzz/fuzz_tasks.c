@@ -3,7 +3,8 @@
  * libFuzzer target for the task inputs: the first byte picks the "data"
  * object of a TASK_START (from the UI, untrusted) parsed as the handlers
  * do (sockets-monitor's initConfig, the pid's strconv.Atoi, the interval),
- * or an AF_PACKET sock_diag message as PacketDiagMsg.deserialize reads it.
+ * an AF_PACKET sock_diag message as PacketDiagMsg.deserialize reads it, or
+ * (second bit) an IOC scanner configuration with its schedule's times.
  */
 #include <stdint.h>
 #include <stdlib.h>
@@ -11,7 +12,10 @@
 
 #include "common/log.h"
 #include "common/vendor/cjson/cJSON.h"
+#include "common/json_schema.h"
 #include "daemon/sockdiag.h"
+#include "daemon/tasks/iocscanner.h"
+#include "daemon/tasks/scheduler.h"
 #include "daemon/tasks/monitors.h"
 #include "daemon/tasks/tasks.h"
 
@@ -34,6 +38,22 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     txt[size - 1] = '\0';
     cJSON *j = cJSON_Parse(txt);
     char err[512];
+    if (data[0] & 2) {
+        struct ks_ioc_config c;
+        if (ks_schema_decode(&ks_ioc_config_schema, j, &c, err, sizeof(err)) == 0) {
+            struct timespec now = {1700000000, 0};
+            for (size_t i = 0; i < c.schedule.len; i++) {
+                const struct ks_sched_config *s =
+                    KS_ARRAY_ITEM(c.schedule, struct ks_sched_config, i);
+                for (size_t k = 0; k < s->time.len; k++)
+                    ks_sched_daily_wait(s->time.v[k], &now);
+            }
+            ks_schema_free(&ks_ioc_config_schema, &c);
+        }
+        cJSON_Delete(j);
+        free(txt);
+        return 0;
+    }
     struct ks_sockmon_config cfg;
     if (ks_sockmon_config_parse(j, &cfg, err, sizeof(err)) == 0) {
         int64_t ns;
