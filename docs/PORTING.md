@@ -298,7 +298,7 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
   - Perfis de aplicativo do ufw (`/etc/ufw/applications.d/`) podem ser lidos como atalhos que só preenchem portas.
   - Diferenças a documentar: o `limit` do upstream é taxa global, não por IP de origem como o `ufw limit`; um endereço IPv4 casa só IPv4 (para os dois, duas regras).
 
-Progresso: tarefas da UI (`pid-monitor`, `node-monitor`, `sockets-monitor`) e as lidas de arquivo (`tasks.json`: `looper`, `IOC-scanner`, `downloader` com `CURL=1`) em `daemon/tasks/`; faltam o audit, os loggers, TLS, notificações, i18n e o painel simplificado.
+Progresso: tarefas da UI (`pid-monitor`, `node-monitor`, `sockets-monitor`) e as lidas de arquivo (`tasks.json`: `looper`, `IOC-scanner`, `downloader` com `CURL=1`) em `daemon/tasks/`; loggers (`Server.Loggers`: remote, remote_syslog, syslog) em `daemon/loggers.c`; faltam o audit, TLS, notificações, i18n e o painel simplificado.
 
 **Aceite:**
 - [ ] Tabela de funcionalidades em `docs/UPSTREAM.md` 100% marcada como portada, ou com justificativa explícita para o que ficou de fora.

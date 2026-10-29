@@ -22,7 +22,9 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/procmon/audit/config.go` (`Config`) | `daemon/config.c` | estrutura | uso na fase 10 |
 | `daemon/procmon/ebpf/config.go` (`Config`) | `daemon/config.c` | estrutura | uso na fase 9 |
 | `daemon/statistics/stats.go` (`StatsConfig`) | `daemon/config.c` | portado | aplicado por `daemon/stats.c` |
-| `daemon/log/loggers/logger.go` (`LoggerConfig`) | `daemon/config.c` | estrutura | uso na fase 10 |
+| `daemon/log/loggers/logger.go` (`LoggerConfig`) | `daemon/config.c` | portado | |
+| `daemon/log/loggers/*.go` (`LoggerManager`, `Remote`, `RemoteSyslog`, `Syslog`) | `daemon/loggers.c` | portado | fila e workers em threads (destacadas: parar não espera conexão nem resolução de nome); o `log/syslog` local falado direto no `/dev/log`. Divergências 96 a 98 |
+| `daemon/log/formats/*.go` (RFC 5424, RFC 3164, CSV, JSON) | `daemon/logformats.c` | portado | o JSON da conexão é o `encoding/json` da struct gerada (`omitempty`), não o protojson |
 | `daemon/ui/config_utils.go` (`loadDiskConfiguration`, `loadConfiguration`, `reloadConfiguration`, `getSocketPath`) | `daemon/uiclient.c` | parcial | inclusive o monitoramento do arquivo (inotify, como o fsnotify: escrita e remoção). Falta aplicar `Server.Loggers` e `TasksOptions` (fase 10), `Ebpf` e `Audit` (fases 9 e 10); `Internal.GCPercent` não se aplica a C |
 | `daemon/ui/config_utils.go` (`reloadConfiguration`, parte de log) | `daemon/uiclient.c` | portado | |
 | `daemon/log/log.go` | `common/log.c` | portado | mesmo formato de linha, rótulos e cores |
@@ -66,7 +68,7 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/core/system.go` (`IPv6Enabled`) | `daemon/intercept.c` | portado | |
 | `daemon/ui/client.go` | `daemon/uiclient.c` | parcial | `NewClient`, `Connect`, `poller`, `connect`, `openSocket` (sem TLS: fase 10, divergência 39), `disconnect`, `ping`, `Ask`, `PostAlert`, `DefaultAction`, `DefaultDuration`, `Connected`, `IsAsking`, `InterceptUnknown`, `GetFirewallType`, `monitorConfigWorker`. Conexão: `common/grpc/` |
 | `daemon/ui/notifications.go` | `daemon/uiclient.c` | parcial | `getClientConfig` (com `SystemFirewall`), `Subscribe`, `listenForNotifications`, `sendNotificationReply` e todos os `handleAction*` (o JSON das tarefas aceita `name` e `Name`, como o decodificador do Go; a UI manda minúsculas); `handleActionReloadFw` grava o `system-fw.json` e responde com os erros da recarga (ou OK depois de 2 s). `handleActionTaskStart`/`Stop` com as três tarefas da UI (divergências 41, 86 a 88) |
-| `daemon/ui/notifications_tasks.go` | `daemon/uiclient.c` (`on_task_result`, `add_task`) | parcial | `monitorTaskEvents` (resposta à notificação se o id for > 10000, senão alerta), `monitorSockets`, `monitorNode`, `monitorProcessDetails`; `monitorTaskManager` não tem o que fazer sem canais. Falta o `loggers.Log` dos alertas das tarefas (loggers, fase 10) |
+| `daemon/ui/notifications_tasks.go` | `daemon/uiclient.c` (`on_task_result`, `add_task`) | portado | `monitorTaskEvents` (resposta à notificação se o id for > 10000, senão alerta), `monitorSockets`, `monitorNode`, `monitorProcessDetails`; `monitorTaskManager` não tem o que fazer sem canais. Os alertas das tarefas também vão para os loggers |
 | `daemon/tasks/main.go`, `base/main.go`, `doc.go` | `daemon/tasks/tasks.c` | parcial | `TaskManager` (`AddTask`, `RemoveTask`, `GetTask`, `StopAll`, `StopTempTasks`, `Stop`), os ids de `base`; cada tarefa é um timer do loop em vez de goroutine e canais. `UpdateTask` não tem uso; `PauseAll`/`ResumeAll` não têm chamadores e as tarefas não os implementam (TODO no upstream) |
 | `daemon/tasks/pidmonitor/main.go` | `daemon/tasks/pidmon.c` | portado | divergência 86 |
 | `daemon/tasks/nodemonitor/main.go` | `daemon/tasks/nodemon.c` | portado | o JSON de `syscall.Sysinfo_t` com os campos de linux/amd64 (`Pad_cgo_0`, `X_f`, `Pad_cgo_1`) ou de 32 bits; a lista de campos veio do pacote `syscall` e falta conferir contra o daemon Go no job `interop-ui` |
@@ -78,7 +80,7 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/tasks/downloader/*.go` | `daemon/tasks/downloader.c` | portado | só com `CURL=1` (libcurl numa thread, as listas em paralelo); sem ele a tarefa não inicia. Divergências 93 e 94 |
 | `daemon/ui/alerts.go` | `daemon/uiclient.c`, `daemon/protocol.c` (`ks_pb_alert_text`) | parcial | alertas de texto e a fila do `alertsDispatcher`; sem gzip (divergência 38). Alertas com processo ou conexão não têm quem os gere ainda (ebpf, fase 9) |
 | `daemon/ui/auth/auth.go` | — | pendente | TLS (`TLS=1`, fase 10) |
-| `daemon/statistics/stats.go`, `event.go` | `daemon/stats.c` | portado | sem workers (contagem no loop); `SetLoggers`/`logger.Log` com os loggers (fase 10); divergência 45 |
+| `daemon/statistics/stats.go`, `event.go` | `daemon/stats.c` | portado | sem workers (contagem no loop); `SetLoggers` e o `logger.Log` de cada conexão; divergência 45 |
 | `daemon/core/system.go` (`GetHostname`, `GetKernelVersion`) | `daemon/uiclient.c` | portado | |
 | `google.golang.org/grpc` (cliente: `Dial`, keepalive, prazos, status) | `common/grpc/grpc.c` | portado | só o que o protocolo usa; ver `docs/PROTOCOL.md` |
 | `daemon/firewall/rules.go` | `daemon/fw/fw.c` | portado | `Init` (iptables se o binário funciona, senão nftables; tipo desconhecido mantém o firewall anterior), `Reload`, `Stop`, `IsRunning`, `Enable/DisableInterception`, `CleanRules`, `SaveConfiguration`, `ErrorsChan`/`ErrChanEmpty`, `Serialize`, `Deserialize`. `ReloadSystemRules` não tem quem a chame no upstream e não foi portada |
@@ -224,6 +226,9 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 93 | `daemon/tasks/downloader.c` | abre o arquivo da lista com `O_RDWR\|O_CREATE` sem truncar e escreve por cima: uma lista nova menor deixa o fim da antiga; o arquivo é criado (vazio) mesmo se o download falhar. Intervalo inválido: `time.NewTicker(0)` entra em pânico; tempo-limite inválido: o erro de `Start` faz o gerenciador não repassar os resultados, e a goroutine trava no primeiro envio | baixa para um temporário ao lado e renomeia se deu certo; falha não toca o arquivo. Intervalo inválido: a tarefa não inicia (log); tempo-limite inválido: sem tempo-limite, com aviso | não corromper as listas usadas pelas regras |
 | 94 | `daemon/tasks/downloader.c` | `net/http` (User-Agent `Go-http-client/1.1`) | libcurl, só com `CURL=1`: redirecionamentos (até 10), gzip, proxy do ambiente e tempo-limite total como o `http.Client` | evita um cliente HTTP/TLS próprio; dependência opcional |
 | 95 | `daemon/uiclient.c` | com `Tasks.ConfigPath` no arquivo de configuração, a primeira leitura (`loadDiskConfiguration`) chama `TaskMgr.LoadTaskFile` antes de o `TaskMgr` existir: pânico na partida | a lista é lida uma vez ao criar o cliente, e de novo quando o caminho muda | não derrubar o daemon |
+| 96 | `daemon/loggers.c` | o logger `syslog` sem daemon de syslog (`syslog.New` falha) entra nulo no mapa de loggers e o primeiro evento derruba o daemon | erro no log e o logger é ignorado | não derrubar o daemon (contêineres e sistemas sem syslogd) |
+| 97 | `daemon/loggers.c`, `daemon/logformats.c` | cada worker do gerenciador formata a mensagem ao tirá-la da fila; os checksums de `connToSD` saem na ordem aleatória do mapa | a mensagem é formatada ao entrar na fila (o carimbo de hora é o do evento); checksums em ordem de chave | determinístico; o tempo de fila é de milissegundos |
+| 98 | `daemon/loggers.c` | o estado de conexão do `Remote` é um só para todos os writers (um writer reconectando marca o logger como desconectado e as mensagens são descartadas); ao reabrir após 10 erros, a conexão antiga fica aberta | o logger está conectado se algum writer estiver; a conexão antiga é fechada | sem descartes por corrida entre writers; sem vazar sockets |
 
 ## Bugs do upstream a relatar
 
@@ -270,6 +275,11 @@ comportamento, a não ser onde a tabela acima diz o contrário.
   rodando. O port reproduz.
 - O agendador nunca dispara com horas+minutos ou horas+segundos sem o
   terceiro campo, nem sem `weekday`. O port reproduz.
+- Loggers: o `syslog` ignora o `Tag` configurado (o `syslog.New` usa a
+  constante `opensnitch`) e, no formato padrão, manda uma linha RFC 5424 com
+  hostname e tag vazios dentro da linha do próprio `log/syslog` (cabeçalho
+  duplo); o `Remote` não usa `formatLine`, então as linhas CSV vão sem
+  quebra de linha. O port reproduz.
 - `readDescriptors` escreve o nome do descritor onde deveria ir o inode
   (`socket:[<fd>] - ...`). O port reproduz.
 - `PacketDiagMsg.deserialize` lê os atributos por deslocamentos fixos e toma
