@@ -1,0 +1,13 @@
+# nftables v1.0.2 (Lester Gooch)
+table inet opensnitch {
+	chain filter_input {
+		type filter hook input priority filter; policy drop;
+		iifname "lo" accept
+		ct state established,related accept
+	}
+
+	chain mangle_output {
+		type filter hook output priority mangle; policy accept;
+		icmp type { echo-reply, destination-unreachable, echo-request } accept
+	}
+}

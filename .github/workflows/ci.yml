@@ -99,6 +99,13 @@ jobs:
         run: |
           sudo env OPENSNITCHD="$PWD/build/opensnitchd-upstream" KISNITCHD="$PWD/build/kisnitchd" \
               KISNITCH_GTK="$PWD/build/kisnitch-gtk" tests/integration/ui.sh
+      # Phase 8: the same system-fw.json files give the same ruleset with
+      # upstream's daemon, and switching iptables <-> nftables leaves nothing.
+      - name: system firewall, ours and upstream's daemon
+        run: |
+          sudo apt-get install -y iptables
+          sudo env OPENSNITCHD="$PWD/build/opensnitchd-upstream" KISNITCHD="$PWD/build/kisnitchd" \
+              tests/integration/sysfw.sh
 
   # Phase 6 differential test: the same pop-up cases through upstream's
   # Python pop-up code (Qt replaced by stand-ins) and through ours.

@@ -1,0 +1,105 @@
+{
+  "Enabled": true,
+  "Version": 1,
+  "SystemRules": [
+    {
+      "Rule": null,
+      "Chains": [
+        {
+          "Name": "filter_input",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "filter",
+          "Hook": "input",
+          "Policy": "drop",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "Allow loopback",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "iifname",
+                    "Values": [
+                      {
+                        "Key": "lo",
+                        "Value": ""
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": "",
+              "UUID": "profile-lo"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "Allow established",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ct",
+                    "Values": [
+                      {
+                        "Key": "state",
+                        "Value": "related"
+                      },
+                      {
+                        "Key": "state",
+                        "Value": "established"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": "",
+              "UUID": "profile-ct"
+            }
+          ]
+        },
+        {
+          "Name": "mangle_output",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "mangle",
+          "Hook": "output",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "Allow ICMP",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "icmp",
+                    "Values": [
+                      {
+                        "Key": "type",
+                        "Value": "echo-request,echo-reply,destination-unreachable"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -246,6 +246,7 @@ test-integration: all $(INTEGRATION_TESTS) $(BUILD)/tests/test_stats_gui
 	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd KISNITCH_GTK=$(CURDIR)/$(BUILD)/kisnitch-gtk \
 		tests/integration/ui.sh || fail=1; \
 	KISNITCH_GTK=$(CURDIR)/$(BUILD)/kisnitch-gtk tests/integration/stats_win.sh || fail=1; \
+	KISNITCHD=$(CURDIR)/$(BUILD)/kisnitchd tests/integration/sysfw.sh || fail=1; \
 	STATS_GUI_TEST=$(CURDIR)/$(BUILD)/tests/test_stats_gui tests/integration/stats_gui.sh || fail=1; \
 	if [ $$fail -ne 0 ]; then echo "*** integration tests FAILED"; exit 1; fi; \
 	echo "*** all integration tests passed"

@@ -1,0 +1,1672 @@
+{
+  "Enabled": true,
+  "Version": 1,
+  "SystemRules": [
+    {
+      "Chains": [
+        {
+          "Name": "ks_regular",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "",
+          "Hook": "",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "in a regular chain",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "udp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "5353"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            }
+          ]
+        },
+        {
+          "Name": "filter_input",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "filter",
+          "Hook": "input",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "tcp port",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "22"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "tcp port set",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "80,443,8080"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "udp port range",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "udp",
+                    "Values": [
+                      {
+                        "Key": "sport",
+                        "Value": "1000-2000"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "tcp port !=",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "!=",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "8080"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "tcp both ports",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "sport",
+                        "Value": "1024"
+                      },
+                      {
+                        "Key": "dport",
+                        "Value": "22"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "sctp dccp udplite",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "sctp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "9"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ip saddr range",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ip",
+                    "Values": [
+                      {
+                        "Key": "saddr",
+                        "Value": "192.168.1.0-192.168.1.255"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ip daddr",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ip",
+                    "Values": [
+                      {
+                        "Key": "daddr",
+                        "Value": "10.0.0.1"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "reject",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ip daddr !=",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "!=",
+                    "Name": "ip",
+                    "Values": [
+                      {
+                        "Key": "daddr",
+                        "Value": "10.0.0.2"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ip saddr+daddr",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ip",
+                    "Values": [
+                      {
+                        "Key": "saddr",
+                        "Value": "1.2.3.4"
+                      },
+                      {
+                        "Key": "daddr",
+                        "Value": "5.6.7.8"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ip protocol",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ip",
+                    "Values": [
+                      {
+                        "Key": "protocol",
+                        "Value": "tcp"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ip6 statement, v4 address",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ip6",
+                    "Values": [
+                      {
+                        "Key": "daddr",
+                        "Value": "127.0.0.1"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ipv6 address (rejected by the kernel)",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ip",
+                    "Values": [
+                      {
+                        "Key": "daddr",
+                        "Value": "::1"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ct established",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ct",
+                    "Values": [
+                      {
+                        "Key": "state",
+                        "Value": "established,related"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ct two states",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ct",
+                    "Values": [
+                      {
+                        "Key": "state",
+                        "Value": "new"
+                      },
+                      {
+                        "Key": "state",
+                        "Value": "invalid"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ct mark",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ct",
+                    "Values": [
+                      {
+                        "Key": "mark",
+                        "Value": "123"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ct set mark",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ct",
+                    "Values": [
+                      {
+                        "Key": "set",
+                        "Value": ""
+                      },
+                      {
+                        "Key": "mark",
+                        "Value": "5"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "meta mark",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "meta",
+                    "Values": [
+                      {
+                        "Key": "mark",
+                        "Value": "1"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "meta set mark",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "meta",
+                    "Values": [
+                      {
+                        "Key": "set",
+                        "Value": ""
+                      },
+                      {
+                        "Key": "mark",
+                        "Value": "7"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "meta l4proto set + dport",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "meta",
+                    "Values": [
+                      {
+                        "Key": "l4proto",
+                        "Value": "tcp,udp"
+                      },
+                      {
+                        "Key": "dport",
+                        "Value": "53"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "meta l4proto",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "meta",
+                    "Values": [
+                      {
+                        "Key": "l4proto",
+                        "Value": "tcp"
+                      },
+                      {
+                        "Key": "sport",
+                        "Value": "53"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "meta nftrace",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "meta",
+                    "Values": [
+                      {
+                        "Key": "nftrace",
+                        "Value": "1"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "meta invalid nftrace",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "meta",
+                    "Values": [
+                      {
+                        "Key": "nftrace",
+                        "Value": "2"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "iifname",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "iifname",
+                    "Values": [
+                      {
+                        "Key": "lo",
+                        "Value": ""
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "iifname !=",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "!=",
+                    "Name": "iifname",
+                    "Values": [
+                      {
+                        "Key": "eth*",
+                        "Value": ""
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ether saddr",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ether",
+                    "Values": [
+                      {
+                        "Key": "saddr",
+                        "Value": "aa:bb:cc:dd:ee:ff"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ether daddr",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ether",
+                    "Values": [
+                      {
+                        "Key": "daddr",
+                        "Value": "00:11:22:33:44:55"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "bad mac",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ether",
+                    "Values": [
+                      {
+                        "Key": "saddr",
+                        "Value": "aa:bb:cc"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "icmp one type",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "icmp",
+                    "Values": [
+                      {
+                        "Key": "type",
+                        "Value": "echo-request"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "icmp types",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "icmp",
+                    "Values": [
+                      {
+                        "Key": "type",
+                        "Value": "echo-request,echo-reply"
+                      },
+                      {
+                        "Key": "type",
+                        "Value": "time-exceeded"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "icmpv6 types",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "icmpv6",
+                    "Values": [
+                      {
+                        "Key": "type",
+                        "Value": "neighbour-solicitation,neighbour-advertisement,router-advertisement"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "log",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "log",
+                    "Values": [
+                      {
+                        "Key": "prefix",
+                        "Value": "kstest "
+                      },
+                      {
+                        "Key": "level",
+                        "Value": "warn"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "log default prefix",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "log",
+                    "Values": []
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "log empty prefix",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "log",
+                    "Values": [
+                      {
+                        "Key": "prefix",
+                        "Value": ""
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "limit",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "limit",
+                    "Values": [
+                      {
+                        "Key": "units",
+                        "Value": "10"
+                      },
+                      {
+                        "Key": "time-units",
+                        "Value": "minute"
+                      },
+                      {
+                        "Key": "burst",
+                        "Value": "5"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "limit over bytes",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "limit",
+                    "Values": [
+                      {
+                        "Key": "over",
+                        "Value": ""
+                      },
+                      {
+                        "Key": "units",
+                        "Value": "2"
+                      },
+                      {
+                        "Key": "rate-units",
+                        "Value": "mbytes"
+                      },
+                      {
+                        "Key": "time-units",
+                        "Value": "second"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "quota",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "quota",
+                    "Values": [
+                      {
+                        "Key": "mbytes",
+                        "Value": "10"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "quota over used",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "quota",
+                    "Values": [
+                      {
+                        "Key": "over",
+                        "Value": ""
+                      },
+                      {
+                        "Key": "bytes",
+                        "Value": "1000"
+                      },
+                      {
+                        "Key": "used",
+                        "Value": "10"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "counter",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "counter",
+                    "Values": [
+                      {
+                        "Key": "name",
+                        "Value": "kscount"
+                      },
+                      {
+                        "Key": "packets",
+                        "Value": ""
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "reject tcp reset",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "23"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "reject",
+              "TargetParameters": "with tcp reset"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "reject icmp",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "udp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "69"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "reject",
+              "TargetParameters": "with icmp port-unreachable"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "reject icmpx",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "udp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "70"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "reject",
+              "TargetParameters": "with icmpx admin-prohibited"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "return",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "24"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "return",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "jump",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "25"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "jump",
+              "TargetParameters": "ks_regular"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "queue",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "26"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "queue",
+              "TargetParameters": "num 3"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "queue bad num",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "27"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "queue",
+              "TargetParameters": "num x"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "unknown statement adds nothing",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "foo",
+                    "Values": [
+                      {
+                        "Key": "bar",
+                        "Value": "1"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": false,
+              "Position": "0",
+              "Description": "disabled",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "28"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "upper case target",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "29"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "ACCEPT",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "no verdict",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "30"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "stop verdict (rejected by the kernel)",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "31"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "stop",
+              "TargetParameters": ""
+            }
+          ]
+        },
+        {
+          "Name": "nat_prerouting",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "natdest",
+          "Hook": "prerouting",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "dnat",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "80"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "dnat",
+              "TargetParameters": "to 10.0.0.2:8080"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "dnat ip",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "81"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "dnat",
+              "TargetParameters": "10.0.0.3"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "redirect",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "82"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "redirect",
+              "TargetParameters": "to :8082"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "bad dnat",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "83"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "dnat",
+              "TargetParameters": "to 300.0.0.1"
+            }
+          ]
+        },
+        {
+          "Name": "nat_postrouting",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "natsource",
+          "Hook": "postrouting",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "snat",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ip",
+                    "Values": [
+                      {
+                        "Key": "saddr",
+                        "Value": "10.0.0.0-10.0.0.255"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "snat",
+              "TargetParameters": "to 1.2.3.4"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "masquerade",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "oifname",
+                    "Values": [
+                      {
+                        "Key": "eth0",
+                        "Value": ""
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "masquerade",
+              "TargetParameters": ""
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "masquerade random",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "oifname",
+                    "Values": [
+                      {
+                        "Key": "eth1",
+                        "Value": ""
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "masquerade",
+              "TargetParameters": "random,persistent"
+            },
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "masquerade to port",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "443"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "masquerade",
+              "TargetParameters": "to :1024"
+            }
+          ]
+        },
+        {
+          "Name": "raw_prerouting",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "raw",
+          "Hook": "prerouting",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "notrack",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "udp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "123"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "notrack",
+                    "Values": []
+                  }
+                }
+              ],
+              "Target": "",
+              "TargetParameters": ""
+            }
+          ]
+        },
+        {
+          "Name": "bad_combination",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "natdest",
+          "Hook": "forward",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "x",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "1"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            }
+          ]
+        },
+        {
+          "Name": "",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "filter",
+          "Hook": "input",
+          "Policy": "accept",
+          "Rules": []
+        },
+        {
+          "Name": "conntrack_out",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "conntrack",
+          "Hook": "output",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ct chain",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "2"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            }
+          ]
+        },
+        {
+          "Name": "sec_in",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "security",
+          "Hook": "input",
+          "Policy": "accept",
+          "Rules": []
+        },
+        {
+          "Name": "selinux_post",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "selinux",
+          "Hook": "postrouting",
+          "Policy": "accept",
+          "Rules": []
+        },
+        {
+          "Name": "Mixed_Case",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "filter",
+          "Hook": "output",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "mixed case chain name",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "3"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            }
+          ]
+        },
+        {
+          "Name": "input",
+          "Table": "kstest",
+          "Family": "ip",
+          "Priority": "",
+          "Type": "filter",
+          "Hook": "input",
+          "Policy": "drop",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "in an ip table",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "ip",
+                    "Values": [
+                      {
+                        "Key": "daddr",
+                        "Value": "192.0.2.1"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            }
+          ]
+        },
+        {
+          "Name": "input",
+          "Table": "kstest6",
+          "Family": "ip6",
+          "Priority": "",
+          "Type": "filter",
+          "Hook": "input",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "ip6 table",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "4"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "drop",
+              "TargetParameters": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

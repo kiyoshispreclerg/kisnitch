@@ -1,0 +1,110 @@
+# nftables v1.0.2 (Lester Gooch)
+table inet opensnitch {
+	counter kscount {
+		packets 0 bytes 0
+	}
+
+	chain ks_regular {
+		udp dport 5353 drop
+	}
+
+	chain filter_input {
+		type filter hook input priority filter; policy accept;
+		tcp dport 22 accept
+		tcp dport { 80, 443, 8080 } accept
+		udp sport 1000-2000 drop
+		tcp dport != 8080 drop
+		tcp sport 1024 tcp dport 22 accept
+		sctp dport 9 drop
+		ip saddr 192.168.1.0-192.168.1.255 accept
+		ip daddr 10.0.0.1 reject with icmp net-unreachable
+		ip daddr != 10.0.0.2 drop
+		ip saddr 1.2.3.4 ip daddr 5.6.7.8 drop
+		ip protocol tcp accept
+		ip daddr 127.0.0.1 accept
+		ct state established,related accept
+		ct state invalid,new drop
+		ct mark 0x0000007b accept
+		ct mark set 0x00000005
+		meta mark 0x00000001 accept
+		meta mark set 0x00000007
+		meta l4proto { tcp, udp } th dport 53 accept
+		tcp sport 53 accept
+		iifname "lo" accept
+		iifname != "eth*" drop
+		ether saddr aa:bb:cc:dd:ee:ff drop
+		ether daddr 00:11:22:33:44:55 drop
+		icmp type echo-request accept
+		icmp type { echo-reply, echo-request, time-exceeded } accept
+		icmpv6 type { nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert } accept
+		log prefix "kstest "
+		log prefix "opensnitch" drop
+		limit rate 10/minute accept
+		limit rate over 2 mbytes/second burst 0 bytes drop
+		quota 10 mbytes accept
+		quota over 1000 bytes used 10 bytes drop
+		counter name "kscount" accept
+		tcp dport 23 reject with tcp reset
+		udp dport 69 reject
+		udp dport 70 reject with icmpx no-route
+		tcp dport 24 return
+		tcp dport 25 jump ks_regular
+		tcp dport 26 queue flags bypass to 3
+		tcp dport 29 accept
+		tcp dport 30
+	}
+
+	chain nat_prerouting {
+		type nat hook prerouting priority dstnat; policy accept;
+		tcp dport 80 dnat ip to 10.0.0.2:8080
+		tcp dport 81 dnat ip to 10.0.0.3
+		tcp dport 82 redirect to :8082
+	}
+
+	chain nat_postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip saddr 10.0.0.0-10.0.0.255 snat ip to 1.2.3.4
+		oifname "eth0" masquerade
+		oifname "eth1" masquerade random,persistent
+		tcp dport 443 masquerade to :1024
+	}
+
+	chain raw_prerouting {
+		type filter hook prerouting priority raw; policy accept;
+		udp dport 123 notrack
+	}
+
+	chain conntrack_out {
+		type filter hook output priority 100; policy accept;
+		tcp dport 2 accept
+	}
+
+	chain sec_in {
+		type filter hook input priority security; policy accept;
+	}
+
+	chain selinux_post {
+		type filter hook postrouting priority -225; policy accept;
+	}
+
+	chain mixed_case {
+		type filter hook output priority filter; policy accept;
+		tcp dport 3 accept
+	}
+
+	chain mangle_output {
+		type route hook output priority mangle; policy accept;
+	}
+}
+table ip kstest {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		ip daddr 192.0.2.1 drop
+	}
+}
+table ip6 kstest6 {
+	chain input {
+		type filter hook input priority filter; policy accept;
+		tcp dport 4 drop
+	}
+}

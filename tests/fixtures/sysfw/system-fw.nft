@@ -1,0 +1,52 @@
+# nftables v1.0.2 (Lester Gooch)
+table inet opensnitch {
+	chain filter_forward {
+		type filter hook forward priority filter; policy accept;
+	}
+
+	chain filter_output {
+		type filter hook output priority filter; policy accept;
+	}
+
+	chain filter_input {
+		type filter hook input priority filter; policy accept;
+	}
+
+	chain filter_prerouting {
+		type filter hook prerouting priority filter; policy accept;
+	}
+
+	chain mangle_prerouting {
+		type filter hook prerouting priority mangle; policy accept;
+	}
+
+	chain mangle_postrouting {
+		type filter hook postrouting priority mangle; policy accept;
+	}
+
+	chain nat_prerouting {
+		type nat hook prerouting priority dstnat; policy accept;
+	}
+
+	chain nat_postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+	}
+
+	chain nat_input {
+		type nat hook input priority 100; policy accept;
+	}
+
+	chain nat_output {
+		type nat hook output priority 100; policy accept;
+	}
+
+	chain mangle_output {
+		type filter hook output priority mangle; policy accept;
+		icmp type { echo-reply, destination-unreachable, echo-request } accept
+		icmpv6 type { destination-unreachable, echo-request, echo-reply } accept
+	}
+
+	chain mangle_forward {
+		type filter hook forward priority mangle; policy accept;
+	}
+}

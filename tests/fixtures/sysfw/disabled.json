@@ -1,0 +1,43 @@
+{
+  "Enabled": false,
+  "Version": 1,
+  "SystemRules": [
+    {
+      "Chains": [
+        {
+          "Name": "filter_input",
+          "Table": "opensnitch",
+          "Family": "inet",
+          "Priority": "",
+          "Type": "filter",
+          "Hook": "input",
+          "Policy": "accept",
+          "Rules": [
+            {
+              "Enabled": true,
+              "Position": "0",
+              "Description": "x",
+              "Parameters": "",
+              "Expressions": [
+                {
+                  "Statement": {
+                    "Op": "",
+                    "Name": "tcp",
+                    "Values": [
+                      {
+                        "Key": "dport",
+                        "Value": "22"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Target": "accept",
+              "TargetParameters": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

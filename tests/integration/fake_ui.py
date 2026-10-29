@@ -16,8 +16,9 @@
 #                  (answers "allow" after a while)
 #   duration       duration of the rules it answers (default "always")
 #   ui_config      JSON returned by Subscribe as the UI's config
-#   notify.json    a notification to send ({"type": N, "data": "..."}); the
-#                  file is removed once sent
+#   notify.json    a notification to send ({"type": N, "data": "..."}; with
+#                  "sysfw": <path>, that system-fw.json goes in sysFirewall);
+#                  the file is removed once sent
 import json
 import os
 import sys
@@ -31,6 +32,7 @@ sys.path.insert(0, sys.argv[1])
 
 import grpc  # noqa: E402
 import ui_pb2  # noqa: E402
+from google.protobuf import json_format  # noqa: E402
 import ui_pb2_grpc  # noqa: E402
 
 SOCKET, LOG, CTL = sys.argv[2], sys.argv[3], sys.argv[4]
@@ -80,7 +82,10 @@ class UI(ui_pb2_grpc.UIServicer):
     def Subscribe(self, request, context):
         log(rpc="Subscribe", name=request.name, version=request.version,
             config=request.config, rules=[r.name for r in request.rules],
-            fw_running=request.isFirewallRunning, log_level=request.logLevel)
+            fw_running=request.isFirewallRunning, log_level=request.logLevel,
+            sysfw=json_format.MessageToDict(request.systemFirewall,
+                                            preserving_proto_field_name=True)
+            if request.HasField("systemFirewall") else None)
         return ui_pb2.ClientConfig(
             name=request.name, version=request.version,
             config=ctl("ui_config", request.config), rules=request.rules)
@@ -108,8 +113,13 @@ class UI(ui_pb2_grpc.UIServicer):
                 os.unlink(path)
                 nid += 1
                 log(rpc="Notification", id=nid, type=n["type"])
-                yield ui_pb2.Notification(id=nid, type=n["type"],
+                ntf = ui_pb2.Notification(id=nid, type=n["type"],
                                           data=n.get("data", ""))
+                if "sysfw" in n:
+                    with open(n["sysfw"]) as f:
+                        json_format.Parse(f.read(), ntf.sysFirewall,
+                                          ignore_unknown_fields=True)
+                yield ntf
             time.sleep(0.1)
         log(rpc="Notifications", event="closed")
 

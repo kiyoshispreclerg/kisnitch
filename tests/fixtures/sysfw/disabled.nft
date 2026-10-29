@@ -1,0 +1,10 @@
+# nftables v1.0.2 (Lester Gooch)
+table inet opensnitch {
+	chain filter_input {
+		type filter hook input priority filter; policy accept;
+	}
+
+	chain mangle_output {
+		type route hook output priority mangle; policy accept;
+	}
+}

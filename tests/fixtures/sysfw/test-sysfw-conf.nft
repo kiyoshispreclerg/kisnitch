@@ -1,0 +1,19 @@
+# nftables v1.0.2 (Lester Gooch)
+table inet opensnitch {
+	chain filter_input {
+		type filter hook input priority filter; policy accept;
+		tcp dport 22 accept
+	}
+
+	chain mangle_output {
+		type filter hook output priority mangle; policy accept;
+		icmp type { echo-reply, echo-request } accept
+		icmpv6 type { echo-request, echo-reply } accept
+		udp dport 51820 accept
+	}
+
+	chain mangle_forward {
+		type filter hook forward priority mangle; policy accept;
+		ct state new queue flags bypass to 0
+	}
+}

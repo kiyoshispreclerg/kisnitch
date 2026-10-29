@@ -11,7 +11,12 @@
 #include <unistd.h>
 
 #include "common/pb_util.h"
+#include "common/json_util.h"
+#include "common/sysfw.h"
 #include "ui/db.h"
+#include "ui/fw_dialog.h"
+#include "ui/fwrules.h"
+#include "ui/stats_fw.h"
 #include "ui/prefs.h"
 #include "ui/rules_editor.h"
 #include "ui/rulesdb.h"
@@ -52,7 +57,8 @@ static void spin(void)
 /* the first widget under `wd` that is a button or label with this text */
 static GtkWidget *find_labeled(GtkWidget *wd, const char *label)
 {
-    if (GTK_IS_BUTTON(wd) && strcmp(gtk_button_get_label(GTK_BUTTON(wd)), label) == 0)
+    if (GTK_IS_BUTTON(wd) && gtk_button_get_label(GTK_BUTTON(wd)) != NULL &&
+        strcmp(gtk_button_get_label(GTK_BUTTON(wd)), label) == 0)
         return wd;
     if (GTK_IS_CONTAINER(wd)) {
         GList *ch = gtk_container_get_children(GTK_CONTAINER(wd));
@@ -113,9 +119,31 @@ static GtkWidget *name_entry(GtkWidget *win)
     return e;
 }
 
+/* the label under `wd` with exactly this text */
+static GtkWidget *find_in_label(GtkWidget *wd, const char *text)
+{
+    if (GTK_IS_LABEL(wd) && strcmp(gtk_label_get_text(GTK_LABEL(wd)), text) == 0)
+        return wd;
+    if (GTK_IS_CONTAINER(wd)) {
+        GList *ch = gtk_container_get_children(GTK_CONTAINER(wd));
+        for (GList *l = ch; l != NULL; l = l->next) {
+            GtkWidget *r = find_in_label(l->data, text);
+            if (r != NULL) {
+                g_list_free(ch);
+                return r;
+            }
+        }
+        g_list_free(ch);
+    }
+    return NULL;
+}
+
 /* any label of any window whose text has `needle` */
 static bool find_in(GtkWidget *wd, const char *needle)
 {
+    if (GTK_IS_EXPANDER(wd) && gtk_expander_get_label(GTK_EXPANDER(wd)) != NULL &&
+        strstr(gtk_expander_get_label(GTK_EXPANDER(wd)), needle) != NULL)
+        return true;
     if (GTK_IS_LABEL(wd) && strstr(gtk_label_get_text(GTK_LABEL(wd)), needle) != NULL)
         return true;
     if (GTK_IS_ENTRY(wd) && strstr(gtk_entry_get_text(GTK_ENTRY(wd)), needle) != NULL)
@@ -511,6 +539,169 @@ TEST(export_csv)
     g_free(path);
 }
 
+/* the last notification queued for a node */
+static Protocol__Notification *last_queued(const char *addr)
+{
+    struct ks_node *n = ks_nodes_get(ks_service_nodes(svc), addr);
+    return n != NULL && n->nqueue > 0 ? queued(addr, n->nqueue - 1) : NULL;
+}
+
+static GtkWidget *window_titled(const char *title)
+{
+    GList *tops = gtk_window_list_toplevels();
+    GtkWidget *found = NULL;
+    for (GList *l = tops; l != NULL; l = l->next) {
+        const char *t = gtk_window_get_title(GTK_WINDOW(l->data));
+        if (t != NULL && strcmp(t, title) == 0 && gtk_widget_get_visible(l->data))
+            found = l->data;
+    }
+    g_list_free(tops);
+    return found;
+}
+
+/* the first visible widget of type `t` under `wd` */
+static GtkWidget *find_type(GtkWidget *wd, GType t)
+{
+    if (G_TYPE_CHECK_INSTANCE_TYPE(wd, t) && gtk_widget_get_visible(wd))
+        return wd;
+    if (GTK_IS_CONTAINER(wd)) {
+        GList *ch = gtk_container_get_children(GTK_CONTAINER(wd));
+        for (GList *l = ch; l != NULL; l = l->next) {
+            GtkWidget *r = find_type(l->data, t);
+            if (r != NULL) {
+                g_list_free(ch);
+                return r;
+            }
+        }
+        g_list_free(ch);
+    }
+    return NULL;
+}
+
+static const Protocol__FwChain *pb_chain(const Protocol__SysFirewall *fw, const char *name)
+{
+    for (size_t i = 0; i < fw->n_systemrules; i++)
+        for (size_t j = 0; j < fw->systemrules[i]->n_chains; j++)
+            if (strcmp(fw->systemrules[i]->chains[j]->name, name) == 0)
+                return fw->systemrules[i]->chains[j];
+    return NULL;
+}
+
+TEST(firewall_dialogs)
+{
+    struct ks_node *node = ks_nodes_get(ks_service_nodes(svc), "unix:/local");
+    char err[256];
+    size_t len;
+    char *raw = ks_read_file(KS_FIXTURES_DIR "/../../upstream/daemon/data/system-fw.json",
+                             1 << 20, &len, err, sizeof(err));
+    CHECK(raw != NULL);
+    node->fw = calloc(1, sizeof(*node->fw));
+    CHECK(ks_sysfw_parse(raw, len, node->fw, err, sizeof(err)) == 0);
+    free(raw);
+    free(node->config->config);
+    node->config->config = strdup("{\"Firewall\": \"nftables\"}");
+
+    /* fwButton: the policies of the node */
+    struct ks_fw_dlg *d = ks_sw_fw_dialog(w->fw);
+    ks_fw_dlg_show(d);
+    spin();
+    GtkWidget *fwwin = window_titled("Firewall");
+    CHECK(fwwin != NULL);
+    GtkWidget *inbound = input_of(find_in_label(fwwin, "Inbound"));
+    CHECK(inbound != NULL && GTK_IS_COMBO_BOX(inbound));
+    CHECK_INT_EQ(gtk_combo_box_get_active(GTK_COMBO_BOX(inbound)), 0);
+
+    /* inbound: deny -> the drop profile goes to the daemon */
+    gtk_combo_box_set_active(GTK_COMBO_BOX(inbound), 1);
+    spin();
+    Protocol__Notification *n = last_queued("unix:/local");
+    CHECK(n != NULL && n->type == PROTOCOL__ACTION__RELOAD_FW_RULES && n->sysfirewall != NULL);
+    const Protocol__FwChain *in = pb_chain(n->sysfirewall, "filter_input");
+    CHECK(in != NULL);
+    CHECK_STR_EQ(in->policy, "drop");
+    CHECK_INT_EQ(in->n_rules, 3);
+    reply("unix:/local", n->id, false, "");
+    protobuf_c_message_free_unpacked(&n->base, NULL);
+    spin();
+    CHECK(on_screen("Configuration applied."));
+
+    /* Allow service (OUT): port 22 */
+    ks_fwrule_dlg_exclude_service(ks_fw_dlg_rule_dialog(d), KS_FWF_OUT);
+    spin();
+    GtkWidget *rwin = window_titled("Exclude service");
+    CHECK(rwin != NULL);
+    GtkWidget *value = find_type(rwin, GTK_TYPE_COMBO_BOX_ENTRY);
+    CHECK(value != NULL);
+    gtk_entry_set_text(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(value))), "22");
+    gtk_button_clicked(GTK_BUTTON(find_labeled(rwin, "_Add")));
+    spin();
+    n = last_queued("unix:/local");
+    CHECK(n != NULL && n->type == PROTOCOL__ACTION__RELOAD_FW_RULES);
+    const Protocol__FwChain *out = pb_chain(n->sysfirewall, "mangle_output");
+    CHECK(out != NULL && out->n_rules == 5);
+    const Protocol__FwRule *r = out->rules[0];
+    /* the protocol combo starts at "tcp,udp", as upstream's */
+    CHECK_STR_EQ(r->expressions[0]->statement->name, "meta");
+    CHECK_STR_EQ(r->expressions[0]->statement->values[0]->key, "l4proto");
+    CHECK_STR_EQ(r->expressions[0]->statement->values[0]->value, "tcp,udp");
+    CHECK_STR_EQ(r->expressions[0]->statement->values[1]->key, "dport");
+    CHECK_STR_EQ(r->expressions[0]->statement->values[1]->value, "22");
+    CHECK_STR_EQ(r->target, "accept");
+    char uuid[64];
+    snprintf(uuid, sizeof(uuid), "%s", r->uuid);
+    reply("unix:/local", n->id, false, "");
+    protobuf_c_message_free_unpacked(&n->base, NULL);
+    spin();
+    CHECK(on_screen("Rule added"));
+
+    /* the "Firewall" entry of the rules combo: every rule of the node */
+    gtk_notebook_set_current_page(GTK_NOTEBOOK(w->nb), 2);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(w->combo_rules), 4);
+    ks_sw_run_query(w, ks_sw_tab(w, KS_TAB_RULES), false);
+    spin();
+    CHECK(ks_sw_fw_visible(w->fw));
+    CHECK(!gtk_widget_get_visible(w->rules_sw));
+    CHECK_STR_EQ(gtk_label_get_text(GTK_LABEL(w->rows_label)), "9"); /* 6 + 2 of the profile + 1 */
+    gtk_entry_set_text(GTK_ENTRY(w->filter), "dport 22");
+    spin();
+    CHECK_STR_EQ(gtk_label_get_text(GTK_LABEL(w->rows_label)), "2");
+    gtk_entry_set_text(GTK_ENTRY(w->filter), "");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(w->combo_rules), 0);
+    spin();
+    CHECK(!ks_sw_fw_visible(w->fw));
+    gtk_notebook_set_current_page(GTK_NOTEBOOK(w->nb), 0);
+
+    /* editing it: the rule dialog loads it; an error naming it is shown */
+    ks_fw_dlg_load_rule(d, "unix:/local", uuid);
+    spin();
+    rwin = window_titled("Firewall rule");
+    CHECK(rwin != NULL);
+    /* KS_SHOT_DIR: screenshots of the dialogs */
+    const char *shots = getenv("KS_SHOT_DIR");
+    if (shots != NULL) {
+        char cmd[512];
+        gtk_window_move(GTK_WINDOW(fwwin), 0, 0);
+        gtk_window_move(GTK_WINDOW(rwin), 420, 0);
+        spin();
+        snprintf(cmd, sizeof(cmd), "import -window root '%s/firewall-dialogs.png'", shots);
+        if (system(cmd) != 0)
+            fprintf(stderr, "screenshot failed\n");
+    }
+    CHECK(on_screen("tcp,udp dport == ssh/22") || on_screen("tcp,udp dport == 22")); /* the service of the port, if /etc/services has it */
+    gtk_button_clicked(GTK_BUTTON(find_labeled(rwin, "_Save")));
+    spin();
+    n = last_queued("unix:/local");
+    CHECK(n != NULL);
+    char data[256];
+    snprintf(data, sizeof(data), "%s invalid rule parameters (%s),", uuid, uuid);
+    reply("unix:/local", n->id, true, data);
+    protobuf_c_message_free_unpacked(&n->base, NULL);
+    spin();
+    CHECK(on_screen("Error saving rule"));
+    gtk_widget_hide(rwin);
+    gtk_widget_hide(fwwin);
+}
+
 int main(int argc, char **argv)
 {
     if (!gtk_init_check(&argc, &argv)) {
@@ -541,6 +732,7 @@ int main(int argc, char **argv)
     RUN(rules_editor_from_event_and_edit);
     RUN(preferences_save);
     RUN(export_csv);
+    RUN(firewall_dialogs);
 
     ks_stats_win_free(w);
     ks_service_free(svc);

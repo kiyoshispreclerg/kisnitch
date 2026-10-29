@@ -9,10 +9,15 @@
 #include "common/log.h"
 #include "daemon/evloop.h"
 #include "daemon/fw/fw.h"
+#include "daemon/fw/iptables.h"
 #include "daemon/fw/nft.h"
 #include "tests/harness.h"
 
 static char out[16384];
+
+/* No system-fw.json: only the interception rules (system rules: sysfw.sh). */
+#define NO_SYSFW "/nonexistent/system-fw.json"
+
 
 static int nft(const char *args)
 {
@@ -37,7 +42,7 @@ TEST(installs_upstream_rules)
 {
     struct ks_evloop *loop = ks_evloop_new();
     struct ks_nft *n = ks_nft_new(loop);
-    ks_nft_init(n, 0, KS_FW_DEFAULT_CONFIG_FILE, "10s", true);
+    ks_nft_init(n, 0, NO_SYSFW, "10s", true);
     CHECK(ks_nft_is_running(n));
     CHECK(ks_nft_are_rules_loaded(n));
     CHECK_INT_EQ(ks_nft_count_rules(n, KS_NFT_INTERCEPTION_KEY), 3);
@@ -70,7 +75,7 @@ TEST(installs_upstream_rules)
 TEST(queue_num_and_no_bypass)
 {
     struct ks_nft *n = ks_nft_new(NULL);
-    ks_nft_init(n, 7, KS_FW_DEFAULT_CONFIG_FILE, "0s", false);
+    ks_nft_init(n, 7, NO_SYSFW, "0s", false);
     CHECK(ks_nft_are_rules_loaded(n));
     CHECK(nft("list chain inet opensnitch mangle_output") == 0);
     CHECK_STR_HAS(out, "queue to 7");
@@ -84,13 +89,13 @@ TEST(cleans_up_after_a_crash)
 {
     /* A daemon that died without cleaning up... */
     struct ks_nft *a = ks_nft_new(NULL);
-    ks_nft_init(a, 0, "", "0s", true);
+    ks_nft_init(a, 0, NO_SYSFW, "0s", true);
     ks_nft_free(a);
     CHECK(nft("list table inet opensnitch") == 0);
 
     /* ...leaves no duplicates behind when the next one starts. */
     struct ks_nft *b = ks_nft_new(NULL);
-    ks_nft_init(b, 0, "", "0s", true);
+    ks_nft_init(b, 0, NO_SYSFW, "0s", true);
     CHECK_INT_EQ(ks_nft_count_rules(b, KS_NFT_INTERCEPTION_KEY), 3);
     CHECK(ks_nft_are_rules_loaded(b));
     ks_nft_stop(b);
@@ -102,7 +107,7 @@ TEST(checker_reinstalls_after_flush)
 {
     struct ks_evloop *loop = ks_evloop_new();
     struct ks_nft *n = ks_nft_new(loop);
-    ks_nft_init(n, 0, "", "200ms", true);
+    ks_nft_init(n, 0, NO_SYSFW, "200ms", true);
     CHECK(ks_nft_are_rules_loaded(n));
 
     CHECK(nft("flush ruleset") == 0);
@@ -134,7 +139,7 @@ TEST(other_tables_are_left_alone)
     CHECK(nft("add rule ip filter output counter") == 0);
 
     struct ks_nft *n = ks_nft_new(NULL);
-    ks_nft_init(n, 0, "", "0s", true);
+    ks_nft_init(n, 0, NO_SYSFW, "0s", true);
     ks_nft_stop(n);
     CHECK(nft("list table ip filter") == 0);
     CHECK_STR_HAS(out, "counter");
@@ -153,7 +158,7 @@ TEST(upstream_keeps_table_if_inet_has_rules)
     CHECK(nft("add rule inet other c counter") == 0);
 
     struct ks_nft *n = ks_nft_new(NULL);
-    ks_nft_init(n, 0, "", "0s", true);
+    ks_nft_init(n, 0, NO_SYSFW, "0s", true);
     ks_nft_stop(n);
     CHECK_INT_EQ(ks_nft_count_rules(n, KS_NFT_INTERCEPTION_KEY), 0);
     CHECK(nft("list table inet opensnitch") == 0);
@@ -167,16 +172,21 @@ TEST(fw_facade)
 {
     struct ks_fw fw;
     CHECK(ks_fw_create(&fw, NULL) == 0);
-    CHECK(ks_fw_init(&fw, "iptables", "", "0s", true, 0) == 0); /* falls back */
+    /* iptables if the binary works, nftables otherwise */
+    CHECK(ks_fw_init(&fw, "iptables", NO_SYSFW, "0s", true, 0) == 0);
     CHECK(ks_fw_is_running(&fw));
-    CHECK_STR_EQ(ks_fw_name(&fw), "nftables");
+    CHECK_STR_EQ(ks_fw_name(&fw), ks_ipt_is_available() ? "iptables" : "nftables");
     CHECK(ks_fw_disable_interception(&fw) == 0);
     CHECK(nft("list ruleset") == 0);
     CHECK(strstr(out, "queue") == NULL);
     CHECK(ks_fw_enable_interception(&fw) == 0);
     CHECK(nft("list ruleset") == 0);
     CHECK_STR_HAS(out, "queue");
-    CHECK(ks_fw_reload(&fw, "nftables", "", "0s", false, 3) == 0);
+    CHECK(ks_fw_reload(&fw, "nftables", NO_SYSFW, "0s", false, 3) == 0);
+    CHECK_STR_EQ(ks_fw_name(&fw), "nftables");
+    /* an unknown type keeps the current firewall */
+    CHECK(ks_fw_reload(&fw, "pf", NO_SYSFW, "0s", false, 3) == 0);
+    CHECK_STR_EQ(ks_fw_name(&fw), "nftables");
     CHECK(nft("list ruleset") == 0);
     CHECK_STR_HAS(out, "queue to 3");
     ks_fw_stop(&fw);
