@@ -149,6 +149,7 @@ $(BUILD)/ui/i18n.o: CPPFLAGS += -DKS_LOCALEDIR='"$(DATADIR)/locale"'
 FORCE:
 .PHONY: FORCE
 
+.DEFAULT_GOAL := all
 .PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui ui-checklist clean test-integration install install-data install-mo install-service install-sysv uninstall
 
 all: $(BUILD)/kisnitchd $(BUILD)/kisnitch-gtk $(MOFILES)
