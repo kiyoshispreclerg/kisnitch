@@ -36,7 +36,7 @@ numa máquina com Go.)
 - Recursos do upstream usados pela UI ficam em ui/res/ (tools/sync-ui-res.sh) e são embutidos no binário; as tabelas do slugify vêm de tools/gen-slug-tables.py.
 
 ## Comandos
-- make / make test / make asan / make valgrind / make lint
+- make / make test / make asan / make valgrind / make lint (opcionais: `CURL=1` para a tarefa `downloader`, com libcurl)
 - make diff (teste diferencial contra o Go do upstream; ver tests/diff/run.sh)
 - make diff-ui (popup e editor de regras contra o código Python do upstream; precisa do submódulo e de python3-protobuf, python3-grpc-tools, python3-slugify, python3-unidecode)
 - make fuzz-run FUZZ_TIME=60 (nesta máquina: `FUZZ_LDFLAGS=-L/usr/lib/gcc/x86_64-linux-gnu/11`)

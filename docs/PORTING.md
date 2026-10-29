@@ -46,8 +46,9 @@ Todas em C, empacotadas em todas as distros principais.
 | Banco de estatísticas (UI) | `sqlite3` | sim (UI) |
 | Interface | `gtk+-2.0` | sim (UI) |
 | Notificações | `libnotify` | opcional (`NOTIFY=1`) |
+| Tarefa `downloader` (HTTP/HTTPS) | `libcurl` | opcional (`CURL=1`) |
 
-**Build:** `Makefile` simples + `pkg-config`. Sem autotools, sem meson, sem cmake. Flags opcionais via `make EBPF=1 TLS=1 NOTIFY=1`.
+**Build:** `Makefile` simples + `pkg-config`. Sem autotools, sem meson, sem cmake. Flags opcionais via `make EBPF=1 TLS=1 NOTIFY=1 CURL=1`.
 
 **Sobre o gRPC:** não usar a biblioteca oficial gRPC (é C++ e pesada). Implementar um cliente/servidor gRPC mínimo sobre `nghttp2` + `protobuf-c`. O gRPC é só HTTP/2 com um framing de 5 bytes (1 byte de compressão + 4 bytes de tamanho) e alguns headers (`content-type: application/grpc`, `grpc-status` nos trailers). Só precisamos de chamadas unárias e de um stream bidirecional (`Notifications`), via socket Unix e opcionalmente TCP.
 
@@ -297,7 +298,7 @@ Regra geral para todas as fases: antes de escrever código, ler os arquivos corr
   - Perfis de aplicativo do ufw (`/etc/ufw/applications.d/`) podem ser lidos como atalhos que só preenchem portas.
   - Diferenças a documentar: o `limit` do upstream é taxa global, não por IP de origem como o `ufw limit`; um endereço IPv4 casa só IPv4 (para os dois, duas regras).
 
-Progresso: tarefas da UI (`pid-monitor`, `node-monitor`, `sockets-monitor`) em `daemon/tasks/`; faltam as tarefas lidas de arquivo (`TasksOptions`), o audit, os loggers, TLS, notificações, i18n e o painel simplificado.
+Progresso: tarefas da UI (`pid-monitor`, `node-monitor`, `sockets-monitor`) e as lidas de arquivo (`tasks.json`: `looper`, `IOC-scanner`, `downloader` com `CURL=1`) em `daemon/tasks/`; faltam o audit, os loggers, TLS, notificações, i18n e o painel simplificado.
 
 **Aceite:**
 - [ ] Tabela de funcionalidades em `docs/UPSTREAM.md` 100% marcada como portada, ou com justificativa explícita para o que ficou de fora.

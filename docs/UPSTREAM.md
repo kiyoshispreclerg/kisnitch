@@ -71,7 +71,11 @@ posterior), `copiado` (arquivo trazido sem tradução), `pendente`.
 | `daemon/tasks/pidmonitor/main.go` | `daemon/tasks/pidmon.c` | portado | divergência 86 |
 | `daemon/tasks/nodemonitor/main.go` | `daemon/tasks/nodemon.c` | portado | o JSON de `syscall.Sysinfo_t` com os campos de linux/amd64 (`Pad_cgo_0`, `X_f`, `Pad_cgo_1`) ou de 32 bits; a lista de campos veio do pacote `syscall` e falta conferir contra o daemon Go no job `interop-ui` |
 | `daemon/tasks/socketsmonitor/*.go` | `daemon/tasks/sockmon.c` | portado | divergências 86, 87 e 89 |
-| `daemon/tasks/load.go`, `config/*.go`, `looptask`, `downloader`, `iocscanner`, `scheduler` | — | pendente | tarefas lidas de `TasksOptions.ConfigPath` (fase 10) |
+| `daemon/tasks/load.go`, `config/main.go`, `monitor.go`, `utils.go` | `daemon/tasks/load.c` | portado | `LoadTaskFile`, `ReloadTaskFile` (sem uso), `loadDiskTasks`, `loadDiskTask`, `Loader.Load`, `LoadTaskData`, `AddWatches`/`RemoveWatch` e o `liveReloadWorker` com inotify no loop; divergências 90 e 95 |
+| `daemon/tasks/looptask/main.go` | `daemon/tasks/looper.c` | portado | |
+| `daemon/tasks/scheduler/scheduler.go` | `daemon/tasks/scheduler.c` | portado | `time.Parse` de `15:04:05`/`15:04` com as regras do Go (hora de um ou dois dígitos, fração de segundo aceita); timers do loop no lugar dos tickers |
+| `daemon/tasks/iocscanner/*.go` (`config`, `tools/base`, `executer`, `yara`, `dpkg`, `generic`) | `daemon/tasks/iocscanner.c` | portado | processos com `posix_spawnp` e a saída lida no loop; divergências 41, 91 e 92 |
+| `daemon/tasks/downloader/*.go` | `daemon/tasks/downloader.c` | portado | só com `CURL=1` (libcurl numa thread, as listas em paralelo); sem ele a tarefa não inicia. Divergências 93 e 94 |
 | `daemon/ui/alerts.go` | `daemon/uiclient.c`, `daemon/protocol.c` (`ks_pb_alert_text`) | parcial | alertas de texto e a fila do `alertsDispatcher`; sem gzip (divergência 38). Alertas com processo ou conexão não têm quem os gere ainda (ebpf, fase 9) |
 | `daemon/ui/auth/auth.go` | — | pendente | TLS (`TLS=1`, fase 10) |
 | `daemon/statistics/stats.go`, `event.go` | `daemon/stats.c` | portado | sem workers (contagem no loop); `SetLoggers`/`logger.Log` com os loggers (fase 10); divergência 45 |
@@ -165,7 +169,7 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 37 | `daemon/intercept.c`, `daemon/main.c` | para perguntar à UI, o pacote é reenfileirado na fila `N+1` (`SetRequeueVerdict`) e lido de volta em até 1 s; a goroutine fica bloqueada na resposta | o veredicto do pacote fica pendente pelo id e sai quando a UI responde; não há fila `N+1` | loop único (seção 4 do PORTING.md); o efeito para o resto do tráfego é o mesmo, e a fila `N+1` deixa de ser ocupada |
 | 38 | `daemon/uiclient.c` | `PostAlert` com compressão gzip | sem compressão | evita a zlib; a UI aceita os dois |
 | 39 | `daemon/uiclient.c` | `Server.Authentication.Type` `tls-simple`/`tls-mutual` conecta com TLS | não conecta; avisa a cada segundo ("Invalid client auth options") | TLS vem na fase 10 (`TLS=1`) |
-| 41 | `daemon/uiclient.c`, `daemon/tasks/` | as asserções de tipo dos dados das tarefas (`conf["pid"].(string)`, `conf["node"]`, `conf["interval"]` do `node-monitor`, os campos do `sockets-monitor`) e o `SetID` no `sockets-monitor` nulo (configuração que não é objeto) derrubam o daemon | responde erro com o texto do pânico (`interface conversion: interface {} is nil, not string`) ou `[sockmon] invalid config received: <JSON>` | não derrubar o daemon por mensagem da rede |
+| 41 | `daemon/uiclient.c`, `daemon/tasks/` | as asserções de tipo dos dados das tarefas (`conf["pid"].(string)`, `conf["node"]`, `conf["interval"]` do `node-monitor`, os campos do `sockets-monitor`, o `interval` do `looper` e do `IOC-scanner` lidos do disco, `opts.Cmd[0]` de uma ferramenta sem comando, `path[1]` nas linhas de uma coluna do debsums) e o `SetID` no `sockets-monitor` nulo (configuração que não é objeto) derrubam o daemon | responde erro com o texto do pânico (`interface conversion: interface {} is nil, not string`) ou `[sockmon] invalid config received: <JSON>` | não derrubar o daemon por mensagem da rede |
 | 42 | `daemon/uiclient.c` | `ENABLE_RULE`/`DISABLE_RULE` com regra sem operador derruba o daemon (ponteiro nulo) | responde erro | não derrubar o daemon por mensagem da rede |
 | 43 | `daemon/uiclient.c` | `unix-abstract:<nome>` disca a rede `unix-abstract`, que o Go não conhece: nunca conecta | conecta no socket abstrato `<nome>` | é o que o endereço quer dizer (a UI converte `unix:@nome` para `unix-abstract:nome` achando que o daemon entende) |
 | 44 | `daemon/stats.c` | `Statistics.daemon_version` é a versão do daemon | é a versão do upstream (`1.8.0`) | a UI espera `x.y.z` (`Utils.check_versions`); com a versão do port ela descartaria as estatísticas |
@@ -214,6 +218,12 @@ Cada uma precisa de justificativa; remover da lista quando corrigida.
 | 87 | `daemon/tasks/tasks.c` | intervalo zero ou negativo: `time.NewTicker` entra em pânico | erro no start (só log, a tarefa fica parada), como um intervalo inválido | não derrubar o daemon |
 | 88 | `daemon/uiclient.c` | o resultado de cada tarefa vai ao stream de notificações que existia quando ela começou | vai ao stream atual (as tarefas da UI param ao desconectar, divergência 86) | mesmo efeito |
 | 89 | `daemon/tasks/sockmon.c` | uma goroutine por socket: a ordem de `Table` varia a cada chamada | a ordem do dump (lista de opções do upstream, depois XDP, depois AF_PACKET) | determinístico; a UI ordena a tabela |
+| 90 | `daemon/tasks/load.c` | cada evento de escrita ou renomeação de um arquivo de tarefas espera 1 s e recarrega (vários eventos, várias recargas) | uma recarga por arquivo a cada espera de 1 s | mesmo efeito |
+| 91 | `daemon/tasks/iocscanner.c`, `downloader.c` | um erro de tipo na configuração da tarefa (`json.Unmarshal`) só gera aviso, e a tarefa segue com o que foi decodificado antes do erro | aviso e configuração vazia (o IOC-scanner fica sem ferramentas e não inicia) | o decodificador de `common/json_schema.c` não guarda decodificação parcial |
+| 92 | `daemon/tasks/iocscanner.c` | ao fim da primeira execução, `Stop()` cancela o contexto da ferramenta e fecha o relatório: as execuções seguintes não iniciam o comando (só mandam cabeçalho e rodapé), não gravam relatório, e o yara perde a lista de varredura. A saída inteira fica na memória | toda execução agendada roda; o arquivo de relatório (nome com a hora de criação da tarefa) recebe os relatórios em sequência e a lista do yara dura até a tarefa parar; o relatório é cortado em 64 MiB | é o que a tarefa promete (varreduras periódicas) |
+| 93 | `daemon/tasks/downloader.c` | abre o arquivo da lista com `O_RDWR\|O_CREATE` sem truncar e escreve por cima: uma lista nova menor deixa o fim da antiga; o arquivo é criado (vazio) mesmo se o download falhar. Intervalo inválido: `time.NewTicker(0)` entra em pânico; tempo-limite inválido: o erro de `Start` faz o gerenciador não repassar os resultados, e a goroutine trava no primeiro envio | baixa para um temporário ao lado e renomeia se deu certo; falha não toca o arquivo. Intervalo inválido: a tarefa não inicia (log); tempo-limite inválido: sem tempo-limite, com aviso | não corromper as listas usadas pelas regras |
+| 94 | `daemon/tasks/downloader.c` | `net/http` (User-Agent `Go-http-client/1.1`) | libcurl, só com `CURL=1`: redirecionamentos (até 10), gzip, proxy do ambiente e tempo-limite total como o `http.Client` | evita um cliente HTTP/TLS próprio; dependência opcional |
+| 95 | `daemon/uiclient.c` | com `Tasks.ConfigPath` no arquivo de configuração, a primeira leitura (`loadDiskConfiguration`) chama `TaskMgr.LoadTaskFile` antes de o `TaskMgr` existir: pânico na partida | a lista é lida uma vez ao criar o cliente, e de novo quando o caminho muda | não derrubar o daemon |
 
 ## Bugs do upstream a relatar
 
@@ -248,6 +258,18 @@ comportamento, a não ser onde a tabela acima diz o contrário.
   (divergência 86); asserções de tipo sem verificação nos dados das tarefas
   derrubam o daemon, e o `sockets-monitor` chama `SetID` antes de verificar
   o erro de `New` (divergência 41).
+- Tarefas do disco: o IOC-scanner só roda de verdade na primeira vez
+  (divergência 92); o downloader escreve por cima da lista sem truncar
+  (divergência 93); `Tasks.ConfigPath` na configuração da partida derruba o
+  daemon (divergência 95); `Start` do downloader devolve o erro do
+  tempo-limite por cima do erro do intervalo.
+- `LoadTaskFile`, ao mudar o arquivo de uma tarefa, escolhe a tarefa pelo
+  nome da instância (`taskConf.Name`) em vez do tipo da lista: só reinicia
+  instâncias chamadas `looper`, `downloader` ou `IOC-scanner`; as outras são
+  removidas e não voltam. Tarefas que saem do `tasks.json` continuam
+  rodando. O port reproduz.
+- O agendador nunca dispara com horas+minutos ou horas+segundos sem o
+  terceiro campo, nem sem `weekday`. O port reproduz.
 - `readDescriptors` escreve o nome do descritor onde deveria ir o inode
   (`socket:[<fd>] - ...`). O port reproduz.
 - `PacketDiagMsg.deserialize` lê os atributos por deslocamentos fixos e toma
