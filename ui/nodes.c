@@ -12,6 +12,9 @@
 #define _DEFAULT_SOURCE 1
 #include "ui/nodes.h"
 
+#include "common/arena.h"
+#include "common/sysfw.h"
+
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netinet/in.h>
@@ -37,6 +40,10 @@ static void free_node(struct ks_node *node)
 {
     if (node->config)
         protobuf_c_message_free_unpacked(&node->config->base, NULL);
+    if (node->fw != NULL) {
+        ks_sysfw_free(node->fw);
+        free(node->fw);
+    }
     for (size_t i = 0; i < node->nqueue; i++)
         free(node->queue[i].buf);
     free(node->queue);
@@ -190,6 +197,17 @@ struct ks_node *ks_nodes_add(struct ks_nodes *n, const char *peer,
         if (node->config)
             protobuf_c_message_free_unpacked(&node->config->base, NULL);
         node->config = config;
+        /* add_fw_config(addr, client_config.systemFirewall) */
+        if (node->fw != NULL) {
+            ks_sysfw_free(node->fw);
+            free(node->fw);
+            node->fw = NULL;
+        }
+        if (config->systemfirewall != NULL && (node->fw = calloc(1, sizeof(*node->fw))) != NULL &&
+            ks_sysfw_from_pb(node->fw, config->systemfirewall) < 0) {
+            free(node->fw);
+            node->fw = NULL;
+        }
     }
     return node;
 fail:
@@ -352,4 +370,21 @@ void ks_nodes_reply(struct ks_nodes *n, const char *addr, const Protocol__Notifi
         return;
     }
     ks_debug("[Nodes]: reply notification not in the list: %llu", (unsigned long long)r->id);
+}
+
+uint64_t ks_nodes_reload_fw(struct ks_nodes *n, const char *addr, ks_ntf_reply_cb cb,
+                            void *data)
+{
+    struct ks_node *node = ks_nodes_get(n, addr);
+    if (node == NULL || node->fw == NULL)
+        return 0;
+    struct ks_arena a = {0};
+    Protocol__Notification ntf = PROTOCOL__NOTIFICATION__INIT;
+    ntf.type = PROTOCOL__ACTION__RELOAD_FW_RULES;
+    ntf.sysfirewall = ks_sysfw_to_pb(&a, node->fw);
+    uint64_t id = 0;
+    if (ntf.sysfirewall != NULL)
+        id = ks_nodes_send(n, addr, &ntf, cb, data);
+    ks_arena_free(&a);
+    return id;
 }

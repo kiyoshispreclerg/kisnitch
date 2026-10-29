@@ -51,6 +51,7 @@ DAEMON_LIB_SRC = daemon/config.c \
 DAEMON_MAIN    = daemon/main.c
 # The UI without widgets (GLib only): what the unit tests link.
 UI_LIB_SRC = ui/db.c \
+             ui/fwrules.c \
              ui/highlight.c \
              ui/desktop.c \
              ui/nodeinfo.c \
@@ -72,6 +73,9 @@ UI_LIB_SRC = ui/db.c \
              ui/slug.c \
              ui/statsq.c
 UI_GTK_SRC = ui/main.c \
+             ui/stats_fw.c \
+             ui/fw_dialog.c \
+             ui/fw_rule_dialog.c \
              ui/prompt.c \
              ui/rules_editor.c \
              ui/prefs.c \

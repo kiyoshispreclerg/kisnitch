@@ -10,6 +10,8 @@
  */
 #include "ui/stats_win.h"
 #include "ui/stats_win_priv.h"
+#include "ui/fw_dialog.h"
+#include "ui/stats_fw.h"
 
 #include <gtk/gtk.h>
 #include <stdlib.h>
@@ -196,6 +198,10 @@ static void on_header_clicked(GtkTreeViewColumn *col, gpointer ud)
 /* setQuery(): detach the model from its view, run the query, attach it. */
 void ks_sw_run_query(struct ks_stats_win *w, struct tabview *tv, bool refresh_only)
 {
+    if (tv->tab == KS_TAB_RULES && ks_sw_fw_visible(w->fw)) {
+        ks_sw_fw_refresh(w->fw);
+        return;
+    }
     char *sql = tab_sql(w, tv);
     if (sql == NULL)
         return;
@@ -528,12 +534,25 @@ static void on_action_changed(GtkComboBox *c, gpointer ud)
     ks_sw_run_query(w, ks_sw_cur_tab(w), false);
 }
 
+/* RULES_COMBO_FW: the firewall rules instead of the applications' */
+#define RULES_COMBO_FW 4
+
 static void on_rules_combo(GtkComboBox *c, gpointer ud)
 {
     struct ks_stats_win *w = ud;
-    (void)c;
+    bool fw = gtk_combo_box_get_active(c) == RULES_COMBO_FW;
+    gtk_widget_set_visible(ks_sw_fw_widget(w->fw), fw);
+    gtk_widget_set_visible(w->rules_sw, !fw);
     if (!w->loading)
         ks_sw_run_query(w, &w->tv[2], false);
+}
+
+/* fwButton */
+static void on_fw_button(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    struct ks_stats_win *w = ud;
+    ks_fw_dlg_show(ks_sw_fw_dialog(w->fw));
 }
 
 /* _del_by_field(): the item's row of its table and the events that name it */
@@ -710,7 +729,7 @@ static void build_tab(struct ks_stats_win *w, int i)
     if (tv->tab == KS_TAB_RULES) {
         w->combo_rules = gtk_combo_box_new_text();
         static const char *const items[] = {"All applications", "Permanent", "Temporary",
-                                            "Alerts"};
+                                            "Alerts", "Firewall"};
         for (size_t k = 0; k < sizeof(items) / sizeof(items[0]); k++)
             gtk_combo_box_append_text(GTK_COMBO_BOX(w->combo_rules), items[k]);
         gtk_combo_box_set_active(GTK_COMBO_BOX(w->combo_rules), 0);
@@ -764,6 +783,10 @@ static void build_tab(struct ks_stats_win *w, int i)
     } else {
         gtk_box_pack_start(GTK_BOX(tv->page), sw, TRUE, TRUE, 0);
     }
+    if (tv->tab == KS_TAB_RULES) {
+        w->rules_sw = sw;
+        gtk_box_pack_start(GTK_BOX(tv->page), ks_sw_fw_widget(w->fw), TRUE, TRUE, 0);
+    }
     g_signal_connect(tv->back, "clicked", G_CALLBACK(on_back), tv);
     g_signal_connect(tv->tree, "row-activated", G_CALLBACK(on_row_activated), tv);
     ks_sw_menu_attach(w, tv);
@@ -777,6 +800,7 @@ struct ks_stats_win *ks_stats_win_new(struct ks_service *svc, struct ks_settings
     w->settings = settings;
     w->desktop = desktop;
     w->loading = true;
+    w->fw = ks_sw_fw_new(w);
 
     w->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(w->win), "Kisnitch Network Statistics " KS_UPSTREAM_VERSION);
@@ -806,6 +830,12 @@ struct ks_stats_win *ks_stats_win_new(struct ks_service *svc, struct ks_settings
     GtkWidget *actions_btn = gtk_button_new_with_label("Actions");
     g_signal_connect(actions_btn, "clicked", G_CALLBACK(ks_sw_actions_clicked), w);
     gtk_box_pack_start(GTK_BOX(hdr), actions_btn, FALSE, FALSE, 4);
+    GtkWidget *fw_btn = gtk_button_new_with_label("Firewall");
+    gtk_button_set_image(GTK_BUTTON(fw_btn),
+                         gtk_image_new_from_icon_name("security-high", GTK_ICON_SIZE_BUTTON));
+    gtk_widget_set_tooltip_text(fw_btn, "System firewall");
+    g_signal_connect(fw_btn, "clicked", G_CALLBACK(on_fw_button), w);
+    gtk_box_pack_start(GTK_BOX(hdr), fw_btn, FALSE, FALSE, 4);
     GtkWidget *prefs_btn = gtk_button_new_from_stock(GTK_STOCK_PREFERENCES);
     gtk_widget_set_tooltip_text(prefs_btn, "Preferences");
     g_signal_connect(prefs_btn, "clicked", G_CALLBACK(on_prefs_button), w);
@@ -889,6 +919,7 @@ void ks_stats_win_free(struct ks_stats_win *w)
     ks_procdlg_free(w->proc);
     ks_ruleed_free(w->ruleed);
     ks_prefs_free(w->prefs);
+    ks_sw_fw_free(w->fw);
     gtk_widget_destroy(w->win);
     for (int i = 0; i < NTABS; i++) {
         g_object_unref(w->tv[i].store);
@@ -951,6 +982,7 @@ void ks_stats_win_update(struct ks_stats_win *w, const Protocol__Statistics *st,
 /* update_status() / _update_status_label() */
 void ks_stats_win_status_changed(struct ks_stats_win *w)
 {
+    ks_sw_fw_nodes_updated(w->fw);
     struct ks_service_state st = ks_service_state(w->svc);
     const char *text;
     const char *color;

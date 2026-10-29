@@ -91,10 +91,15 @@ struct ks_stats_win {
     struct ks_prefs *prefs;
     gint64 last_update; /* _last_update, monotonic microseconds */
     GtkWidget *rule_edit, *rule_delete; /* the buttons of a rule's detail view */
+    /* the system firewall (stats_fw.c): its rules view, shown instead of
+     * the rules table when the rules combo says "Firewall" */
+    struct ks_sw_fw *fw;
+    GtkWidget *rules_sw;
 };
 
 struct ks_procdlg;
 struct ks_ruleed;
+struct ks_sw_fw;
 struct ks_prefs;
 
 /* stats_win.c */

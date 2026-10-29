@@ -11,7 +11,7 @@
  * Copyright (C) 2026 the Kisnitch contributors.
  *
  * Memory: struct ks_nodes owns every node, their configs (unpacked
- * messages), queued notifications (packed) and the records of sent
+ * messages and firewall), queued notifications (packed) and the records of sent
  * notifications. A node's `stream` is borrowed from the gRPC connection
  * (cleared by the owner when the call closes).
  */
@@ -26,6 +26,8 @@
 #include "common/grpc/grpc.h"
 #include "common/pb/ui.pb-c.h"
 
+struct ks_sysfw;
+
 #define KS_NODE_ADDR_MAX 160
 
 struct ks_queued_ntf {
@@ -36,6 +38,7 @@ struct ks_queued_ntf {
 struct ks_node {
     char addr[KS_NODE_ADDR_MAX]; /* "proto:addr" */
     Protocol__ClientConfig *config;
+    struct ks_sysfw *fw; /* node['firewall']: the editable system firewall, or NULL */
     bool online;
     time_t last_seen;
     struct ks_grpc_call *stream; /* the open Notifications call, if any */
@@ -106,6 +109,11 @@ uint64_t ks_nodes_send_all(struct ks_nodes *n, Protocol__Notification *ntf, ks_n
                            void *data);
 /* Sends what's queued for the node on its (now open) stream. */
 void ks_nodes_flush(struct ks_node *node);
+
+/* Nodes.reload_fw(): a RELOAD_FW_RULES notification with the node's
+ * firewall (node->fw). Returns the id, 0 if the node has no firewall. */
+uint64_t ks_nodes_reload_fw(struct ks_nodes *n, const char *addr, ks_ntf_reply_cb cb,
+                            void *data);
 
 /* Nodes.reply_notification(): routes a reply to its callback. */
 void ks_nodes_reply(struct ks_nodes *n, const char *addr, const Protocol__NotificationReply *r);
