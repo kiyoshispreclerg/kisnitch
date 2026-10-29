@@ -16,6 +16,9 @@ DAEMON=/usr/sbin/kisnitchd
 PIDFILE=/run/$NAME.pid
 RULES=/etc/opensnitchd/rules
 DAEMON_ARGS="-rules-path $RULES"
+# Only the capabilities the daemon uses (docs/PRIVILEGES.md); set CAPS= in
+# /etc/default/kisnitch to run with all of root's, e.g. for the audit method.
+CAPS="-all,+net_admin,+net_raw,+sys_ptrace,+dac_override"
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 [ -x "$DAEMON" ] || exit 0
@@ -28,8 +31,17 @@ do_start() {
         return 1
     fi
     [ -d "$RULES" ] || mkdir -p "$RULES"
-    start-stop-daemon --start --quiet --oknodo --background --make-pidfile \
-        --pidfile "$PIDFILE" --exec "$DAEMON" -- $DAEMON_ARGS
+    # in a container whose bounding set lacks one of them setpriv refuses; the
+    # daemon then runs with what the container allows (never with more)
+    if [ -n "$CAPS" ] && [ -x /usr/bin/setpriv ] &&
+        setpriv --bounding-set "$CAPS" true >/dev/null 2>&1; then
+        start-stop-daemon --start --quiet --oknodo --background --make-pidfile \
+            --pidfile "$PIDFILE" --exec "$DAEMON" --startas /usr/bin/setpriv -- \
+            --bounding-set "$CAPS" --no-new-privs "$DAEMON" $DAEMON_ARGS
+    else
+        start-stop-daemon --start --quiet --oknodo --background --make-pidfile \
+            --pidfile "$PIDFILE" --exec "$DAEMON" -- $DAEMON_ARGS
+    fi
 }
 
 do_stop() {

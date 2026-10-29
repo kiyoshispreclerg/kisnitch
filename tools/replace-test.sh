@@ -96,6 +96,9 @@ sleep 3
 /etc/init.d/kisnitch status || fail "the daemon is not running after start"
 pgrep -x kisnitchd >/dev/null || fail "no kisnitchd process"
 ! pgrep -x opensnitchd >/dev/null || fail "opensnitchd is running"
+# the capabilities: net_admin, net_raw, sys_ptrace, dac_override (docs/PRIVILEGES.md)
+bnd=$(sed -n 's/^CapBnd:[[:space:]]*//p' /proc/"$(cat /run/kisnitch.pid)"/status)
+[ "$bnd" = 0000000000083002 ] || fail "CapBnd of the daemon is $bnd, expected 0000000000083002"
 /etc/init.d/kisnitch restart
 sleep 2
 /etc/init.d/kisnitch status || fail "the daemon is not running after restart"

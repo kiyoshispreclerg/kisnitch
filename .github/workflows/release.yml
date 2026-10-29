@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
-      options: --cap-add=NET_ADMIN
+      options: --cap-add=NET_ADMIN --cap-add=SYS_PTRACE
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:

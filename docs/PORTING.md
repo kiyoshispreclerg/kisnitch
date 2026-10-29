@@ -309,7 +309,7 @@ Progresso: tarefas da UI (`pid-monitor`, `node-monitor`, `sockets-monitor`) e as
 
 - Units para systemd, OpenRC e runit; PKGBUILD e pacote Debian.
 
-Progresso: unidade systemd (`packaging/systemd/`) e script sysvinit (`packaging/sysvinit/`, Devuan) feitos; pacote Debian (`tools/build-deb.sh`) com `Conflicts`/`Replaces`/`Provides` de `opensnitch` e `python3-opensnitch-ui`, scripts `packaging/debian/` (criam só o que falta em `/etc/opensnitchd`, ativam o systemd ou o sysvinit conforme o sistema), padrões em `data/defaults/` (cópia de `upstream/daemon/data`). Falta: OpenRC, runit, PKGBUILD, teste de instalação por cima de um OpenSnitch real, fuzzing contínuo, revisão de privilégios.
+Progresso: unidade systemd (`packaging/systemd/`) e script sysvinit (`packaging/sysvinit/`, Devuan) feitos; pacote Debian (`tools/build-deb.sh`) com `Conflicts`/`Replaces`/`Provides` de `opensnitch` e `python3-opensnitch-ui`, scripts `packaging/debian/` (criam só o que falta em `/etc/opensnitchd`, ativam o systemd ou o sysvinit conforme o sistema), padrões em `data/defaults/` (cópia de `upstream/daemon/data`). Teste de instalação por cima do OpenSnitch original em `tools/replace-test.sh` (job `replace` do `release.yml`, por alvo). Fuzzing contínuo: `.github/workflows/fuzz.yml` (toda noite, um job por alvo de `tests/fuzz/`, corpus guardado entre as execuções, entrada que quebra vira artefato). Revisão de privilégios: `docs/PRIVILEGES.md` (4 capabilities, sandbox do systemd, `setpriv` no sysvinit). Falta: OpenRC, runit, PKGBUILD, rodar o job `replace` e a unidade systemd numa máquina de verdade.
 - `make install` respeitando `PREFIX` e `DESTDIR`.
 - Fuzzing contínuo dos parsers, análise estática, revisão de privilégios (capabilities mínimas se viável).
 

@@ -1,0 +1,80 @@
+name: Fuzz
+
+# Long fuzzing campaigns, every night and on demand (Actions tab, with the
+# minutes per target as input). One job per target in tests/fuzz/. The corpus
+# of each target is kept between runs (actions/cache), so every night starts
+# where the last one stopped. A crash fails the job and uploads the input:
+# fix the bug, then copy the input to tests/fuzz/corpus/<target>/regress-*
+# (docs/PORTING.md, section 6) so the short run in ci.yml keeps checking it.
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: 'Minutes per target'
+        default: '20'
+
+permissions:
+  contents: read
+
+jobs:
+  list:
+    runs-on: ubuntu-24.04
+    outputs:
+      targets: ${{ steps.t.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: t
+        run: |
+          list=$(ls tests/fuzz/fuzz_*.c | sed 's|.*/||; s|\.c$||' | jq -R . | jq -sc .)
+          echo "targets=$list" >> "$GITHUB_OUTPUT"
+
+  fuzz:
+    name: ${{ matrix.target }}
+    needs: list
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.list.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y gettext libpcre2-dev libnetfilter-queue-dev libnftnl-dev libmnl-dev libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev libsqlite3-dev
+      - name: Build the fuzzer
+        run: make build/fuzz/${{ matrix.target }}
+      - name: Restore the corpus
+        uses: actions/cache/restore@v4
+        with:
+          path: corpus
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: fuzz-corpus-${{ matrix.target }}-
+      - name: Fuzz
+        run: |
+          t=${{ matrix.target }}
+          mkdir -p corpus crashes
+          seeds=tests/fuzz/corpus/$t; [ -d "$seeds" ] || seeds=
+          secs=$(( ${{ github.event.inputs.minutes || 20 }} * 60 ))
+          build/fuzz/$t -max_total_time=$secs -artifact_prefix=crashes/ corpus $seeds
+      - name: Minimize the corpus
+        if: success()
+        run: |
+          t=${{ matrix.target }}
+          seeds=tests/fuzz/corpus/$t; [ -d "$seeds" ] || seeds=
+          mkdir -p merged
+          build/fuzz/$t -merge=1 merged corpus $seeds
+          rm -rf corpus && mv merged corpus
+      - name: Save the corpus
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: corpus
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+      - name: Keep the crashing input
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-${{ matrix.target }}
+          path: crashes/
+          if-no-files-found: ignore

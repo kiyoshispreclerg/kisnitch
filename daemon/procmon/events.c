@@ -19,6 +19,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "common/log.h"
@@ -47,15 +48,22 @@ static int open_socket(void)
         ks_warning("unable to start netlink.ProcEventMonitor (0): %s", strerror(errno));
         goto fail;
     }
-    if (setns(init_ns, CLONE_NEWNET) < 0) {
-        ks_warning("unable to start netlink.ProcEventMonitor (1): %s", strerror(errno));
-        goto fail;
+    /* Already in PID 1's namespace (the usual case): no setns(), which
+     * would ask for CAP_SYS_ADMIN even to enter the namespace we are in. */
+    struct stat st_self, st_init;
+    bool same = fstat(self_ns, &st_self) == 0 && fstat(init_ns, &st_init) == 0 &&
+                st_self.st_dev == st_init.st_dev && st_self.st_ino == st_init.st_ino;
+    if (!same) {
+        if (setns(init_ns, CLONE_NEWNET) < 0) {
+            ks_warning("unable to start netlink.ProcEventMonitor (1): %s", strerror(errno));
+            goto fail;
+        }
+        switched = true;
     }
-    switched = true;
 
     int fd = socket(AF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC | SOCK_NONBLOCK,
                     NETLINK_CONNECTOR);
-    if (setns(self_ns, CLONE_NEWNET) < 0)
+    if (switched && setns(self_ns, CLONE_NEWNET) < 0)
         ks_error("could not return to our network namespace: %s", strerror(errno));
     switched = false;
     if (fd < 0)
