@@ -44,8 +44,27 @@ cd /etc/opensnitchd
 sed 's/"LogLevel": *[0-9]*/"LogLevel": 1/' default-config.json > default-config.json.new
 mv default-config.json.new default-config.json
 mkdir -p rules
-first=$(ls rules/*.json | head -1)
-sed 's/"name": *"[^"]*"/"name": "user-rule"/' "$first" > rules/zz-user-rule.json
+# some distributions' packages ship no rules, so write the user's own
+cat > rules/zz-user-rule.json <<'EOF'
+{
+  "created": "2026-01-01T00:00:00Z",
+  "updated": "2026-01-01T00:00:00Z",
+  "name": "user-rule",
+  "description": "a rule of the user",
+  "enabled": true,
+  "precedence": false,
+  "nolog": false,
+  "action": "allow",
+  "duration": "always",
+  "operator": {
+    "type": "simple",
+    "operand": "process.path",
+    "sensitive": false,
+    "data": "/usr/bin/curl",
+    "list": []
+  }
+}
+EOF
 mkdir -p /root/.config/opensnitch
 printf '[global]\ndefault_timeout=17\n' > /root/.config/opensnitch/settings.conf
 snap() {
