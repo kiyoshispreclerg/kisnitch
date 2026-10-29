@@ -1,0 +1,5 @@
+[OpenSSH]
+title=Secure shell
+ports=22/tcp
+[Samba]
+ports=137,138/udp|139,445/tcp

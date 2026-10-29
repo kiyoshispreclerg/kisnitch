@@ -702,6 +702,130 @@ TEST(firewall_dialogs)
     gtk_widget_hide(fwwin);
 }
 
+/* ---- the simplified firewall panel ---------------------------------------------- */
+
+static int fill_step;
+
+static gboolean fill_new_rule(gpointer ud)
+{
+    (void)ud;
+    GtkWidget *win = window_titled("New rule");
+    if (win == NULL)
+        return TRUE; /* not open yet */
+    GtkWidget *port = input_of(find_in_label(win, "Port"));
+    if (fill_step == 0) {
+        /* an invalid port first: the dialog stays, with the form's message */
+        gtk_combo_box_set_active(GTK_COMBO_BOX(input_of(find_in_label(win, "Protocol"))), 2);
+        gtk_entry_set_text(GTK_ENTRY(port), "abc");
+        gtk_entry_set_text(GTK_ENTRY(input_of(find_in_label(win, "From"))), "10.0.0.0/8");
+        gtk_entry_set_text(GTK_ENTRY(input_of(find_in_label(win, "Description"))), "web");
+        fill_step = 1;
+        gtk_dialog_response(GTK_DIALOG(win), GTK_RESPONSE_OK);
+        return TRUE;
+    }
+    if (fill_step == 1) {
+        if (!on_screen("port not valid."))
+            return TRUE;
+        gtk_entry_set_text(GTK_ENTRY(port), "8080");
+        fill_step = 2;
+        gtk_dialog_response(GTK_DIALOG(win), GTK_RESPONSE_OK);
+    }
+    return FALSE;
+}
+
+static bool store_has(GtkTreeModel *m, int col, const char *text)
+{
+    GtkTreeIter it;
+    for (bool ok = gtk_tree_model_get_iter_first(m, &it); ok; ok = gtk_tree_model_iter_next(m, &it)) {
+        char *v = NULL;
+        gtk_tree_model_get(m, &it, col, &v, -1);
+        bool hit = v != NULL && strcmp(v, text) == 0;
+        g_free(v);
+        if (hit)
+            return true;
+    }
+    return false;
+}
+
+TEST(firewall_simple_panel)
+{
+    struct ks_fw_dlg *d = ks_sw_fw_dialog(w->fw);
+    ks_fw_dlg_show(d);
+    spin();
+    GtkWidget *fwwin = window_titled("Firewall");
+    CHECK(fwwin != NULL);
+    gtk_button_clicked(GTK_BUTTON(find_labeled(fwwin, "_Rules (simple)")));
+    spin();
+    GtkWidget *win = window_titled("Firewall rules");
+    CHECK(win != NULL);
+    GtkWidget *view = find_type(win, GTK_TYPE_TREE_VIEW);
+    CHECK(view != NULL);
+    GtkTreeModel *m = gtk_tree_view_get_model(GTK_TREE_VIEW(view));
+    /* the inbound drop policy of the previous test: its rules, as "Policy" */
+    CHECK(store_has(m, 2, "Policy"));
+    /* the "Allow service (OUT)" rule: tcp,udp dport 22, accept, output */
+    CHECK(store_has(m, 4, "tcp+udp 22"));
+    GtkWidget *incoming =
+        find_type(gtk_widget_get_parent(find_in_label(win, "Incoming:")), GTK_TYPE_COMBO_BOX);
+    CHECK(incoming != NULL);
+    CHECK_INT_EQ(gtk_combo_box_get_active(GTK_COMBO_BOX(incoming)), 1);
+
+    /* a new rule through the dialog */
+    fill_step = 0;
+    g_timeout_add(50, fill_new_rule, NULL);
+    gtk_button_clicked(GTK_BUTTON(find_labeled(win, "_Add")));
+    spin();
+    CHECK_INT_EQ(fill_step, 2);
+    Protocol__Notification *n = last_queued("unix:/local");
+    CHECK(n != NULL && n->type == PROTOCOL__ACTION__RELOAD_FW_RULES);
+    const Protocol__FwChain *in = pb_chain(n->sysfirewall, "filter_input");
+    CHECK(in != NULL && in->n_rules >= 1);
+    const Protocol__FwRule *r = in->rules[in->n_rules - 1];
+    CHECK_STR_EQ(r->description, "web");
+    CHECK_STR_EQ(r->target, "accept");
+    CHECK_STR_EQ(r->expressions[0]->statement->name, "tcp");
+    CHECK_STR_EQ(r->expressions[0]->statement->values[0]->value, "8080");
+    CHECK_STR_EQ(r->expressions[1]->statement->name, "ip");
+    CHECK_STR_EQ(r->expressions[1]->statement->values[0]->key, "saddr");
+    CHECK_STR_EQ(r->expressions[1]->statement->values[0]->value, "10.0.0.0-10.255.255.255");
+    reply("unix:/local", n->id, false, "");
+    protobuf_c_message_free_unpacked(&n->base, NULL);
+    spin();
+    CHECK(on_screen("Configuration applied."));
+    CHECK(store_has(m, 4, "tcp 8080"));
+    CHECK(store_has(m, 5, "10.0.0.0/8"));
+
+    /* outgoing: deny */
+    GtkWidget *box = gtk_widget_get_parent(find_in_label(win, "   Outgoing:"));
+    GList *ch = gtk_container_get_children(GTK_CONTAINER(box));
+    GtkWidget *combo_out = g_list_nth_data(ch, 3);
+    g_list_free(ch);
+    CHECK(combo_out != NULL && GTK_IS_COMBO_BOX(combo_out));
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_out), 1);
+    spin();
+    n = last_queued("unix:/local");
+    CHECK(n != NULL);
+    const Protocol__FwChain *out = pb_chain(n->sysfirewall, "mangle_output");
+    CHECK(out != NULL);
+    CHECK_STR_EQ(out->policy, "drop");
+    reply("unix:/local", n->id, false, "");
+    protobuf_c_message_free_unpacked(&n->base, NULL);
+    spin();
+    CHECK(on_screen("Output policy configured to drop"));
+
+    const char *shots = getenv("KS_SHOT_DIR");
+    if (shots != NULL) {
+        char cmd[512];
+        gtk_window_move(GTK_WINDOW(win), 0, 0);
+        spin();
+        snprintf(cmd, sizeof(cmd), "import -window root '%s/firewall-simple.png'", shots);
+        if (system(cmd) != 0)
+            fprintf(stderr, "screenshot failed\n");
+    }
+    gtk_widget_hide(win);
+    gtk_widget_hide(fwwin);
+}
+
 int main(int argc, char **argv)
 {
     if (!gtk_init_check(&argc, &argv)) {
@@ -733,6 +857,7 @@ int main(int argc, char **argv)
     RUN(preferences_save);
     RUN(export_csv);
     RUN(firewall_dialogs);
+    RUN(firewall_simple_panel);
 
     ks_stats_win_free(w);
     ks_service_free(svc);
