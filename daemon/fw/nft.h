@@ -19,8 +19,8 @@
  * Every rule carries the user data "opensnitch-key-interception" (raw
  * bytes), which is how they are found and deleted.
  *
- * The system firewall (system-fw.json, AddSystemRules) arrives in phase 8;
- * until then the configuration path is only stored.
+ * The system firewall (system-fw.json: tables, chains and rules carrying the
+ * user data "opensnitch-key-system") is in nft_sys.c and nft_exprs.c.
  *
  * Copyright (C) 2018 Simone Margaritelli, 2019-2025 Gustavo Iñiguez Goia
  *               and the OpenSnitch contributors.
@@ -49,16 +49,22 @@
 /* common.DefaultCheckInterval */
 #define KS_FW_DEFAULT_CHECK_INTERVAL_NS (10LL * 1000000000LL)
 
+struct ks_arena;
 struct ks_evloop;
+struct ks_fw_errors;
 struct ks_nft;
+struct ks_sysfw;
+struct _Protocol__SysFirewall;
 
 /* Fw(): a stopped firewall. NULL on OOM. */
 struct ks_nft *ks_nft_new(struct ks_evloop *loop);
 /* Frees without touching the kernel; call ks_nft_stop() first to clean up. */
 void ks_nft_free(struct ks_nft *n);
 
-/* Init: cleans up leftovers of a previous run, adds the interception
- * rules and starts the rules checker. Does nothing if already running.
+/* Init: loads system-fw.json from `config_path` (and watches it), cleans
+ * up leftovers of a previous run, adds the system rules and the
+ * interception rules, and starts the rules checker. Does nothing if
+ * already running.
  * `monitor_interval` is a Go duration ("10s"; "0s" disables the checker;
  * invalid ones fall back to 10s). */
 void ks_nft_init(struct ks_nft *n, uint16_t queue_num, const char *config_path,
@@ -71,6 +77,15 @@ void ks_nft_enable_interception(struct ks_nft *n);
 void ks_nft_disable_interception(struct ks_nft *n, bool log_errors);
 /* CleanRules */
 void ks_nft_clean_rules(struct ks_nft *n, bool log_errors);
+
+/* Serialize: the system firewall configuration, allocated in `a`. */
+struct _Protocol__SysFirewall *ks_nft_serialize(struct ks_nft *n, struct ks_arena *a);
+/* SaveConfiguration: writes system-fw.json (the watcher applies it). */
+int ks_nft_save_configuration(struct ks_nft *n, const char *raw, size_t len);
+/* ErrorsChan: errors adding system rules. */
+struct ks_fw_errors *ks_nft_errors(struct ks_nft *n);
+/* The loaded system firewall configuration (SysConfig). */
+const struct ks_sysfw *ks_nft_sysfw(const struct ks_nft *n);
 
 /* AreRulesLoaded: the three rules are there, the DNS one first in
  * filter_input and the other two last in mangle_output. */

@@ -25,11 +25,13 @@
 #include <unistd.h>
 
 #include "common/arena.h"
+#include "common/duration.h"
 #include "common/grpc/grpc.h"
 #include "common/log.h"
 #include "common/vendor/cjson/cJSON.h"
 #include "daemon/evloop.h"
 #include "daemon/fw/fw.h"
+#include "daemon/fw/sysfw.h"
 #include "daemon/procmon/procmon.h"
 #include "daemon/protocol.h"
 #include "daemon/rules/loader.h"
@@ -114,7 +116,24 @@ struct ks_uiclient {
     size_t nqueued;
 
     int inotify_fd;
+
+    struct fw_reload *fw_reloads; /* RELOAD_FW_RULES waiting for errors */
 };
+
+/* A RELOAD_FW_RULES notification whose reply waits for the errors of the
+ * reload (upstream's goroutine: the first errors, or OK after 2s). */
+struct fw_reload {
+    struct ks_uiclient *c;
+    struct ks_grpc_call *stream;
+    uint64_t id;
+    int type;
+    int64_t deadline;
+    struct ks_timer *timer;
+    struct fw_reload *next;
+};
+
+#define FW_RELOAD_WAIT_NS (2 * KS_SECOND)
+#define FW_RELOAD_POLL_NS (50 * KS_MILLISECOND)
 
 static void disconnect(struct ks_uiclient *c);
 static void poller_tick(void *data);
@@ -960,13 +979,104 @@ static void handle_disable_interception(struct ks_uiclient *c,
     send_reply(c, ntf, "", NULL);
 }
 
+static void fw_reload_free(struct ks_uiclient *c, struct fw_reload *r)
+{
+    for (struct fw_reload **p = &c->fw_reloads; *p != NULL; p = &(*p)->next) {
+        if (*p == r) {
+            *p = r->next;
+            break;
+        }
+    }
+    if (r->timer != NULL)
+        ks_evloop_cancel_timer(c->d.loop, r->timer);
+    free(r);
+}
+
+static void fw_reload_poll(void *data)
+{
+    struct fw_reload *r = data;
+    struct ks_uiclient *c = r->c;
+    struct ks_fw_errors *q = c->d.fw != NULL ? ks_fw_errors(c->d.fw) : NULL;
+    Protocol__Notification ntf = PROTOCOL__NOTIFICATION__INIT;
+    ntf.id = r->id;
+    ntf.type = (Protocol__Action)r->type;
+    bool same_stream = c->notifications == r->stream;
+
+    if (q != NULL && !ks_fw_errors_empty(q)) {
+        /* errors = fmt.Sprint(errors, fwerr, ","), until the channel is empty */
+        size_t len = 0, cap = 256;
+        char *all = malloc(cap);
+        char *e;
+        while (all != NULL && (e = ks_fw_errors_pop(q)) != NULL) {
+            size_t el = strlen(e);
+            if (len + el + 2 > cap) {
+                while (len + el + 2 > cap)
+                    cap *= 2;
+                char *na = realloc(all, cap);
+                if (na == NULL) {
+                    free(e);
+                    break;
+                }
+                all = na;
+            }
+            memcpy(all + len, e, el);
+            len += el;
+            all[len++] = ',';
+            all[len] = '\0';
+            free(e);
+        }
+        if (same_stream)
+            send_reply(c, &ntf, "", all != NULL ? all : "out of memory");
+        free(all);
+        goto done;
+    }
+    if (ks_evloop_now(c->d.loop) < r->deadline)
+        return;
+    ks_debug("[notification] reload firewall. timeout fired, no errors?");
+    if (same_stream)
+        send_reply(c, &ntf, "", NULL);
+done:
+    fw_reload_free(c, r);
+}
+
+/* handleActionReloadFw */
 static void handle_reload_fw(struct ks_uiclient *c, const Protocol__Notification *ntf)
 {
     ks_info("[notification] reloading firewall");
-    /* firewall.Deserialize() + SaveConfiguration(): phase 8. */
-    ks_warning("[notification] system firewall rules are not supported yet");
-    send_reply(c, ntf, "", "Error reloading firewall: system firewall rules are not "
-                           "supported yet");
+    char *raw = c->d.fw != NULL ? ks_fw_deserialize(c->d.fw, ntf->sysfirewall) : NULL;
+    if (raw == NULL) {
+        ks_warning("firewall.Deserialize() error: %s",
+                   ntf->sysfirewall == NULL ? "Marshal called with nil"
+                                            : "firewall not initialized, report please");
+        send_reply(c, ntf, "", "Error reloading firewall, invalid rules");
+        return;
+    }
+    if (ks_fw_save_configuration(c->d.fw, raw) < 0) {
+        free(raw);
+        send_reply(c, ntf, "", "Error saving system firewall rules: writing firewall "
+                               "configuration to disk");
+        return;
+    }
+    free(raw);
+    struct fw_reload *r = calloc(1, sizeof(*r));
+    if (r == NULL) {
+        send_reply(c, ntf, "", NULL);
+        return;
+    }
+    r->c = c;
+    r->stream = c->notifications;
+    r->id = ntf->id;
+    r->type = (int)ntf->type;
+    r->deadline = ks_evloop_now(c->d.loop) + FW_RELOAD_WAIT_NS;
+    r->timer = ks_evloop_add_timer(c->d.loop, FW_RELOAD_POLL_NS, FW_RELOAD_POLL_NS,
+                                   fw_reload_poll, r);
+    if (r->timer == NULL) {
+        free(r);
+        send_reply(c, ntf, "", NULL);
+        return;
+    }
+    r->next = c->fw_reloads;
+    c->fw_reloads = r;
 }
 
 static void handle_notification(struct ks_uiclient *c, const Protocol__Notification *ntf)
@@ -1148,7 +1258,8 @@ static uint8_t *client_config(struct ks_uiclient *c, size_t *len)
                 goto out;
         cc.n_rules = n;
     }
-    /* SystemFirewall: firewall.Serialize() of system-fw.json, phase 8. */
+    if (c->d.fw != NULL)
+        cc.systemfirewall = ks_fw_serialize(c->d.fw, &a);
     buf = ks_pb_pack(&cc.base, len);
 out:
     ks_arena_free(&a);
@@ -1556,6 +1667,8 @@ void ks_uiclient_free(struct ks_uiclient *c)
         return;
     stop_poller(c);
     resolve_free(c);
+    while (c->fw_reloads != NULL)
+        fw_reload_free(c, c->fw_reloads);
     if (c->conn) {
         ks_evloop_del_fd(c->d.loop, ks_grpc_conn_fd(c->conn));
         struct ks_grpc_conn *conn = c->conn;

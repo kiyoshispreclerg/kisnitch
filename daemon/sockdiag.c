@@ -466,6 +466,13 @@ static int conntrack_flush(uint8_t subsys, char *err, size_t errlen)
     return ack_request(NETLINK_NETFILTER, &req, sizeof(req), err, errlen);
 }
 
+void ks_conntrack_flush_table(void)
+{
+    char err[256];
+    if (conntrack_flush(NFNL_SUBSYS_CTNETLINK, err, sizeof(err)) < 0)
+        ks_error("error in ConntrackTableFlush %s", err);
+}
+
 void ks_flush_connections(void)
 {
     char err[256];

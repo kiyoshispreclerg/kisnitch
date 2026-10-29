@@ -4,7 +4,7 @@
  * monitor,utils}.go (interception) and the rules checker of
  * daemon/firewall/common/common.go.
  *
- * google/nftables queues messages and sends them on Flush() (our commit());
+ * google/nftables queues messages and sends them on Flush() (our ks_nftp_commit());
  * we do the same with an nfnetlink batch. Function names follow upstream's.
  *
  * Copyright (C) 2018 Simone Margaritelli, 2019-2025 Gustavo Iñiguez Goia
@@ -34,85 +34,7 @@
 #include "common/duration.h"
 #include "common/log.h"
 #include "daemon/evloop.h"
-
-#define LOG_TAG "nftables:"
-#define NAME_LEN 256 /* NFT_NAME_MAXLEN */
-
-/* google/nftables chain priorities and types. */
-#define PRIO_MANGLE (-150)
-#define PRIO_FILTER 0
-#define TYPE_FILTER "filter"
-#define TYPE_ROUTE "route"
-
-/* ct state bits (expr.CtStateBit*) */
-#define CT_STATE_NEW 8u
-#define CT_STATE_RELATED 4u
-
-#define BATCH_BUF_SIZE (64 * 1024)
-/* Big enough for any rule other programs may have added. */
-#define RECV_BUF_SIZE (64 * 1024)
-/* A dump request (MNL_SOCKET_BUFFER_SIZE is not a constant expression). */
-#define REQ_BUF_SIZE 1024
-/* ReloadRulesCallback sleeps this long between deleting and re-adding. */
-#define RELOAD_DELAY_NS (500 * KS_MILLISECOND)
-
-/* nftables.Chain, as listed from the kernel or as we add it. */
-struct chain {
-    char name[NAME_LEN];
-    char table[NAME_LEN];
-    uint8_t family;
-    bool has_hook;
-    uint32_t hooknum;
-    int32_t prio;
-    char type[16];
-    bool has_policy;
-    uint32_t policy;
-};
-
-struct rule {
-    uint64_t handle;
-    uint8_t *udata;
-    size_t udata_len;
-};
-
-/* sysTables entry: key "name-family". */
-struct table_entry {
-    char name[NAME_LEN];
-    char family[16];
-    uint8_t fam;
-};
-
-/* sysChains entry: key from chain_key(). */
-struct chain_entry {
-    char key[NAME_LEN * 2 + 16];
-    struct chain c;
-};
-
-struct ks_nft {
-    struct ks_evloop *loop;
-    struct mnl_socket *nl;
-    uint32_t portid;
-    uint32_t seq;
-
-    char *buf;   /* the batch */
-    char *rbuf;  /* replies */
-    struct mnl_nlmsg_batch *batch;
-    size_t nmsgs;
-    bool batch_full;
-
-    struct table_entry *tables;
-    size_t ntables;
-    struct chain_entry *chains;
-    size_t nchains;
-
-    uint16_t queue_num;
-    bool bypass_queue;
-    char *config_path;
-    int64_t check_interval;
-    bool running;
-    struct ks_timer *checker;
-    struct ks_timer *reload_timer;
-};
+#include "daemon/fw/nft_priv.h"
 
 /* ---- netlink -------------------------------------------------------- */
 
@@ -140,8 +62,8 @@ static void conn_close(struct ks_nft *n)
 }
 
 /* Room for the next message of the batch (opening it if needed), or NULL
- * if it's full (then commit() fails). */
-static char *batch_room(struct ks_nft *n)
+ * if it's full (then ks_nftp_commit() fails). */
+char *ks_nftp_batch_room(struct ks_nft *n)
 {
     if (n->batch_full)
         return NULL;
@@ -157,7 +79,7 @@ static char *batch_room(struct ks_nft *n)
     return mnl_nlmsg_batch_current(n->batch);
 }
 
-static void batch_added(struct ks_nft *n)
+void ks_nftp_batch_added(struct ks_nft *n)
 {
     mnl_nlmsg_batch_next(n->batch);
     n->nmsgs++;
@@ -194,7 +116,7 @@ static int read_acks(struct ks_nft *n, bool discard)
 
 /* Conn.Flush(), Nft.Commit(): sends the queued messages. Nothing queued is
  * a success. */
-static bool commit(struct ks_nft *n)
+bool ks_nftp_commit(struct ks_nft *n)
 {
     if (n->nmsgs == 0) {
         batch_reset(n);
@@ -299,7 +221,7 @@ out:
 }
 
 /* Conn.ListChains(): every chain of every family. Caller frees *out. */
-static int list_chains(struct ks_nft *n, struct chain **out, size_t *count)
+int ks_nftp_list_chains(struct ks_nft *n, struct chain **out, size_t *count)
 {
     char buf[REQ_BUF_SIZE];
     struct nlmsghdr *nlh = nftnl_nlmsg_build_hdr(buf, NFT_MSG_GETCHAIN, NFPROTO_UNSPEC,
@@ -365,7 +287,7 @@ out:
     return MNL_CB_OK;
 }
 
-static void free_rules(struct rule *v, size_t count)
+void ks_nftp_free_rules(struct rule *v, size_t count)
 {
     for (size_t i = 0; i < count; i++)
         free(v[i].udata);
@@ -373,7 +295,7 @@ static void free_rules(struct rule *v, size_t count)
 }
 
 /* Conn.GetRule(table, chain) */
-static int get_rules(struct ks_nft *n, const struct chain *c, struct rule **out,
+int ks_nftp_get_rules(struct ks_nft *n, const struct chain *c, struct rule **out,
                      size_t *count)
 {
     char buf[REQ_BUF_SIZE];
@@ -396,7 +318,7 @@ static int get_rules(struct ks_nft *n, const struct chain *c, struct rule **out,
         ret = -1;
     }
     if (ret < 0) {
-        free_rules(l.v, l.n);
+        ks_nftp_free_rules(l.v, l.n);
         return -1;
     }
     *out = l.v;
@@ -404,7 +326,7 @@ static int get_rules(struct ks_nft *n, const struct chain *c, struct rule **out,
     return 0;
 }
 
-static bool rule_has_key(const struct rule *r, const char *key)
+bool ks_nftp_rule_has_key(const struct rule *r, const char *key)
 {
     size_t klen = strlen(key);
     return r->udata != NULL && r->udata_len == klen && memcmp(r->udata, key, klen) == 0;
@@ -414,7 +336,7 @@ static bool rule_has_key(const struct rule *r, const char *key)
 
 static void queue_new_table(struct ks_nft *n, const char *name, uint8_t fam)
 {
-    char *room = batch_room(n);
+    char *room = ks_nftp_batch_room(n);
     struct nftnl_table *t = nftnl_table_alloc();
     if (room == NULL || t == NULL) {
         n->batch_full = true;
@@ -427,12 +349,12 @@ static void queue_new_table(struct ks_nft *n, const char *name, uint8_t fam)
                                                  NLM_F_CREATE | NLM_F_ACK, n->seq++);
     nftnl_table_nlmsg_build_payload(nlh, t);
     nftnl_table_free(t);
-    batch_added(n);
+    ks_nftp_batch_added(n);
 }
 
 static void queue_del_table(struct ks_nft *n, const char *name, uint8_t fam)
 {
-    char *room = batch_room(n);
+    char *room = ks_nftp_batch_room(n);
     struct nftnl_table *t = nftnl_table_alloc();
     if (room == NULL || t == NULL) {
         n->batch_full = true;
@@ -445,13 +367,13 @@ static void queue_del_table(struct ks_nft *n, const char *name, uint8_t fam)
                                                  NLM_F_ACK, n->seq++);
     nftnl_table_nlmsg_build_payload(nlh, t);
     nftnl_table_free(t);
-    batch_added(n);
+    ks_nftp_batch_added(n);
 }
 
 /* Conn.AddChain: hook and priority only if both are set. */
-static void queue_new_chain(struct ks_nft *n, const struct chain *c)
+void ks_nftp_queue_new_chain(struct ks_nft *n, const struct chain *c)
 {
-    char *room = batch_room(n);
+    char *room = ks_nftp_batch_room(n);
     struct nftnl_chain *ch = nftnl_chain_alloc();
     if (room == NULL || ch == NULL) {
         n->batch_full = true;
@@ -472,12 +394,12 @@ static void queue_new_chain(struct ks_nft *n, const struct chain *c)
                                                  NLM_F_CREATE | NLM_F_ACK, n->seq++);
     nftnl_chain_nlmsg_build_payload(nlh, ch);
     nftnl_chain_free(ch);
-    batch_added(n);
+    ks_nftp_batch_added(n);
 }
 
-static void queue_del_chain(struct ks_nft *n, const struct chain *c)
+void ks_nftp_queue_del_chain(struct ks_nft *n, const struct chain *c)
 {
-    char *room = batch_room(n);
+    char *room = ks_nftp_batch_room(n);
     struct nftnl_chain *ch = nftnl_chain_alloc();
     if (room == NULL || ch == NULL) {
         n->batch_full = true;
@@ -490,12 +412,12 @@ static void queue_del_chain(struct ks_nft *n, const struct chain *c)
                                                  NLM_F_ACK, n->seq++);
     nftnl_chain_nlmsg_build_payload(nlh, ch);
     nftnl_chain_free(ch);
-    batch_added(n);
+    ks_nftp_batch_added(n);
 }
 
 static void queue_del_rule(struct ks_nft *n, const struct chain *c, uint64_t handle)
 {
-    char *room = batch_room(n);
+    char *room = ks_nftp_batch_room(n);
     struct nftnl_rule *r = nftnl_rule_alloc();
     if (room == NULL || r == NULL) {
         n->batch_full = true;
@@ -509,12 +431,12 @@ static void queue_del_rule(struct ks_nft *n, const struct chain *c, uint64_t han
                                                  NLM_F_ACK, n->seq++);
     nftnl_rule_nlmsg_build_payload(nlh, r);
     nftnl_rule_free(r);
-    batch_added(n);
+    ks_nftp_batch_added(n);
 }
 
 /* Expressions, in google/nftables terms. Each returns false on OOM. */
 
-static bool add_expr(struct nftnl_rule *r, struct nftnl_expr *e)
+bool ks_nftp_add_expr(struct nftnl_rule *r, struct nftnl_expr *e)
 {
     if (e == NULL)
         return false;
@@ -523,18 +445,18 @@ static bool add_expr(struct nftnl_rule *r, struct nftnl_expr *e)
 }
 
 /* expr.Meta{Key: MetaKeyL4PROTO, Register: 1} */
-static bool e_meta_l4proto(struct nftnl_rule *r)
+bool ks_nftp_e_meta_l4proto(struct nftnl_rule *r)
 {
     struct nftnl_expr *e = nftnl_expr_alloc("meta");
     if (e == NULL)
         return false;
     nftnl_expr_set_u32(e, NFTNL_EXPR_META_KEY, NFT_META_L4PROTO);
     nftnl_expr_set_u32(e, NFTNL_EXPR_META_DREG, NFT_REG_1);
-    return add_expr(r, e);
+    return ks_nftp_add_expr(r, e);
 }
 
 /* expr.Cmp{Op, Register: 1, Data} */
-static bool e_cmp(struct nftnl_rule *r, enum nft_cmp_ops op, const void *data, uint32_t len)
+bool ks_nftp_e_cmp(struct nftnl_rule *r, enum nft_cmp_ops op, const void *data, uint32_t len)
 {
     struct nftnl_expr *e = nftnl_expr_alloc("cmp");
     if (e == NULL)
@@ -542,11 +464,11 @@ static bool e_cmp(struct nftnl_rule *r, enum nft_cmp_ops op, const void *data, u
     nftnl_expr_set_u32(e, NFTNL_EXPR_CMP_SREG, NFT_REG_1);
     nftnl_expr_set_u32(e, NFTNL_EXPR_CMP_OP, op);
     nftnl_expr_set(e, NFTNL_EXPR_CMP_DATA, data, len);
-    return add_expr(r, e);
+    return ks_nftp_add_expr(r, e);
 }
 
 /* expr.Payload{DestRegister: 1, Base: PayloadBaseTransportHeader, ...} */
-static bool e_payload_th(struct nftnl_rule *r, uint32_t offset, uint32_t len)
+bool ks_nftp_e_payload_th(struct nftnl_rule *r, uint32_t offset, uint32_t len)
 {
     struct nftnl_expr *e = nftnl_expr_alloc("payload");
     if (e == NULL)
@@ -555,11 +477,11 @@ static bool e_payload_th(struct nftnl_rule *r, uint32_t offset, uint32_t len)
     nftnl_expr_set_u32(e, NFTNL_EXPR_PAYLOAD_BASE, NFT_PAYLOAD_TRANSPORT_HEADER);
     nftnl_expr_set_u32(e, NFTNL_EXPR_PAYLOAD_OFFSET, offset);
     nftnl_expr_set_u32(e, NFTNL_EXPR_PAYLOAD_LEN, len);
-    return add_expr(r, e);
+    return ks_nftp_add_expr(r, e);
 }
 
 /* expr.Bitwise{SourceRegister: 1, DestRegister: 1, Len, Mask, Xor} */
-static bool e_bitwise(struct nftnl_rule *r, const void *mask, const void *xor, uint32_t len)
+bool ks_nftp_e_bitwise(struct nftnl_rule *r, const void *mask, const void *xor, uint32_t len)
 {
     struct nftnl_expr *e = nftnl_expr_alloc("bitwise");
     if (e == NULL)
@@ -569,7 +491,7 @@ static bool e_bitwise(struct nftnl_rule *r, const void *mask, const void *xor, u
     nftnl_expr_set_u32(e, NFTNL_EXPR_BITWISE_LEN, len);
     nftnl_expr_set(e, NFTNL_EXPR_BITWISE_MASK, mask, len);
     nftnl_expr_set(e, NFTNL_EXPR_BITWISE_XOR, xor, len);
-    return add_expr(r, e);
+    return ks_nftp_add_expr(r, e);
 }
 
 /* expr.Ct{Register: 1, Key: CtKeySTATE} */
@@ -580,7 +502,7 @@ static bool e_ct_state(struct nftnl_rule *r)
         return false;
     nftnl_expr_set_u32(e, NFTNL_EXPR_CT_KEY, NFT_CT_STATE);
     nftnl_expr_set_u32(e, NFTNL_EXPR_CT_DREG, NFT_REG_1);
-    return add_expr(r, e);
+    return ks_nftp_add_expr(r, e);
 }
 
 /* expr.Queue{Num, Flag}; google/nftables sends Total = 1. */
@@ -593,7 +515,7 @@ static bool e_queue(struct ks_nft *n, struct nftnl_rule *r)
     nftnl_expr_set_u16(e, NFTNL_EXPR_QUEUE_TOTAL, 1);
     /* getBypassFlag */
     nftnl_expr_set_u16(e, NFTNL_EXPR_QUEUE_FLAGS, n->bypass_queue ? NFT_QUEUE_FLAG_BYPASS : 0);
-    return add_expr(r, e);
+    return ks_nftp_add_expr(r, e);
 }
 
 enum rule_kind { RULE_DNS, RULE_NOT_TCP_NEW, RULE_TCP_SYN };
@@ -610,16 +532,16 @@ static bool build_rule_exprs(struct ks_nft *n, struct nftnl_rule *r, enum rule_k
 
     switch (kind) {
     case RULE_DNS: /* udp sport 53 */
-        return e_meta_l4proto(r) && e_cmp(r, NFT_CMP_EQ, &udp, 1) &&
-               e_payload_th(r, 0, 2) && e_cmp(r, NFT_CMP_EQ, port53, 2) && e_queue(n, r);
+        return ks_nftp_e_meta_l4proto(r) && ks_nftp_e_cmp(r, NFT_CMP_EQ, &udp, 1) &&
+               ks_nftp_e_payload_th(r, 0, 2) && ks_nftp_e_cmp(r, NFT_CMP_EQ, port53, 2) && e_queue(n, r);
     case RULE_NOT_TCP_NEW: /* meta l4proto != tcp ct state new,related */
-        return e_meta_l4proto(r) && e_cmp(r, NFT_CMP_NEQ, &tcp, 1) && e_ct_state(r) &&
-               e_bitwise(r, &ct_mask, &ct_xor, 4) && e_cmp(r, NFT_CMP_NEQ, zero4, 4) &&
+        return ks_nftp_e_meta_l4proto(r) && ks_nftp_e_cmp(r, NFT_CMP_NEQ, &tcp, 1) && e_ct_state(r) &&
+               ks_nftp_e_bitwise(r, &ct_mask, &ct_xor, 4) && ks_nftp_e_cmp(r, NFT_CMP_NEQ, zero4, 4) &&
                e_queue(n, r);
     case RULE_TCP_SYN: /* tcp flags & (fin|syn|rst|ack) == syn */
-        return e_meta_l4proto(r) && e_cmp(r, NFT_CMP_EQ, &tcp, 1) &&
-               e_payload_th(r, 13, 1) && e_bitwise(r, &syn_mask, &zero1, 1) &&
-               e_cmp(r, NFT_CMP_EQ, &syn, 1) && e_queue(n, r);
+        return ks_nftp_e_meta_l4proto(r) && ks_nftp_e_cmp(r, NFT_CMP_EQ, &tcp, 1) &&
+               ks_nftp_e_payload_th(r, 13, 1) && ks_nftp_e_bitwise(r, &syn_mask, &zero1, 1) &&
+               ks_nftp_e_cmp(r, NFT_CMP_EQ, &syn, 1) && e_queue(n, r);
     }
     return false;
 }
@@ -629,7 +551,7 @@ static bool build_rule_exprs(struct ks_nft *n, struct nftnl_rule *r, enum rule_k
 static void queue_new_rule(struct ks_nft *n, const struct chain *c, enum rule_kind kind,
                            bool append)
 {
-    char *room = batch_room(n);
+    char *room = ks_nftp_batch_room(n);
     struct nftnl_rule *r = nftnl_rule_alloc();
     if (room == NULL || r == NULL) {
         n->batch_full = true;
@@ -651,13 +573,13 @@ static void queue_new_rule(struct ks_nft *n, const struct chain *c, enum rule_ki
                                                  n->seq++);
     nftnl_rule_nlmsg_build_payload(nlh, r);
     nftnl_rule_free(r);
-    batch_added(n);
+    ks_nftp_batch_added(n);
 }
 
 /* ---- stores (sysTables, sysChains) -------------------------------- */
 
 /* GetFamilyCode */
-static uint8_t family_code(const char *family)
+uint8_t ks_nftp_family_code(const char *family)
 {
     if (strcmp(family, "ip6") == 0)
         return NFPROTO_IPV6;
@@ -673,13 +595,13 @@ static uint8_t family_code(const char *family)
 }
 
 /* getChainKey */
-static void chain_key(const char *name, const char *table, uint8_t fam, char *buf,
+void ks_nftp_chain_key(const char *name, const char *table, uint8_t fam, char *buf,
                       size_t len)
 {
     snprintf(buf, len, "%s-%s-%u", name, table, fam);
 }
 
-static struct table_entry *get_table(struct ks_nft *n, const char *name, const char *family)
+struct table_entry *ks_nftp_get_table(struct ks_nft *n, const char *name, const char *family)
 {
     for (size_t i = 0; i < n->ntables; i++)
         if (strcmp(n->tables[i].name, name) == 0 && strcmp(n->tables[i].family, family) == 0)
@@ -687,7 +609,7 @@ static struct table_entry *get_table(struct ks_nft *n, const char *name, const c
     return NULL;
 }
 
-static struct chain_entry *store_get_chain(struct ks_nft *n, const char *key)
+struct chain_entry *ks_nftp_store_get_chain(struct ks_nft *n, const char *key)
 {
     for (size_t i = 0; i < n->nchains; i++)
         if (strcmp(n->chains[i].key, key) == 0)
@@ -695,7 +617,7 @@ static struct chain_entry *store_get_chain(struct ks_nft *n, const char *key)
     return NULL;
 }
 
-static void store_del_chain(struct ks_nft *n, const char *key)
+void ks_nftp_store_del_chain(struct ks_nft *n, const char *key)
 {
     for (size_t i = 0; i < n->nchains; i++) {
         if (strcmp(n->chains[i].key, key) == 0) {
@@ -705,9 +627,9 @@ static void store_del_chain(struct ks_nft *n, const char *key)
     }
 }
 
-static void store_put_chain(struct ks_nft *n, const char *key, const struct chain *c)
+void ks_nftp_store_put_chain(struct ks_nft *n, const char *key, const struct chain *c)
 {
-    struct chain_entry *e = store_get_chain(n, key);
+    struct chain_entry *e = ks_nftp_store_get_chain(n, key);
     if (e == NULL) {
         struct chain_entry *v = realloc(n->chains, (n->nchains + 1) * sizeof(*v));
         if (v == NULL) {
@@ -726,26 +648,29 @@ static void init_maps_store(struct ks_nft *n)
 {
     free(n->tables);
     free(n->chains);
+    free(n->orig_chains);
     n->tables = NULL;
     n->ntables = 0;
     n->chains = NULL;
     n->nchains = 0;
+    n->orig_chains = NULL;
+    n->norig_chains = 0;
 }
 
 /* ---- tables.go ---------------------------------------------------- */
 
 /* AddTable. Returns the stored table, or NULL with the error in `err`. */
-static struct table_entry *add_table(struct ks_nft *n, const char *name, const char *family,
+struct table_entry *ks_nftp_add_table(struct ks_nft *n, const char *name, const char *family,
                                      char *err, size_t errlen)
 {
-    uint8_t fam = family_code(family);
+    uint8_t fam = ks_nftp_family_code(family);
     queue_new_table(n, name, fam);
-    if (!commit(n)) {
+    if (!ks_nftp_commit(n)) {
         snprintf(err, errlen, "%s error adding system firewall table: %s, family: %s (%u)",
                  LOG_TAG, name, family, fam);
         return NULL;
     }
-    struct table_entry *t = get_table(n, name, family);
+    struct table_entry *t = ks_nftp_get_table(n, name, family);
     if (t == NULL) {
         struct table_entry *v = realloc(n->tables, (n->ntables + 1) * sizeof(*v));
         if (v == NULL) {
@@ -764,7 +689,7 @@ static struct table_entry *add_table(struct ks_nft *n, const char *name, const c
 /* AddInterceptionTables */
 static int add_interception_tables(struct ks_nft *n, char *err, size_t errlen)
 {
-    return add_table(n, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET, err, errlen) ? 0 : -1;
+    return ks_nftp_add_table(n, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET, err, errlen) ? 0 : -1;
 }
 
 /* nonSystemRules: rules in the chains of tables sharing the name *or* the
@@ -774,7 +699,7 @@ static long non_system_rules(struct ks_nft *n, const struct table_entry *t)
 {
     struct chain *chains;
     size_t nchains;
-    if (list_chains(n, &chains, &nchains) < 0)
+    if (ks_nftp_list_chains(n, &chains, &nchains) < 0)
         return -1;
     long total = 0;
     for (size_t i = 0; i < nchains; i++) {
@@ -782,19 +707,19 @@ static long non_system_rules(struct ks_nft *n, const struct table_entry *t)
             continue;
         struct rule *rules;
         size_t nrules;
-        if (get_rules(n, &chains[i], &rules, &nrules) < 0) {
+        if (ks_nftp_get_rules(n, &chains[i], &rules, &nrules) < 0) {
             free(chains);
             return -1;
         }
         total += (long)nrules;
-        free_rules(rules, nrules);
+        ks_nftp_free_rules(rules, nrules);
     }
     free(chains);
     return total;
 }
 
 /* DelSystemTables */
-static void del_system_tables(struct ks_nft *n)
+void ks_nftp_del_system_tables(struct ks_nft *n)
 {
     for (size_t i = 0; i < n->ntables;) {
         struct table_entry *t = &n->tables[i];
@@ -803,7 +728,7 @@ static void del_system_tables(struct ks_nft *n)
             continue;
         }
         queue_del_table(n, t->name, t->fam);
-        if (!commit(n)) {
+        if (!ks_nftp_commit(n)) {
             ks_warning("error deleting system table: %s-%s", t->name, t->family);
             i++;
             continue;
@@ -815,17 +740,17 @@ static void del_system_tables(struct ks_nft *n)
 /* ---- chains.go ---------------------------------------------------- */
 
 /* Nft.GetChain: the chain in the kernel, if it exists. */
-static bool kernel_get_chain(struct ks_nft *n, const char *name, const struct table_entry *t,
+bool ks_nftp_kernel_get_chain(struct ks_nft *n, const char *name, const struct table_entry *t,
                              const char *family, struct chain *out)
 {
     struct chain *chains;
     size_t nchains;
     bool found = false;
-    if (list_chains(n, &chains, &nchains) < 0)
+    if (ks_nftp_list_chains(n, &chains, &nchains) < 0)
         return false;
     for (size_t i = 0; i < nchains && !found; i++) {
         if (strcmp(name, chains[i].name) == 0 && strcmp(t->name, chains[i].table) == 0 &&
-            family_code(family) == chains[i].family) {
+            ks_nftp_family_code(family) == chains[i].family) {
             *out = chains[i];
             found = true;
         }
@@ -836,23 +761,23 @@ static bool kernel_get_chain(struct ks_nft *n, const char *name, const struct ta
 
 /* AddChain: queues the chain (the caller commits). Reuses the chain if it
  * already exists. Returns false if the table isn't known. */
-static bool add_chain(struct ks_nft *n, const char *name, const char *table,
+bool ks_nftp_add_chain(struct ks_nft *n, const char *name, const char *table,
                       const char *family, int32_t prio, const char *type,
                       uint32_t hooknum, uint32_t policy)
 {
     if (family[0] == '\0')
         family = KS_NFT_FAMILY_INET;
-    struct table_entry *t = get_table(n, table, family);
+    struct table_entry *t = ks_nftp_get_table(n, table, family);
     if (t == NULL) {
         ks_error("%s addChain, Error getting table: %s, %s", LOG_TAG, table, family);
         return false;
     }
 
     char key[sizeof(((struct chain_entry *)0)->key)];
-    chain_key(name, t->name, t->fam, key, sizeof(key));
+    ks_nftp_chain_key(name, t->name, t->fam, key, sizeof(key));
     struct chain c;
-    if (kernel_get_chain(n, name, t, family, &c)) {
-        store_del_chain(n, key);
+    if (ks_nftp_kernel_get_chain(n, name, t, family, &c)) {
+        ks_nftp_store_del_chain(n, key);
         c.has_policy = true;
         c.policy = policy;
     } else {
@@ -871,20 +796,20 @@ static bool add_chain(struct ks_nft *n, const char *name, const char *table,
         c.has_policy = true;
         c.policy = policy;
     }
-    queue_new_chain(n, &c);
-    store_put_chain(n, key, &c);
+    ks_nftp_queue_new_chain(n, &c);
+    ks_nftp_store_put_chain(n, key, &c);
     return true;
 }
 
 /* The policy of a chain we added before, or accept. */
 static uint32_t stored_policy(struct ks_nft *n, const char *name)
 {
-    struct table_entry *t = get_table(n, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET);
+    struct table_entry *t = ks_nftp_get_table(n, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET);
     if (t == NULL)
         return NF_ACCEPT;
     char key[sizeof(((struct chain_entry *)0)->key)];
-    chain_key(name, t->name, t->fam, key, sizeof(key));
-    struct chain_entry *e = store_get_chain(n, key);
+    ks_nftp_chain_key(name, t->name, t->fam, key, sizeof(key));
+    struct chain_entry *e = ks_nftp_store_get_chain(n, key);
     return e != NULL && e->c.has_policy ? e->c.policy : NF_ACCEPT;
 }
 
@@ -894,23 +819,23 @@ static int add_interception_chains(struct ks_nft *n)
     uint32_t filter_policy = stored_policy(n, KS_NFT_CHAIN_FILTER_INPUT);
     uint32_t mangle_policy = stored_policy(n, KS_NFT_CHAIN_MANGLE_OUTPUT);
 
-    add_chain(n, KS_NFT_CHAIN_FILTER_INPUT, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET,
+    ks_nftp_add_chain(n, KS_NFT_CHAIN_FILTER_INPUT, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET,
               PRIO_FILTER, TYPE_FILTER, NF_INET_LOCAL_IN, filter_policy);
-    if (!commit(n)) {
+    if (!ks_nftp_commit(n)) {
         ks_error("Error while adding interception chains: Error adding DNS interception "
                  "chain filter_input-opensnitch-inet");
         return -1;
     }
-    add_chain(n, KS_NFT_CHAIN_MANGLE_OUTPUT, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET,
+    ks_nftp_add_chain(n, KS_NFT_CHAIN_MANGLE_OUTPUT, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET,
               PRIO_MANGLE, TYPE_ROUTE, NF_INET_LOCAL_OUT, mangle_policy);
-    if (!commit(n)) {
+    if (!ks_nftp_commit(n)) {
         ks_error("(1) Error adding interception chain mangle_output-opensnitch-inet, "
                  "trying with type Filter instead of Route");
         /* Workaround for kernels 4.x: GetChainPriority(inet, mangle, output) */
-        add_chain(n, KS_NFT_CHAIN_MANGLE_OUTPUT, KS_NFT_TABLE_OPENSNITCH,
+        ks_nftp_add_chain(n, KS_NFT_CHAIN_MANGLE_OUTPUT, KS_NFT_TABLE_OPENSNITCH,
                   KS_NFT_FAMILY_INET, PRIO_MANGLE, TYPE_FILTER, NF_INET_LOCAL_OUT,
                   mangle_policy);
-        if (!commit(n)) {
+        if (!ks_nftp_commit(n)) {
             ks_error("Error while adding interception chains: (2) Error adding "
                      "interception chain mangle_output-opensnitch-inet with type Filter. "
                      "Report it on github please, specifying the distro and the kernel");
@@ -921,25 +846,25 @@ static int add_interception_chains(struct ks_nft *n)
 }
 
 /* DelChain */
-static void del_chain(struct ks_nft *n, const struct chain *c)
+void ks_nftp_del_chain(struct ks_nft *n, const struct chain *c)
 {
     char key[sizeof(((struct chain_entry *)0)->key)];
-    chain_key(c->name, c->table, c->family, key, sizeof(key));
-    queue_del_chain(n, c);
-    store_del_chain(n, key);
-    if (!commit(n))
+    ks_nftp_chain_key(c->name, c->table, c->family, key, sizeof(key));
+    ks_nftp_queue_del_chain(n, c);
+    ks_nftp_store_del_chain(n, key);
+    if (!ks_nftp_commit(n))
         ks_warning("[nftables] error deleting chain %s, %s", c->name, c->table);
 }
 
 /* GetChain (from the store) */
-static struct chain *stored_chain(struct ks_nft *n, const char *name,
+struct chain *ks_nftp_stored_chain(struct ks_nft *n, const char *name,
                                   const struct table_entry *t)
 {
     if (t == NULL)
         return NULL;
     char key[sizeof(((struct chain_entry *)0)->key)];
-    chain_key(name, t->name, t->fam, key, sizeof(key));
-    struct chain_entry *e = store_get_chain(n, key);
+    ks_nftp_chain_key(name, t->name, t->fam, key, sizeof(key));
+    struct chain_entry *e = ks_nftp_store_get_chain(n, key);
     return e != NULL ? &e->c : NULL;
 }
 
@@ -950,8 +875,8 @@ static int queue_dns_responses(struct ks_nft *n)
 {
     if (n->nl == NULL)
         return 0;
-    struct table_entry *t = get_table(n, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET);
-    struct chain *c = stored_chain(n, KS_NFT_CHAIN_FILTER_INPUT, t);
+    struct table_entry *t = ks_nftp_get_table(n, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET);
+    struct chain *c = ks_nftp_stored_chain(n, KS_NFT_CHAIN_FILTER_INPUT, t);
     if (t == NULL) {
         ks_error("QueueDNSResponses() Error getting table: opensnitch-%s", KS_NFT_FAMILY_INET);
     } else if (c == NULL) {
@@ -960,7 +885,7 @@ static int queue_dns_responses(struct ks_nft *n)
     } else {
         queue_new_rule(n, c, RULE_DNS, false); /* InsertRule, position 0 */
     }
-    if (!commit(n)) {
+    if (!ks_nftp_commit(n)) {
         ks_error("Error while running DNS nftables rule: Error adding DNS interception rules");
         return -1;
     }
@@ -973,15 +898,15 @@ static int queue_connections(struct ks_nft *n)
 {
     if (n->nl == NULL)
         return 0;
-    struct table_entry *t = get_table(n, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET);
+    struct table_entry *t = ks_nftp_get_table(n, KS_NFT_TABLE_OPENSNITCH, KS_NFT_FAMILY_INET);
     if (t == NULL)
         return 0;
-    struct chain *c = stored_chain(n, KS_NFT_CHAIN_MANGLE_OUTPUT, t);
+    struct chain *c = ks_nftp_stored_chain(n, KS_NFT_CHAIN_MANGLE_OUTPUT, t);
     if (c == NULL)
         return 0;
     queue_new_rule(n, c, RULE_NOT_TCP_NEW, true);
     queue_new_rule(n, c, RULE_TCP_SYN, true);
-    if (!commit(n)) {
+    if (!ks_nftp_commit(n)) {
         ks_error("Error while running conntrack nftables rule: Error adding interception rule ");
         return -1;
     }
@@ -989,11 +914,11 @@ static int queue_connections(struct ks_nft *n)
 }
 
 /* delRulesByKey */
-static int del_rules_by_key(struct ks_nft *n, const char *key)
+int ks_nftp_del_rules_by_key(struct ks_nft *n, const char *key)
 {
     struct chain *chains;
     size_t nchains;
-    if (list_chains(n, &chains, &nchains) < 0) {
+    if (ks_nftp_list_chains(n, &chains, &nchains) < 0) {
         ks_warning("error listing nftables chains (%s): %s", key, strerror(errno));
         return -1;
     }
@@ -1001,26 +926,26 @@ static int del_rules_by_key(struct ks_nft *n, const char *key)
         const struct chain *c = &chains[i];
         struct rule *rules;
         size_t nrules;
-        if (get_rules(n, c, &rules, &nrules) < 0) {
+        if (ks_nftp_get_rules(n, c, &rules, &nrules) < 0) {
             ks_warning("Error listing rules (%s): %s", key, strerror(errno));
             continue;
         }
         size_t del = 0;
         for (size_t r = 0; r < nrules; r++) {
-            if (!rule_has_key(&rules[r], key))
+            if (!ks_nftp_rule_has_key(&rules[r], key))
                 continue;
             queue_del_rule(n, c, rules[r].handle);
             del++;
         }
-        if (del > 0 && !commit(n))
+        if (del > 0 && !ks_nftp_commit(n))
             ks_warning("%s error deleting rules (%s)", LOG_TAG, key);
         if (nrules == 0 || nrules == del) {
             char ck[sizeof(((struct chain_entry *)0)->key)];
-            chain_key(c->name, c->table, c->family, ck, sizeof(ck));
-            if (store_get_chain(n, ck) != NULL)
-                del_chain(n, c);
+            ks_nftp_chain_key(c->name, c->table, c->family, ck, sizeof(ck));
+            if (ks_nftp_store_get_chain(n, ck) != NULL)
+                ks_nftp_del_chain(n, c);
         }
-        free_rules(rules, nrules);
+        ks_nftp_free_rules(rules, nrules);
     }
     free(chains);
     return 0;
@@ -1029,21 +954,7 @@ static int del_rules_by_key(struct ks_nft *n, const char *key)
 /* DelInterceptionRules */
 static void del_interception_rules(struct ks_nft *n)
 {
-    del_rules_by_key(n, KS_NFT_INTERCEPTION_KEY);
-}
-
-/* ---- system.go (the parts interception needs) --------------------- */
-
-/* DeleteSystemRules. The system rules themselves arrive in phase 8; the
- * backup of chain policies (restoreBackupChains) has nothing to restore
- * until then. */
-static void delete_system_rules(struct ks_nft *n, bool force, bool restore_chains)
-{
-    (void)restore_chains;
-    if (del_rules_by_key(n, KS_NFT_SYSTEM_KEY) < 0)
-        ks_warning("error deleting interception rules");
-    if (force)
-        del_system_tables(n);
+    ks_nftp_del_rules_by_key(n, KS_NFT_INTERCEPTION_KEY);
 }
 
 /* ---- common.go: rules checker ------------------------------------- */
@@ -1153,7 +1064,11 @@ void ks_nft_free(struct ks_nft *n)
     free(n->rbuf);
     free(n->tables);
     free(n->chains);
+    free(n->orig_chains);
     free(n->config_path);
+    if (n->conf_ready)
+        ks_sysfw_conf_destroy(&n->conf);
+    ks_fw_errors_clear(&n->errors);
     free(n);
 }
 
@@ -1164,23 +1079,30 @@ void ks_nft_init(struct ks_nft *n, uint16_t queue_num, const char *config_path,
         return;
     n->bypass_queue = bypass_queue;
     conn_open(n);
+    ks_fw_errors_clear(&n->errors);
     init_maps_store(n);
     n->queue_num = queue_num;
     set_rules_checker_interval(n, monitor_interval);
     free(n->config_path);
     n->config_path = strdup(config_path);
 
+    /* The configuration is loaded first, to know which rules to clean up. */
+    ks_nftp_sys_init(n, config_path);
+
     /* Start from a clean state: the daemon may have exited unexpectedly,
      * leaving rules behind. */
     del_interception_rules(n);
+    ks_nftp_add_system_rules(n, false, true);
     ks_nft_enable_interception(n);
     n->running = true;
 }
 
 void ks_nft_stop(struct ks_nft *n)
 {
+    ks_fw_errors_clear(&n->errors);
     if (!n->running)
         return;
+    ks_nftp_sys_stop(n);
     stop_checking_rules(n);
     ks_nft_clean_rules(n, ks_log_get_level() == KS_LOG_DEBUG);
     n->running = false;
@@ -1219,14 +1141,36 @@ void ks_nft_disable_interception(struct ks_nft *n, bool log_errors)
 void ks_nft_clean_rules(struct ks_nft *n, bool log_errors)
 {
     ks_nft_disable_interception(n, log_errors);
-    delete_system_rules(n, true, true);
+    ks_nftp_delete_system_rules(n, true, true);
+}
+
+Protocol__SysFirewall *ks_nft_serialize(struct ks_nft *n, struct ks_arena *a)
+{
+    return ks_sysfw_to_pb(a, &n->conf.cfg);
+}
+
+int ks_nft_save_configuration(struct ks_nft *n, const char *raw, size_t len)
+{
+    if (!n->conf_ready)
+        return -1;
+    return ks_sysfw_conf_save(&n->conf, raw, len);
+}
+
+struct ks_fw_errors *ks_nft_errors(struct ks_nft *n)
+{
+    return &n->errors;
+}
+
+const struct ks_sysfw *ks_nft_sysfw(const struct ks_nft *n)
+{
+    return &n->conf.cfg;
 }
 
 bool ks_nft_are_rules_loaded(struct ks_nft *n)
 {
     struct chain *chains;
     size_t nchains;
-    if (list_chains(n, &chains, &nchains) < 0) {
+    if (ks_nftp_list_chains(n, &chains, &nchains) < 0) {
         ks_warning("[nftables] error listing nftables chains: %s", strerror(errno));
         return false;
     }
@@ -1238,12 +1182,12 @@ bool ks_nft_are_rules_loaded(struct ks_nft *n)
             continue;
         struct rule *rules;
         size_t nrules;
-        if (get_rules(n, c, &rules, &nrules) < 0) {
+        if (ks_nftp_get_rules(n, c, &rules, &nrules) < 0) {
             ks_warning("[nftables] Error listing rules: %s", strerror(errno));
             continue;
         }
         for (size_t r = 0; r < nrules && ok; r++) {
-            if (!rule_has_key(&rules[r], KS_NFT_INTERCEPTION_KEY))
+            if (!ks_nftp_rule_has_key(&rules[r], KS_NFT_INTERCEPTION_KEY))
                 continue;
             if (strcmp(c->name, KS_NFT_CHAIN_FILTER_INPUT) == 0 && r != 0) {
                 ks_warning("nftables DNS rule not in 1st position (%zu)", r);
@@ -1257,7 +1201,7 @@ bool ks_nft_are_rules_loaded(struct ks_nft *n)
                 ok = false;
             }
         }
-        free_rules(rules, nrules);
+        ks_nftp_free_rules(rules, nrules);
     }
     free(chains);
     if (!ok)
@@ -1281,17 +1225,17 @@ int ks_nft_count_rules(struct ks_nft *n, const char *key)
         return -1;
     struct chain *chains;
     size_t nchains;
-    if (list_chains(n, &chains, &nchains) < 0)
+    if (ks_nftp_list_chains(n, &chains, &nchains) < 0)
         return -1;
     int count = 0;
     for (size_t i = 0; i < nchains; i++) {
         struct rule *rules;
         size_t nrules;
-        if (get_rules(n, &chains[i], &rules, &nrules) < 0)
+        if (ks_nftp_get_rules(n, &chains[i], &rules, &nrules) < 0)
             continue;
         for (size_t r = 0; r < nrules; r++)
-            count += rule_has_key(&rules[r], key);
-        free_rules(rules, nrules);
+            count += ks_nftp_rule_has_key(&rules[r], key);
+        ks_nftp_free_rules(rules, nrules);
     }
     free(chains);
     return count;

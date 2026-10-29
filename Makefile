@@ -27,7 +27,11 @@ DAEMON_LIB_SRC = daemon/config.c \
                  daemon/dns/resolved.c \
                  daemon/evloop.c \
                  daemon/fw/fw.c \
+                 daemon/fw/iptables.c \
                  daemon/fw/nft.c \
+                 daemon/fw/nft_exprs.c \
+                 daemon/fw/nft_sys.c \
+                 daemon/fw/sysfw.c \
                  daemon/intercept.c \
                  daemon/netstat.c \
                  daemon/sockdiag.c \

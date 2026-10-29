@@ -72,6 +72,9 @@ int ks_kill_sockets(uint8_t family, uint8_t proto, bool exclude_local,
  * excluding local ones. */
 void ks_kill_all_sockets(void);
 
+/* netlink.ConntrackTableFlush(ConntrackTable). Errors are logged. */
+void ks_conntrack_flush_table(void);
+
 /* FlushConnections: flushes the conntrack table and the expectations
  * table, then KillAllSockets, so that established connections go through
  * the queue again. Errors are logged. */
