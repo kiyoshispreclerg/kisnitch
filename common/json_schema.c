@@ -27,7 +27,7 @@ void ks_schema_free_array(const struct ks_schema *elem, struct ks_array *arr)
 void ks_schema_free(const struct ks_schema *s, void *obj)
 {
     for (size_t i = 0; i < s->n; i++) {
-        const struct ks_field *f = &s->fields[i];
+        const struct ks_schema_field *f = &s->fields[i];
         switch (f->type) {
         case KS_T_STRING: {
             char **p = AT(obj, f);
@@ -38,12 +38,22 @@ void ks_schema_free(const struct ks_schema *s, void *obj)
         case KS_T_STRUCT:
             ks_schema_free(f->sub, AT(obj, f));
             break;
+        case KS_T_PTR: {
+            void **p = AT(obj, f);
+            if (*p != NULL)
+                ks_schema_free(f->sub, *p);
+            free(*p);
+            *p = NULL;
+            break;
+        }
         case KS_T_ARRAY:
             ks_schema_free_array(f->sub, AT(obj, f));
             break;
         case KS_T_BOOL:
         case KS_T_INT:
         case KS_T_UINT16:
+        case KS_T_UINT32:
+        case KS_T_UINT64_STR:
         case KS_T_OPT_INT32:
             break;
         }
@@ -127,6 +137,40 @@ static int decode_int(struct dctx *c, const char *path, const cJSON *v,
     return 0;
 }
 
+/* A uint64 field tagged `json:",string"`: Go wants a JSON string holding a
+ * decimal number ("0"); an unquoted value is an error. */
+static int decode_uint64_str(struct dctx *c, const char *path, const cJSON *v,
+                             uint64_t *out)
+{
+    if (!cJSON_IsString(v)) {
+        snprintf(c->err, c->errlen,
+                 "%s: invalid use of ,string struct tag, trying to unmarshal "
+                 "unquoted value into uint64", path);
+        return -1;
+    }
+    const char *s = v->valuestring;
+    if (s[0] != '-' && (s[0] < '0' || s[0] > '9')) {
+        snprintf(c->err, c->errlen,
+                 "%s: invalid use of ,string struct tag, trying to unmarshal "
+                 "\"%.64s\" into uint64", path, s);
+        return -1;
+    }
+    uint64_t n = 0;
+    bool ok = s[0] != '-';
+    for (const char *q = s; ok && *q; q++) {
+        if (*q < '0' || *q > '9' || n > (UINT64_MAX - (uint64_t)(*q - '0')) / 10)
+            ok = false;
+        else
+            n = n * 10 + (uint64_t)(*q - '0');
+    }
+    if (!ok) {
+        snprintf(c->err, c->errlen, "%s: number %.64s does not fit in uint64", path, s);
+        return -1;
+    }
+    *out = n;
+    return 0;
+}
+
 static int decode_struct(struct dctx *c, const struct ks_schema *s,
                          const cJSON *obj, void *base, const char *path);
 
@@ -168,14 +212,15 @@ static int decode_array(struct dctx *c, const struct ks_schema *elem,
     return 0;
 }
 
-static int decode_field(struct dctx *c, const struct ks_field *f,
+static int decode_field(struct dctx *c, const struct ks_schema_field *f,
                         const cJSON *v, void *base, const char *path)
 {
     void *p = AT(base, f);
     int64_t n;
 
     /* `null` is a no-op except for pointers and slices. */
-    if (cJSON_IsNull(v) && f->type != KS_T_OPT_INT32 && f->type != KS_T_ARRAY)
+    if (cJSON_IsNull(v) && f->type != KS_T_OPT_INT32 && f->type != KS_T_ARRAY &&
+        f->type != KS_T_PTR)
         return 0;
 
     switch (f->type) {
@@ -222,8 +267,31 @@ static int decode_field(struct dctx *c, const struct ks_field *f,
         o->value = (int32_t)n;
         return 0;
     }
+    case KS_T_UINT32:
+        if (decode_int(c, path, v, 0, 4294967295.0, "uint32", &n) < 0)
+            return -1;
+        *(uint32_t *)p = (uint32_t)n;
+        return 0;
+    case KS_T_UINT64_STR:
+        return decode_uint64_str(c, path, v, p);
     case KS_T_STRUCT:
         return decode_struct(c, f->sub, v, p, path);
+    case KS_T_PTR: {
+        void **pp = p;
+        if (cJSON_IsNull(v)) {
+            if (*pp != NULL)
+                ks_schema_free(f->sub, *pp);
+            free(*pp);
+            *pp = NULL;
+            return 0;
+        }
+        if (!cJSON_IsObject(v))
+            return type_error(c, path, f->sub->go_type, v);
+        /* Go decodes into the existing pointee, if any. */
+        if (*pp == NULL && (*pp = calloc(1, f->sub->size)) == NULL)
+            return oom(c);
+        return decode_struct(c, f->sub, v, *pp, path);
+    }
     case KS_T_ARRAY:
         return decode_array(c, f->sub, v, p, path);
     }
@@ -243,7 +311,7 @@ static int decode_struct(struct dctx *c, const struct ks_schema *s,
     const cJSON *item;
     cJSON_ArrayForEach(item, obj) {
         for (size_t i = 0; i < s->n; i++) {
-            const struct ks_field *f = &s->fields[i];
+            const struct ks_schema_field *f = &s->fields[i];
             if (!key_equal_fold(item->string, f->name))
                 continue;
             char sub[PATH_MAX_LEN];
@@ -270,13 +338,17 @@ static int fill_array(const struct ks_schema *elem, struct ks_array *arr)
 static int fill_strings(const struct ks_schema *s, void *base)
 {
     for (size_t i = 0; i < s->n; i++) {
-        const struct ks_field *f = &s->fields[i];
+        const struct ks_schema_field *f = &s->fields[i];
         if (f->type == KS_T_STRING) {
             char **p = AT(base, f);
             if (*p == NULL && (*p = strdup("")) == NULL)
                 return -1;
         } else if (f->type == KS_T_STRUCT) {
             if (fill_strings(f->sub, AT(base, f)) < 0)
+                return -1;
+        } else if (f->type == KS_T_PTR) {
+            void *pp = *(void **)AT(base, f);
+            if (pp != NULL && fill_strings(f->sub, pp) < 0)
                 return -1;
         } else if (f->type == KS_T_ARRAY) {
             if (fill_array(f->sub, AT(base, f)) < 0)
@@ -350,7 +422,7 @@ static cJSON *encode_array(const struct ks_schema *elem, const struct ks_array *
     return out;
 }
 
-static cJSON *encode_field(const struct ks_field *f, const void *base)
+static cJSON *encode_field(const struct ks_schema_field *f, const void *base)
 {
     const void *p = AT_C(base, f);
 
@@ -365,12 +437,23 @@ static cJSON *encode_field(const struct ks_field *f, const void *base)
         return cJSON_CreateNumber((double)*(const int64_t *)p);
     case KS_T_UINT16:
         return cJSON_CreateNumber(*(const uint16_t *)p);
+    case KS_T_UINT32:
+        return cJSON_CreateNumber(*(const uint32_t *)p);
+    case KS_T_UINT64_STR: {
+        char num[24];
+        snprintf(num, sizeof(num), "%llu", (unsigned long long)*(const uint64_t *)p);
+        return cJSON_CreateString(num);
+    }
     case KS_T_OPT_INT32: {
         const struct ks_opt_int32 *o = p;
         return o->set ? cJSON_CreateNumber(o->value) : cJSON_CreateNull();
     }
     case KS_T_STRUCT:
         return ks_schema_encode(f->sub, p);
+    case KS_T_PTR: {
+        const void *pp = *(void *const *)p;
+        return pp != NULL ? ks_schema_encode(f->sub, pp) : cJSON_CreateNull();
+    }
     case KS_T_ARRAY:
         return encode_array(f->sub, p);
     }
@@ -401,7 +484,7 @@ static bool str_equal(const char *a, const char *b)
 bool ks_schema_equal(const struct ks_schema *s, const void *a, const void *b)
 {
     for (size_t i = 0; i < s->n; i++) {
-        const struct ks_field *f = &s->fields[i];
+        const struct ks_schema_field *f = &s->fields[i];
         const void *pa = AT_C(a, f), *pb = AT_C(b, f);
         switch (f->type) {
         case KS_T_STRING:
@@ -420,6 +503,14 @@ bool ks_schema_equal(const struct ks_schema *s, const void *a, const void *b)
             if (*(const uint16_t *)pa != *(const uint16_t *)pb)
                 return false;
             break;
+        case KS_T_UINT32:
+            if (*(const uint32_t *)pa != *(const uint32_t *)pb)
+                return false;
+            break;
+        case KS_T_UINT64_STR:
+            if (*(const uint64_t *)pa != *(const uint64_t *)pb)
+                return false;
+            break;
         case KS_T_OPT_INT32: {
             const struct ks_opt_int32 *x = pa, *y = pb;
             if (x->set != y->set || (x->set && x->value != y->value))
@@ -430,6 +521,12 @@ bool ks_schema_equal(const struct ks_schema *s, const void *a, const void *b)
             if (!ks_schema_equal(f->sub, pa, pb))
                 return false;
             break;
+        case KS_T_PTR: {
+            const void *x = *(void *const *)pa, *y = *(void *const *)pb;
+            if ((x == NULL) != (y == NULL) || (x != NULL && !ks_schema_equal(f->sub, x, y)))
+                return false;
+            break;
+        }
         case KS_T_ARRAY: {
             const struct ks_array *x = pa, *y = pb;
             if (x->non_nil != y->non_nil || x->len != y->len)
@@ -449,7 +546,7 @@ bool ks_schema_equal(const struct ks_schema *s, const void *a, const void *b)
 static int copy_fields(const struct ks_schema *s, void *dst, const void *src)
 {
     for (size_t i = 0; i < s->n; i++) {
-        const struct ks_field *f = &s->fields[i];
+        const struct ks_schema_field *f = &s->fields[i];
         void *pd = AT(dst, f);
         const void *ps = AT_C(src, f);
         switch (f->type) {
@@ -468,6 +565,12 @@ static int copy_fields(const struct ks_schema *s, void *dst, const void *src)
         case KS_T_UINT16:
             *(uint16_t *)pd = *(const uint16_t *)ps;
             break;
+        case KS_T_UINT32:
+            *(uint32_t *)pd = *(const uint32_t *)ps;
+            break;
+        case KS_T_UINT64_STR:
+            *(uint64_t *)pd = *(const uint64_t *)ps;
+            break;
         case KS_T_OPT_INT32:
             *(struct ks_opt_int32 *)pd = *(const struct ks_opt_int32 *)ps;
             break;
@@ -475,6 +578,18 @@ static int copy_fields(const struct ks_schema *s, void *dst, const void *src)
             if (copy_fields(f->sub, pd, ps) < 0)
                 return -1;
             break;
+        case KS_T_PTR: {
+            const void *src_p = *(void *const *)ps;
+            if (src_p == NULL)
+                break;
+            void *np = calloc(1, f->sub->size);
+            if (np == NULL)
+                return -1;
+            *(void **)pd = np;
+            if (copy_fields(f->sub, np, src_p) < 0)
+                return -1;
+            break;
+        }
         case KS_T_ARRAY: {
             const struct ks_array *as = ps;
             struct ks_array *ad = pd;

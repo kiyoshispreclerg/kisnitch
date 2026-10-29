@@ -499,3 +499,14 @@ char *ks_json_print_go(const cJSON *v, bool indent)
     }
     return b.p;
 }
+
+char *ks_json_quote_go(const char *s)
+{
+    struct sbuf b = {0};
+    put_go_string(&b, s != NULL ? s : "");
+    if (b.oom) {
+        free(b.p);
+        return NULL;
+    }
+    return b.p;
+}

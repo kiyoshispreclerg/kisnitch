@@ -13,7 +13,8 @@ COMMON_SRC = common/log.c \
              common/hash.c \
              common/strmap.c \
              common/grpc/grpc.c \
-             common/pb_util.c
+             common/pb_util.c \
+             common/sysfw.c
 # Third-party and generated code: built with the base warnings only.
 VENDOR_SRC = common/vendor/cjson/cJSON.c \
              common/pb/ui.pb-c.c

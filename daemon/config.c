@@ -21,7 +21,7 @@
 #include "common/json_util.h"
 #include "common/log.h"
 
-static const struct ks_field tls_fields[] = {
+static const struct ks_schema_field tls_fields[] = {
     KS_FIELD(struct ks_tls_options, "CACert", KS_T_STRING, ca_cert),
     KS_FIELD(struct ks_tls_options, "ServerCert", KS_T_STRING, server_cert),
     KS_FIELD(struct ks_tls_options, "ServerKey", KS_T_STRING, server_key),
@@ -32,13 +32,13 @@ static const struct ks_field tls_fields[] = {
 };
 static const struct ks_schema tls_schema = KS_SCHEMA("config.ServerTLSOptions", struct ks_tls_options, tls_fields);
 
-static const struct ks_field auth_fields[] = {
+static const struct ks_schema_field auth_fields[] = {
     KS_FIELD(struct ks_server_auth, "Type", KS_T_STRING, type),
     KS_FIELD_SUB(struct ks_server_auth, "TLSOptions", KS_T_STRUCT, tls, tls_schema),
 };
 static const struct ks_schema auth_schema = KS_SCHEMA("config.ServerAuth", struct ks_server_auth, auth_fields);
 
-static const struct ks_field logger_fields[] = {
+static const struct ks_schema_field logger_fields[] = {
     KS_FIELD(struct ks_logger_config, "Name", KS_T_STRING, name),
     KS_FIELD(struct ks_logger_config, "Format", KS_T_STRING, format),
     KS_FIELD(struct ks_logger_config, "Protocol", KS_T_STRING, protocol),
@@ -51,7 +51,7 @@ static const struct ks_field logger_fields[] = {
 };
 static const struct ks_schema logger_schema = KS_SCHEMA("loggers.LoggerConfig", struct ks_logger_config, logger_fields);
 
-static const struct ks_field server_fields[] = {
+static const struct ks_schema_field server_fields[] = {
     KS_FIELD(struct ks_server_config, "Address", KS_T_STRING, address),
     KS_FIELD_SUB(struct ks_server_config, "Authentication", KS_T_STRUCT, auth, auth_schema),
     KS_FIELD(struct ks_server_config, "LogFile", KS_T_STRING, log_file),
@@ -59,13 +59,13 @@ static const struct ks_field server_fields[] = {
 };
 static const struct ks_schema server_schema = KS_SCHEMA("config.ServerConfig", struct ks_server_config, server_fields);
 
-static const struct ks_field rules_fields[] = {
+static const struct ks_schema_field rules_fields[] = {
     KS_FIELD(struct ks_rules_options, "Path", KS_T_STRING, path),
     KS_FIELD(struct ks_rules_options, "EnableChecksums", KS_T_BOOL, enable_checksums),
 };
 static const struct ks_schema rules_schema = KS_SCHEMA("config.RulesOptions", struct ks_rules_options, rules_fields);
 
-static const struct ks_field fw_fields[] = {
+static const struct ks_schema_field fw_fields[] = {
     KS_FIELD(struct ks_fw_options, "Firewall", KS_T_STRING, firewall),
     KS_FIELD(struct ks_fw_options, "ConfigPath", KS_T_STRING, config_path),
     KS_FIELD(struct ks_fw_options, "MonitorInterval", KS_T_STRING, monitor_interval),
@@ -74,23 +74,23 @@ static const struct ks_field fw_fields[] = {
 };
 static const struct ks_schema fw_schema = KS_SCHEMA("config.FwOptions", struct ks_fw_options, fw_fields);
 
-static const struct ks_field tasks_fields[] = {
+static const struct ks_schema_field tasks_fields[] = {
     KS_FIELD(struct ks_tasks_options, "ConfigPath", KS_T_STRING, config_path),
 };
 static const struct ks_schema tasks_schema = KS_SCHEMA("config.TasksOptions", struct ks_tasks_options, tasks_fields);
 
-static const struct ks_field internal_fields[] = {
+static const struct ks_schema_field internal_fields[] = {
     KS_FIELD(struct ks_internal_options, "GCPercent", KS_T_INT, gc_percent),
     KS_FIELD(struct ks_internal_options, "FlushConnsOnStart", KS_T_BOOL, flush_conns_on_start),
 };
 static const struct ks_schema internal_schema = KS_SCHEMA("config.InternalOptions", struct ks_internal_options, internal_fields);
 
-static const struct ks_field audit_fields[] = {
+static const struct ks_schema_field audit_fields[] = {
     KS_FIELD(struct ks_audit_config, "AudispSocketPath", KS_T_STRING, audisp_socket_path),
 };
 static const struct ks_schema audit_schema = KS_SCHEMA("audit.Config", struct ks_audit_config, audit_fields);
 
-static const struct ks_field ebpf_fields[] = {
+static const struct ks_schema_field ebpf_fields[] = {
     KS_FIELD(struct ks_ebpf_config, "ModulesPath", KS_T_STRING, modules_path),
     KS_FIELD(struct ks_ebpf_config, "RingBuffSize", KS_T_INT, ring_buff_size),
     KS_FIELD(struct ks_ebpf_config, "EventsWorkers", KS_T_INT, events_workers),
@@ -98,14 +98,14 @@ static const struct ks_field ebpf_fields[] = {
 };
 static const struct ks_schema ebpf_schema = KS_SCHEMA("ebpf.Config", struct ks_ebpf_config, ebpf_fields);
 
-static const struct ks_field stats_fields[] = {
+static const struct ks_schema_field stats_fields[] = {
     KS_FIELD(struct ks_stats_config, "MaxEvents", KS_T_INT, max_events),
     KS_FIELD(struct ks_stats_config, "MaxStats", KS_T_INT, max_stats),
     KS_FIELD(struct ks_stats_config, "Workers", KS_T_INT, workers),
 };
 static const struct ks_schema stats_schema = KS_SCHEMA("statistics.StatsConfig", struct ks_stats_config, stats_fields);
 
-static const struct ks_field config_fields[] = {
+static const struct ks_schema_field config_fields[] = {
     KS_FIELD(struct ks_config, "LogLevel", KS_T_OPT_INT32, log_level),
     KS_FIELD(struct ks_config, "Firewall", KS_T_STRING, firewall),
     KS_FIELD(struct ks_config, "DefaultAction", KS_T_STRING, default_action),

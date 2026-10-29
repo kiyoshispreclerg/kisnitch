@@ -44,6 +44,10 @@ bool ks_json_is_subset(const cJSON *sub, const cJSON *super);
  * Returns a malloc'd string owned by the caller, or NULL on OOM. */
 char *ks_json_print_go(const cJSON *v, bool indent);
 
+/* json.Marshal of a Go string: the quoted, escaped string. Returns a malloc'd
+ * string owned by the caller, or NULL on OOM. */
+char *ks_json_quote_go(const char *s);
+
 /* Writes `len` bytes of `data` to `path`, creating it with `mode` or
  * truncating it. Returns 0 or -1 with `err` filled. */
 int ks_write_file(const char *path, const char *data, size_t len, mode_t mode,

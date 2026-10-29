@@ -2,14 +2,17 @@
  *
  * Table-driven mapping between JSON and C structs, following the rules of
  * Go's encoding/json for the types upstream uses (string, bool, int, uint16,
- * *int32, nested structs and slices of structs).
+ * uint32, uint64 with the ",string" option, *int32, nested structs, pointers
+ * to structs and slices of structs).
  *
  * Decoding:
  *   - Missing keys keep the zero value; unknown keys are ignored.
  *   - Key matching is case-insensitive (ASCII); with duplicate keys the last
  *     one wins.
  *   - `null` leaves strings, bools, numbers and structs untouched, and resets
- *     *int32 (KS_T_OPT_INT32) and slices (KS_T_ARRAY) to nil.
+ *     *int32 (KS_T_OPT_INT32), pointers (KS_T_PTR) and slices (KS_T_ARRAY)
+ *     to nil. A null element of a slice is a zeroed element (Go's []*T would
+ *     hold a nil pointer).
  *   - Wrong JSON types and out-of-range integers are errors naming the field,
  *     e.g. "FwOptions.QueueNum: expected uint16, got string".
  * Encoding emits every field in table order, like json.Marshal does with
@@ -17,8 +20,8 @@
  *
  * Copyright (C) 2026 the Kisnitch contributors.
  *
- * Memory: a decoded struct owns every string and array reachable through its
- * schema. Release with ks_schema_free(). After a successful decode no string
+ * Memory: a decoded struct owns every string, pointed-to struct and array
+ * reachable through its schema. Release with ks_schema_free(). After a successful decode no string
  * is NULL (absent values are ""), but all functions accept NULL strings, as
  * found in a zero-initialized struct.
  */
@@ -37,13 +40,16 @@ enum ks_ftype {
     KS_T_INT,       /* int64_t (Go int) */
     KS_T_UINT16,    /* uint16_t */
     KS_T_OPT_INT32, /* struct ks_opt_int32 (Go *int32) */
+    KS_T_UINT32,    /* uint32_t */
+    KS_T_UINT64_STR,/* uint64_t, `json:",string"`: a quoted number */
     KS_T_STRUCT,    /* nested struct described by `sub` */
+    KS_T_PTR,       /* pointer to a struct described by `sub` (NULL = nil) */
     KS_T_ARRAY,     /* struct ks_array of `sub` elements (Go slice) */
 };
 
 struct ks_schema;
 
-struct ks_field {
+struct ks_schema_field {
     const char *name; /* JSON key, exactly as upstream */
     enum ks_ftype type;
     size_t off;
@@ -53,7 +59,7 @@ struct ks_field {
 struct ks_schema {
     const char *go_type; /* for error messages, e.g. "config.FwOptions" */
     size_t size;         /* sizeof the C struct */
-    const struct ks_field *fields;
+    const struct ks_schema_field *fields;
     size_t n;
 };
 

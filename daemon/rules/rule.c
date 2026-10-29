@@ -31,7 +31,7 @@
 
 static const struct ks_schema operator_schema;
 
-static const struct ks_field operator_fields[] = {
+static const struct ks_schema_field operator_fields[] = {
     KS_FIELD(struct ks_operator, "operand", KS_T_STRING, operand),
     KS_FIELD(struct ks_operator, "data", KS_T_STRING, data),
     KS_FIELD(struct ks_operator, "type", KS_T_STRING, type),
@@ -41,7 +41,7 @@ static const struct ks_field operator_fields[] = {
 static const struct ks_schema operator_schema =
     KS_SCHEMA("rule.Operator", struct ks_operator, operator_fields);
 
-static const struct ks_field rule_fields[] = {
+static const struct ks_schema_field rule_fields[] = {
     KS_FIELD(struct ks_rule, "created", KS_T_STRING, created),
     KS_FIELD(struct ks_rule, "updated", KS_T_STRING, updated),
     KS_FIELD(struct ks_rule, "name", KS_T_STRING, name),
