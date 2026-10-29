@@ -34,6 +34,7 @@
 #include "ui/settings.h"
 #include "ui/stats_win.h"
 #include "ui/tray.h"
+#include "ui/i18n.h"
 
 #define APP_ID "io.github.evilsocket.opensnitch"
 #define DEFAULT_SOCKET "unix:///tmp/osui.sock"
@@ -111,10 +112,10 @@ static void on_version_warning(void *ud, const char *daemon, const char *ui)
         return;
     a->version_dialog = gtk_message_dialog_new_with_markup(
         NULL, 0, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
-        "You are running version <b>%s</b> of the daemon, while the UI is at version "
-        "<b>%s</b>, they might not be fully compatible.",
+        _("You are running version <b>%s</b> of the daemon, while the UI is at version "
+        "<b>%s</b>, they might not be fully compatible."),
         daemon, ui);
-    gtk_window_set_title(GTK_WINDOW(a->version_dialog), "OpenSnitch version mismatch!");
+    gtk_window_set_title(GTK_WINDOW(a->version_dialog), _("OpenSnitch version mismatch!"));
     g_signal_connect_swapped(a->version_dialog, "response", G_CALLBACK(gtk_widget_hide),
                              a->version_dialog);
     gtk_widget_show(a->version_dialog);
@@ -307,6 +308,12 @@ int main(int argc, char **argv)
         return 1;
     }
     ks_settings_init_defaults(&app.settings);
+    {
+        /* languages.init(): "" is the system's, "en" has no catalog */
+        char *lang = ks_settings_get_string(&app.settings, KS_CFG_DEFAULT_LANGUAGE);
+        ks_i18n_init(NULL, lang);
+        free(lang);
+    }
 
     /* the windows' icon: the theme's "kisnitch" if installed, else ours */
     gtk_window_set_default_icon_name("kisnitch");

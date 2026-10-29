@@ -20,6 +20,7 @@
 #include "ui/prefs_node.h"
 #include "ui/rulesdb.h"
 #include "ui/tray.h"
+#include "ui/i18n.h"
 
 #define HELP_URL "https://github.com/evilsocket/opensnitch/wiki/"
 #define KEY_NOTIF_ENABLED "notifications/enabled"
@@ -35,6 +36,7 @@
 #define NOTIFICATION_TYPE_SYSTEM 1
 #define DEFAULT_DURATION_IDX 6
 #define NCOLS 14
+#define KS_MAX_LANGS 64
 
 enum { TAB_POPUPS, TAB_UI, TAB_RULES, TAB_NODES, TAB_DB };
 
@@ -49,6 +51,8 @@ struct ks_prefs {
     GtkWidget *spin_timeout, *popups_check, *c_action, *c_duration, *c_target, *c_pos;
     GtkWidget *adv_check, *uid_check, *dstport_check, *dstip_check, *sum_check;
     /* UI */
+    char langs[KS_MAX_LANGS][KS_LANG_MAX]; /* combo rows 1.. (row 0: the system's) */
+    size_t nlangs;
     GtkWidget *spin_refresh, *c_lang, *autostart, *srv_addr, *msg_size, *c_auth, *ca_line, *cert_line,
         *key_line, *spin_workers, *spin_clients, *notif_group, *radio_sys, *radio_qt,
         *cols[NCOLS];
@@ -70,6 +74,8 @@ struct ks_prefs {
     bool saved;
     char *restart; /* _changes_needs_restart */
 };
+
+static const char *const auth_types[] = {N_("Simple"), N_("Simple TLS"), N_("Mutual TLS")};
 
 /* ---- small helpers ---------------------------------------------------------------------- */
 
@@ -153,7 +159,7 @@ static GtkWidget *combo_with(const char *const *items, size_t n)
 {
     GtkWidget *c = gtk_combo_box_new_text();
     for (size_t i = 0; i < n; i++)
-        gtk_combo_box_append_text(GTK_COMBO_BOX(c), items[i]);
+        gtk_combo_box_append_text(GTK_COMBO_BOX(c), _(items[i]));
     gtk_combo_box_set_active(GTK_COMBO_BOX(c), 0);
     return c;
 }
@@ -298,7 +304,7 @@ static void load_node_settings(struct ks_prefs *p)
         free(n->config->config);
         n->config->config = norm;
     } else {
-        char *m = g_strdup_printf("Error loading config %s: %s", addr, err);
+        char *m = g_strdup_printf(_("Error loading config %s: %s"), addr, err);
         set_error(p, m);
         g_free(m);
     }
@@ -330,7 +336,7 @@ static void load_nodes(struct ks_prefs *p)
     p->loading = was;
     if (nodes->len == 0) {
         reset_node_settings(p);
-        set_message(p, "There're no nodes connected");
+        set_message(p, _("There're no nodes connected"));
     }
     bool show = nodes->len > 1;
     gtk_widget_set_visible(p->c_nodes, show);
@@ -464,6 +470,13 @@ static void load_settings(struct ks_prefs *p)
     }
     free(cols);
 
+    char *lang = ks_settings_get_string(c, KS_CFG_DEFAULT_LANGUAGE);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(p->c_lang), 0);
+    for (size_t i = 0; lang != NULL && i < p->nlangs; i++)
+        if (strcmp(p->langs[i], lang) == 0 || (strcmp(lang, "zh_Hans") == 0 && strcmp(p->langs[i], "zh_CN") == 0))
+            gtk_combo_box_set_active(GTK_COMBO_BOX(p->c_lang), (int)i + 1);
+    free(lang);
+
     char *home_cfg = g_strdup(g_get_user_config_dir());
     set_active(p->autostart, ks_autostart_enabled(home_cfg));
     g_free(home_cfg);
@@ -489,14 +502,14 @@ static bool save_db_config(struct ks_prefs *p)
     char *db_name = ks_settings_get_string(p->cfg, KS_CFG_DEFAULT_DB_FILE_KEY);
     const char *label = gtk_label_get_text(GTK_LABEL(p->db_label));
     if (label[0] != '\0' && (dbtype != p->db_type_loaded || db_name == NULL || strcmp(db_name, label) != 0))
-        need_restart(p, "DB type changed");
+        need_restart(p, _("DB type changed"));
     char *name = NULL;
     if (dbtype != KS_CFG_DB_TYPE_MEMORY) {
         if (label[0] != '\0') {
             name = g_strdup(label);
         } else {
-            message_dialog(p, GTK_MESSAGE_WARNING, "Warning",
-                           "You must select a file for the database\nor choose \"In memory\" type.");
+            message_dialog(p, GTK_MESSAGE_WARNING, _("Warning"),
+                           _("You must select a file for the database\nor choose \"In memory\" type."));
             free(db_name);
             return false;
         }
@@ -547,7 +560,7 @@ static bool save_ui_config(struct ks_prefs *p)
         }
         nospace[o] = '\0';
         ks_settings_set_string(c, KEY_MAX_MSG, nospace);
-        need_restart(p, "Server options changed");
+        need_restart(p, _("Server options changed"));
         g_free(clean);
         g_free(nospace);
     }
@@ -556,13 +569,13 @@ static bool save_ui_config(struct ks_prefs *p)
     int ai = gtk_combo_box_get_active(GTK_COMBO_BOX(p->c_auth));
     if (ai > 0 && !ks_tls_available()) {
         /* main would refuse to start with it */
-        set_error(p, "TLS is not supported by this build (TLS=1), the server stays on Simple");
+        set_error(p, _("TLS is not supported by this build (TLS=1), the server stays on Simple"));
         gtk_combo_box_set_active(GTK_COMBO_BOX(p->c_auth), 0);
         ai = 0;
     }
     char *saved_auth = ks_settings_get_string(c, KS_CFG_AUTH_TYPE);
     if (saved_auth == NULL || strcmp(saved_auth, ks_node_auth_types[ai]) != 0)
-        need_restart(p, "Certificates changed");
+        need_restart(p, _("Certificates changed"));
     free(saved_auth);
     ks_settings_set_string(c, KS_CFG_AUTH_TYPE, ks_node_auth_types[ai]);
     ks_settings_set_string(c, KEY_AUTH_CACERT, gtk_entry_get_text(GTK_ENTRY(p->ca_line)));
@@ -573,16 +586,16 @@ static bool save_ui_config(struct ks_prefs *p)
     const char *new_srv = combo_entry_text(p->srv_addr);
     if (srv == NULL || strcmp(srv, new_srv) != 0) {
         ks_settings_set_string(c, KS_CFG_DEFAULT_SERVER_ADDR, new_srv);
-        need_restart(p, "Server address changed");
+        need_restart(p, _("Server address changed"));
     }
     free(srv);
     if (ks_settings_get_int(c, KEY_MAX_WORKERS, 20) != spin_value(p->spin_workers)) {
         set_int(p, KEY_MAX_WORKERS, spin_value(p->spin_workers));
-        need_restart(p, "Server max workers changed");
+        need_restart(p, _("Server max workers changed"));
     }
     if (ks_settings_get_int(c, KS_CFG_DEFAULT_SERVER_MAX_CLIENTS, 0) != spin_value(p->spin_clients)) {
         set_int(p, KS_CFG_DEFAULT_SERVER_MAX_CLIENTS, spin_value(p->spin_clients));
-        need_restart(p, "Server max clients changed");
+        need_restart(p, _("Server max clients changed"));
     }
 
     set_int(p, KS_CFG_DEFAULT_IGNORE_TEMPORARY_RULES, gtk_combo_box_get_active(GTK_COMBO_BOX(p->c_rules)));
@@ -610,6 +623,16 @@ static bool save_ui_config(struct ks_prefs *p)
     /* a workaround for not displaying pop-ups (upstream issue #79) */
     if (is_active(p->popups_check))
         set_int(p, KS_CFG_DEFAULT_TIMEOUT_KEY, 0);
+    /* languages.save(): "" is the system's */
+    int li = gtk_combo_box_get_active(GTK_COMBO_BOX(p->c_lang));
+    const char *sel = li > 0 && (size_t)li <= p->nlangs ? p->langs[li - 1] : "";
+    char *saved_lang = ks_settings_get_string(c, KS_CFG_DEFAULT_LANGUAGE);
+    if (strcmp(saved_lang != NULL ? saved_lang : "", sel) != 0) {
+        ks_settings_set_string(c, KS_CFG_DEFAULT_LANGUAGE, sel);
+        ks_settings_set_string(c, KS_CFG_DEFAULT_LANGNAME, sel[0] != '\0' ? ks_i18n_native_name(sel) : "");
+        need_restart(p, _("Language changed"));
+    }
+    free(saved_lang);
     ks_autostart_enable(g_get_user_config_dir(), is_active(p->autostart));
     return true;
 }
@@ -619,9 +642,9 @@ static void on_reply(const char *addr, const Protocol__NotificationReply *r, voi
     struct ks_prefs *p = ud;
     (void)addr;
     if (r->code == PROTOCOL__NOTIFICATION_REPLY_CODE__OK) {
-        set_success(p, "Configuration applied.");
+        set_success(p, _("Configuration applied."));
     } else {
-        char *m = g_strdup_printf("Error applying configuration: %s", r->data != NULL ? r->data : "");
+        char *m = g_strdup_printf(_("Error applying configuration: %s"), r->data != NULL ? r->data : "");
         set_error(p, m);
         g_free(m);
     }
@@ -634,7 +657,7 @@ static char *save_node_config(struct ks_prefs *p, const char *addr)
     struct ks_node *n = ks_nodes_get(nodes, addr);
     if (nodes->len == 0 || n == NULL || !n->online || n->config == NULL)
         return NULL;
-    char *m = g_strdup_printf("Applying configuration on %s ...", addr);
+    char *m = g_strdup_printf(_("Applying configuration on %s ..."), addr);
     set_message(p, m);
     g_free(m);
     char *json = NULL, err[300];
@@ -646,9 +669,9 @@ static char *save_node_config(struct ks_prefs *p, const char *addr)
     const char *server_addr = combo_entry_text(p->srv_addr);
     if (g_str_has_prefix(server_addr, "unix:") &&
         ((cur != NULL && strcmp(cur, node_address) != 0) || strcmp(server_addr, node_address) != 0))
-        need_restart(p, "Node address changed (update GUI address if needed)");
+        need_restart(p, _("Node address changed (update GUI address if needed)"));
     if (g_str_has_prefix(node_address, "unix:") && !g_str_has_prefix(server_addr, "unix:"))
-        need_restart(p, "Node address changed (update GUI address if needed)");
+        need_restart(p, _("Node address changed (update GUI address if needed)"));
 
     /* Nodes.save_node_config() */
     free(n->config->config);
@@ -667,7 +690,7 @@ static bool save_nodes_config(struct ks_prefs *p)
 {
     const char *addr = selected_node(p);
     if ((p->nf.needs_update || is_active(p->apply_all)) && addr != NULL) {
-        set_message(p, "Saving configuration...");
+        set_message(p, _("Saving configuration..."));
         read_nform(p);
         if (is_active(p->apply_all)) {
             struct ks_nodes *nodes = ks_service_nodes(p->svc);
@@ -688,7 +711,7 @@ static bool save_nodes_config(struct ks_prefs *p)
             }
         }
     } else if (addr == NULL) {
-        set_message(p, "There're no nodes connected");
+        set_message(p, _("There're no nodes connected"));
         return false;
     }
     p->nf.needs_update = false;
@@ -703,14 +726,14 @@ static void save_settings(struct ks_prefs *p)
     bool db = save_db_config(p);
     bool nodes = save_nodes_config(p);
     if (ui && db && nodes)
-        set_success(p, "Configuration applied.");
+        set_success(p, _("Configuration applied."));
     ks_service_settings_saved(p->svc);
     if (p->on_saved)
         p->on_saved(p->ud);
     p->saved = true;
     if (p->restart != NULL) {
         message_dialog(p, GTK_MESSAGE_WARNING, p->restart,
-                       "Restart the GUI in order changes to take effect");
+                       _("Restart the GUI in order changes to take effect"));
         g_free(p->restart);
         p->restart = NULL;
     }
@@ -803,7 +826,7 @@ static void on_db_wal_toggled(GtkToggleButton *b, gpointer ud)
     struct ks_prefs *p = ud;
     (void)b;
     if (!p->loading)
-        need_restart(p, "DB journal_mode changed");
+        need_restart(p, _("DB journal_mode changed"));
 }
 
 /* _cb_file_db_clicked() */
@@ -886,7 +909,7 @@ static void on_auth(GtkComboBox *c, gpointer ud)
     int i = gtk_combo_box_get_active(c);
     char *saved = ks_settings_get_string(p->cfg, KS_CFG_AUTH_TYPE);
     if (saved == NULL || i < 0 || i > 2 || strcmp(saved, ks_node_auth_types[i]) != 0)
-        need_restart(p, "Auth type changed");
+        need_restart(p, _("Auth type changed"));
     free(saved);
     gtk_widget_set_sensitive(p->ca_line, i == 2);
     gtk_widget_set_sensitive(p->cert_line, i >= 1);
@@ -908,38 +931,38 @@ static GtkWidget *build_popups(struct ks_prefs *p)
     GtkWidget *t = new_table();
     int l = 0;
     p->spin_timeout = spin(0, 100, 30);
-    row(t, l++, "Default timeout", p->spin_timeout,
-        "This timeout is the countdown you see on the pop-up.");
-    p->popups_check = check("Disable pop-ups, only display a notification", NULL);
+    row(t, l++, _("Default timeout"), p->spin_timeout,
+        _("This timeout is the countdown you see on the pop-up."));
+    p->popups_check = check(_("Disable pop-ups, only display a notification"), NULL);
     gtk_table_attach(GTK_TABLE(t), p->popups_check, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
     static const char *const actions[] = {"deny", "allow", "reject"};
-    static const char *const durations[] = {"once", "30s", "5m", "15m", "30m", "1h", "12h",
-                                            "until reboot", "forever"};
-    static const char *const targets[] = {"by executable", "by command line", "by destination port",
-                                          "by destination ip", "by user id", "by PID"};
-    static const char *const positions[] = {"center", "top right", "bottom right", "top left",
-                                            "bottom left"};
+    static const char *const durations[] = {N_("once"), N_("30s"), N_("5m"), N_("15m"), N_("30m"), N_("1h"), N_("12h"),
+                                            N_("until reboot"), N_("forever")};
+    static const char *const targets[] = {N_("by executable"), N_("by command line"), N_("by destination port"),
+                                          N_("by destination ip"), N_("by user id"), N_("by PID")};
+    static const char *const positions[] = {N_("center"), N_("top right"), N_("bottom right"), N_("top left"),
+                                            N_("bottom left")};
     p->c_action = combo_with(actions, 3);
-    row(t, l++, "Action", p->c_action, "Pop-up default action.");
+    row(t, l++, _("Action"), p->c_action, _("Pop-up default action."));
     p->c_duration = combo_with(durations, 9);
-    row(t, l++, "Duration", p->c_duration, "Pop-up default duration");
+    row(t, l++, _("Duration"), p->c_duration, _("Pop-up default duration"));
     p->c_target = combo_with(targets, 6);
-    row(t, l++, "Default target", p->c_target, NULL);
+    row(t, l++, _("Default target"), p->c_target, NULL);
     p->c_pos = combo_with(positions, 5);
-    row(t, l++, "Default position on screen", p->c_pos, NULL);
-    p->adv_check = check("Show advanced view by default",
-                         "The advanced view allows you to easily select multiple fields.");
+    row(t, l++, _("Default position on screen"), p->c_pos, NULL);
+    p->adv_check = check(_("Show advanced view by default"),
+                         _("The advanced view allows you to easily select multiple fields."));
     gtk_table_attach(GTK_TABLE(t), p->adv_check, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
-    GtkWidget *lbl = gtk_label_new("Filter connections also by:");
+    GtkWidget *lbl = gtk_label_new(_("Filter connections also by:"));
     gtk_misc_set_alignment(GTK_MISC(lbl), 0.0f, 0.5f);
     gtk_table_attach(GTK_TABLE(t), lbl, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
-    p->uid_check = check("User ID", "If checked, this field will be selected when a pop-up is displayed.");
-    p->dstport_check = check("Destination port", NULL);
-    p->dstip_check = check("Destination IP", NULL);
-    p->sum_check = check("checksum", NULL);
+    p->uid_check = check(_("User ID"), _("If checked, this field will be selected when a pop-up is displayed."));
+    p->dstport_check = check(_("Destination port"), NULL);
+    p->dstip_check = check(_("Destination IP"), NULL);
+    p->sum_check = check(_("checksum"), NULL);
     GtkWidget *cs[] = {p->uid_check, p->dstport_check, p->dstip_check, p->sum_check};
     for (int i = 0; i < 4; i++)
         gtk_table_attach(GTK_TABLE(t), cs[i], 0, 2, (guint)l + (guint)i, (guint)l + (guint)i + 1,
@@ -977,22 +1000,24 @@ static void on_test_notifs(GtkButton *b, gpointer ud)
 static GtkWidget *build_ui(struct ks_prefs *p)
 {
     GtkWidget *vbox = gtk_vbox_new(FALSE, 8);
-    GtkWidget *f1 = gtk_frame_new("General");
+    GtkWidget *f1 = gtk_frame_new(_("General"));
     GtkWidget *t = new_table();
     int l = 0;
     p->spin_refresh = spin(0, 100, 1);
-    row(t, l++, "Refresh interval (seconds)", p->spin_refresh, NULL);
+    row(t, l++, _("Refresh interval (seconds)"), p->spin_refresh, NULL);
     p->c_lang = gtk_combo_box_new_text();
-    gtk_combo_box_append_text(GTK_COMBO_BOX(p->c_lang), "System default");
+    gtk_combo_box_append_text(GTK_COMBO_BOX(p->c_lang), _("System default"));
+    p->nlangs = ks_i18n_languages(ks_i18n_localedir(), p->langs, KS_MAX_LANGS);
+    for (size_t i = 0; i < p->nlangs; i++)
+        gtk_combo_box_append_text(GTK_COMBO_BOX(p->c_lang), ks_i18n_native_name(p->langs[i]));
     gtk_combo_box_set_active(GTK_COMBO_BOX(p->c_lang), 0);
-    gtk_widget_set_sensitive(p->c_lang, FALSE);
-    row(t, l++, "Language", p->c_lang, "Translations come with phase 10.");
-    p->autostart = check("Autostart the GUI upon login", "By default the GUI is started when login");
+    row(t, l++, _("Language"), p->c_lang, NULL);
+    p->autostart = check(_("Autostart the GUI upon login"), _("By default the GUI is started when login"));
     gtk_table_attach(GTK_TABLE(t), p->autostart, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     gtk_container_add(GTK_CONTAINER(f1), t);
     gtk_box_pack_start(GTK_BOX(vbox), f1, FALSE, FALSE, 0);
 
-    GtkWidget *f2 = gtk_frame_new("Server");
+    GtkWidget *f2 = gtk_frame_new(_("Server"));
     GtkWidget *t2 = new_table();
     l = 0;
     static const char *const addrs[] = {"unix:///tmp/osui.sock"};
@@ -1010,37 +1035,36 @@ static GtkWidget *build_ui(struct ks_prefs *p)
         gtk_combo_box_append_text(GTK_COMBO_BOX(p->srv_addr), a);
         g_free(a);
     }
-    row(t2, l++, "Address", p->srv_addr, "The address where the GUI is listening for new nodes.");
+    row(t2, l++, _("Address"), p->srv_addr, _("The address where the GUI is listening for new nodes."));
     static const char *const sizes[] = {"4MiB", "8MiB", "16MiB", "32MiB"};
     p->msg_size = entry_combo_with(sizes, 4);
-    row(t2, l++, "Max gRPC channel size", p->msg_size, "Maximum size of each message from nodes. Default 4MB");
-    static const char *const auths[] = {"Simple", "Simple TLS", "Mutual TLS"};
-    p->c_auth = combo_with(auths, 3);
-    row(t2, l++, "Authentication type", p->c_auth,
-        "Simple: no authentication. TLS comes with phase 10.");
+    row(t2, l++, _("Max gRPC channel size"), p->msg_size, _("Maximum size of each message from nodes. Default 4MB"));
+    p->c_auth = combo_with(auth_types, 3);
+    row(t2, l++, _("Authentication type"), p->c_auth,
+        _("Simple: no authentication. TLS needs a build with TLS=1."));
     p->ca_line = gtk_entry_new();
-    row(t2, l++, "CA cert file", p->ca_line, "Absolute path to the CA cert file");
+    row(t2, l++, _("CA cert file"), p->ca_line, _("Absolute path to the CA cert file"));
     p->cert_line = gtk_entry_new();
-    row(t2, l++, "Cert file", p->cert_line, "Absolute path to the cert file");
+    row(t2, l++, _("Cert file"), p->cert_line, _("Absolute path to the cert file"));
     p->key_line = gtk_entry_new();
-    row(t2, l++, "Cert key file", p->key_line, "Absolute path to the cert key file");
+    row(t2, l++, _("Cert key file"), p->key_line, _("Absolute path to the cert key file"));
     p->spin_workers = spin(0, 100000, 20);
-    row(t2, l++, "Max server workers", p->spin_workers, NULL);
+    row(t2, l++, _("Max server workers"), p->spin_workers, NULL);
     p->spin_clients = spin(0, 100, 0);
-    row(t2, l++, "Max server clients", p->spin_clients,
-        "This option limits the number of nodes (incoming connections).");
+    row(t2, l++, _("Max server clients"), p->spin_clients,
+        _("This option limits the number of nodes (incoming connections)."));
     gtk_container_add(GTK_CONTAINER(f2), t2);
     gtk_box_pack_start(GTK_BOX(vbox), f2, FALSE, FALSE, 0);
     g_signal_connect(p->c_auth, "changed", G_CALLBACK(on_auth), p);
 
-    GtkWidget *f3 = gtk_frame_new("Desktop notifications");
+    GtkWidget *f3 = gtk_frame_new(_("Desktop notifications"));
     GtkWidget *b3 = gtk_vbox_new(FALSE, 2);
     gtk_container_set_border_width(GTK_CONTAINER(b3), 8);
-    p->notif_group = check("Enable", NULL);
-    p->radio_sys = gtk_radio_button_new_with_label(NULL, "Use system notifications");
+    p->notif_group = check(_("Enable"), NULL);
+    p->radio_sys = gtk_radio_button_new_with_label(NULL, _("Use system notifications"));
     p->radio_qt = gtk_radio_button_new_with_label(
-        gtk_radio_button_get_group(GTK_RADIO_BUTTON(p->radio_sys)), "Use the tray icon's alert");
-    GtkWidget *test = gtk_button_new_with_label("Test");
+        gtk_radio_button_get_group(GTK_RADIO_BUTTON(p->radio_sys)), _("Use the tray icon's alert"));
+    GtkWidget *test = gtk_button_new_with_label(_("Test"));
     g_signal_connect(test, "clicked", G_CALLBACK(on_test_notifs), p);
     g_signal_connect(p->radio_sys, "toggled", G_CALLBACK(on_radio_sys), p);
     gtk_box_pack_start(GTK_BOX(b3), p->notif_group, FALSE, FALSE, 0);
@@ -1050,15 +1074,15 @@ static GtkWidget *build_ui(struct ks_prefs *p)
     gtk_container_add(GTK_CONTAINER(f3), b3);
     gtk_box_pack_start(GTK_BOX(vbox), f3, FALSE, FALSE, 0);
 
-    GtkWidget *f4 = gtk_frame_new("Events tab columns");
+    GtkWidget *f4 = gtk_frame_new(_("Events tab columns"));
     GtkWidget *b4 = gtk_table_new(5, 3, TRUE);
     gtk_container_set_border_width(GTK_CONTAINER(b4), 8);
     /* the order of the columns of the events table */
-    static const char *const names[NCOLS] = {"Time", "Node", "Action", "Source port", "Source IP",
-                                             "Dest IP", "Dest host", "Dest port", "Protocol", "UID",
-                                             "PID", "Process", "Command line", "Rule"};
+    static const char *const names[NCOLS] = {N_("Time"), N_("Node"), N_("Action"), N_("Source port"), N_("Source IP"),
+                                             N_("Dest IP"), N_("Dest host"), N_("Dest port"), N_("Protocol"), N_("UID"),
+                                             N_("PID"), N_("Process"), N_("Command line"), N_("Rule")};
     for (int i = 0; i < NCOLS; i++) {
-        p->cols[i] = check(names[i], NULL);
+        p->cols[i] = check(_(names[i]), NULL);
         set_active(p->cols[i], true);
         gtk_table_attach_defaults(GTK_TABLE(b4), p->cols[i], (guint)(i % 3), (guint)(i % 3) + 1,
                                   (guint)(i / 3), (guint)(i / 3) + 1);
@@ -1071,12 +1095,12 @@ static GtkWidget *build_ui(struct ks_prefs *p)
 static GtkWidget *build_rules(struct ks_prefs *p)
 {
     GtkWidget *t = new_table();
-    p->rules_check = check("Don't save/Delete rules of duration",
-                           "When this option is selected, the rules of the selected duration are not "
-                           "saved, and the ones already saved are deleted.");
+    p->rules_check = check(_("Don't save/Delete rules of duration"),
+                           _("When this option is selected, the rules of the selected duration are not "
+                           "saved, and the ones already saved are deleted."));
     gtk_table_attach(GTK_TABLE(t), p->rules_check, 0, 1, 0, 1, GTK_FILL, GTK_FILL, 6, 3);
-    static const char *const items[] = {"any temporary rules", "once", "30s or less", "5m or less",
-                                        "15m or less", "30m or less", "1h or less"};
+    static const char *const items[] = {N_("any temporary rules"), N_("once"), N_("30s or less"), N_("5m or less"),
+                                        N_("15m or less"), N_("30m or less"), N_("1h or less")};
     p->c_rules = combo_with(items, 7);
     gtk_table_attach(GTK_TABLE(t), p->c_rules, 1, 2, 0, 1, GTK_FILL, GTK_FILL, 6, 3);
     g_signal_connect(p->rules_check, "toggled", G_CALLBACK(on_rules_check), p);
@@ -1095,7 +1119,7 @@ static GtkWidget *build_nodes(struct ks_prefs *p)
     GtkWidget *top = gtk_hbox_new(FALSE, 6);
     p->c_nodes = gtk_combo_box_new_text();
     gtk_widget_set_no_show_all(p->c_nodes, TRUE);
-    p->apply_all = check("Apply configuration to all nodes", NULL);
+    p->apply_all = check(_("Apply configuration to all nodes"), NULL);
     gtk_widget_set_no_show_all(p->apply_all, TRUE);
     gtk_box_pack_start(GTK_BOX(top), p->c_nodes, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(top), p->apply_all, FALSE, FALSE, 0);
@@ -1103,9 +1127,9 @@ static GtkWidget *build_nodes(struct ks_prefs *p)
     GtkWidget *info = gtk_hbox_new(FALSE, 6);
     p->l_name = gtk_label_new("");
     p->l_version = gtk_label_new("");
-    gtk_box_pack_start(GTK_BOX(info), gtk_label_new("HostName"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(info), gtk_label_new(_("HostName")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(info), p->l_name, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(info), gtk_label_new("Version"), FALSE, FALSE, 8);
+    gtk_box_pack_start(GTK_BOX(info), gtk_label_new(_("Version")), FALSE, FALSE, 8);
     gtk_box_pack_start(GTK_BOX(info), p->l_version, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), info, FALSE, FALSE, 0);
 
@@ -1114,81 +1138,81 @@ static GtkWidget *build_nodes(struct ks_prefs *p)
     GtkWidget *t = new_table();
     int l = 0;
     p->n_action = combo_with(ks_node_actions, 3);
-    row(t, l++, "Default action when the GUI is disconnected", p->n_action, NULL);
+    row(t, l++, _("Default action when the GUI is disconnected"), p->n_action, NULL);
     p->n_addr = entry_combo_with((const char *const[]){"unix:///tmp/osui.sock"}, 1);
-    row(t, l++, "Address", p->n_addr, "Address of the node.");
-    p->n_intercept = check("Debug invalid connections", NULL);
+    row(t, l++, _("Address"), p->n_addr, _("Address of the node."));
+    p->n_intercept = check(_("Debug invalid connections"), NULL);
     gtk_table_attach(GTK_TABLE(t), p->n_intercept, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
     p->n_monitor = combo_with(ks_node_monitors, 3);
-    row(t, l++, "Process monitor method", p->n_monitor, NULL);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new("General"));
+    row(t, l++, _("Process monitor method"), p->n_monitor, NULL);
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new(_("General")));
     /* Logging */
     t = new_table();
     l = 0;
     static const char *const levels[] = {"DEBUG", "INFO", "IMPORTANT", "WARNING", "ERROR", "FATAL"};
     p->n_loglevel = combo_with(levels, 6);
-    row(t, l++, "Default log level", p->n_loglevel, NULL);
-    p->n_utc = check("Log UTC timestamps", NULL);
+    row(t, l++, _("Default log level"), p->n_loglevel, NULL);
+    p->n_utc = check(_("Log UTC timestamps"), NULL);
     gtk_table_attach(GTK_TABLE(t), p->n_utc, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
-    p->n_micro = check("Log timestamp microseconds", NULL);
+    p->n_micro = check(_("Log timestamp microseconds"), NULL);
     gtk_table_attach(GTK_TABLE(t), p->n_micro, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
     static const char *const logs[] = {"/var/log/opensnitchd.log", "/dev/stdout"};
     p->n_logfile = entry_combo_with(logs, 2);
-    row(t, l++, "Log file", p->n_logfile, NULL);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new("Logging"));
+    row(t, l++, _("Log file"), p->n_logfile, NULL);
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new(_("Logging")));
     /* Authentication */
     t = new_table();
     l = 0;
-    p->n_auth = combo_with((const char *const[]){"Simple", "Simple TLS", "Mutual TLS"}, 3);
-    row(t, l++, "Authentication type", p->n_auth, NULL);
+    p->n_auth = combo_with(auth_types, 3);
+    row(t, l++, _("Authentication type"), p->n_auth, NULL);
     p->n_ca = gtk_entry_new();
-    row(t, l++, "CA cert file", p->n_ca, "Absolute path to the CA cert file");
+    row(t, l++, _("CA cert file"), p->n_ca, _("Absolute path to the CA cert file"));
     p->n_srvcert = gtk_entry_new();
-    row(t, l++, "Server cert file", p->n_srvcert, NULL);
+    row(t, l++, _("Server cert file"), p->n_srvcert, NULL);
     p->n_cert = gtk_entry_new();
-    row(t, l++, "Cert file", p->n_cert, NULL);
+    row(t, l++, _("Cert file"), p->n_cert, NULL);
     p->n_key = gtk_entry_new();
-    row(t, l++, "Cert key file", p->n_key, NULL);
-    p->n_skip = check("Don't verify certs", NULL);
+    row(t, l++, _("Cert key file"), p->n_key, NULL);
+    p->n_skip = check(_("Don't verify certs"), NULL);
     gtk_table_attach(GTK_TABLE(t), p->n_skip, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
     p->n_verify = combo_with(ks_node_verify_types, 5);
-    row(t, l++, "Client certificate verification", p->n_verify, NULL);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new("Authentication"));
+    row(t, l++, _("Client certificate verification"), p->n_verify, NULL);
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new(_("Authentication")));
     /* Rules */
     t = new_table();
     l = 0;
-    p->n_checksums = check("Enable checksums verification", NULL);
+    p->n_checksums = check(_("Enable checksums verification"), NULL);
     gtk_table_attach(GTK_TABLE(t), p->n_checksums, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
     p->n_rules_path = gtk_entry_new();
-    p->n_rules_btn = gtk_button_new_with_label("Path");
+    p->n_rules_btn = gtk_button_new_with_label(_("Path"));
     GtkWidget *hb = gtk_hbox_new(FALSE, 4);
     gtk_box_pack_start(GTK_BOX(hb), p->n_rules_path, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hb), p->n_rules_btn, FALSE, FALSE, 0);
-    row(t, l++, "Rules path", hb, "If empty, default rules path will be /etc/opensnitchd/rules");
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new("Rules"));
+    row(t, l++, _("Rules path"), hb, _("If empty, default rules path will be /etc/opensnitchd/rules"));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new(_("Rules")));
     /* Internal */
     t = new_table();
     l = 0;
     p->n_maxevents = gtk_entry_new();
-    row(t, l++, "Max events", p->n_maxevents, NULL);
+    row(t, l++, _("Max events"), p->n_maxevents, NULL);
     p->n_maxstats = gtk_entry_new();
-    row(t, l++, "Max stats", p->n_maxstats, NULL);
+    row(t, l++, _("Max stats"), p->n_maxstats, NULL);
     p->n_gc = spin(0, 100, 100);
-    row(t, l++, "Garbage collector percentage", p->n_gc, NULL);
+    row(t, l++, _("Garbage collector percentage"), p->n_gc, NULL);
     p->n_fwint = gtk_entry_new();
-    row(t, l++, "Firewall rules monitoring interval (seconds)", p->n_fwint,
-        "Check every n seconds that the interception rules are present.");
-    p->n_flush = check("Flush connections on start", "When this option is on, all the existing sockets will be killed.");
+    row(t, l++, _("Firewall rules monitoring interval (seconds)"), p->n_fwint,
+        _("Check every n seconds that the interception rules are present."));
+    p->n_flush = check(_("Flush connections on start"), _("When this option is on, all the existing sockets will be killed."));
     gtk_table_attach(GTK_TABLE(t), p->n_flush, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
-    p->n_block = check("Block outbound network traffic if the daemon unexpectedly dies", NULL);
+    p->n_block = check(_("Block outbound network traffic if the daemon unexpectedly dies"), NULL);
     gtk_table_attach(GTK_TABLE(t), p->n_block, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new("Internal"));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t, gtk_label_new(_("Internal")));
     gtk_box_pack_start(GTK_BOX(vbox), nb, TRUE, TRUE, 0);
 
     g_signal_connect(p->c_nodes, "changed", G_CALLBACK(on_node_combo), p);
@@ -1216,11 +1240,11 @@ static GtkWidget *build_db(struct ks_prefs *p)
 {
     GtkWidget *t = new_table();
     int l = 0;
-    static const char *const types[] = {"In memory", "File"};
+    static const char *const types[] = {N_("In memory"), N_("File")};
     p->db_type = combo_with(types, 2);
-    row(t, l++, "Database type", p->db_type, NULL);
+    row(t, l++, _("Database type"), p->db_type, NULL);
     p->db_label = gtk_label_new("");
-    p->db_file_btn = gtk_button_new_with_label("Select");
+    p->db_file_btn = gtk_button_new_with_label(_("Select"));
     GtkWidget *hb = gtk_hbox_new(FALSE, 6);
     gtk_box_pack_start(GTK_BOX(hb), p->db_label, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hb), p->db_file_btn, FALSE, FALSE, 0);
@@ -1228,22 +1252,22 @@ static GtkWidget *build_db(struct ks_prefs *p)
     gtk_widget_set_no_show_all(p->db_label, TRUE);
     gtk_widget_set_no_show_all(p->db_file_btn, TRUE);
     l++;
-    p->db_days_check = check("Maximum days of events to keep", NULL);
+    p->db_days_check = check(_("Maximum days of events to keep"), NULL);
     p->db_days_spin = spin(1, 99999, 1);
     GtkWidget *hb2 = gtk_hbox_new(FALSE, 6);
     gtk_box_pack_start(GTK_BOX(hb2), p->db_days_check, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hb2), p->db_days_spin, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hb2), gtk_label_new("days"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hb2), gtk_label_new(_("days")), FALSE, FALSE, 0);
     gtk_table_attach(GTK_TABLE(t), hb2, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
     p->db_interval_spin = spin(5, 1440, 5);
     GtkWidget *hb3 = gtk_hbox_new(FALSE, 6);
-    gtk_box_pack_start(GTK_BOX(hb3), gtk_label_new("Minutes between events purges"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hb3), gtk_label_new(_("Minutes between events purges")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hb3), p->db_interval_spin, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hb3), gtk_label_new("minutes"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hb3), gtk_label_new(_("minutes")), FALSE, FALSE, 0);
     gtk_table_attach(GTK_TABLE(t), hb3, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     l++;
-    p->db_wal = check("Enable DB Write-Ahead Logging (WAL)", NULL);
+    p->db_wal = check(_("Enable DB Write-Ahead Logging (WAL)"), NULL);
     gtk_table_attach(GTK_TABLE(t), p->db_wal, 0, 2, (guint)l, (guint)l + 1, GTK_FILL, GTK_FILL, 6, 3);
     g_signal_connect(p->db_type, "changed", G_CALLBACK(on_db_type), p);
     g_signal_connect(p->db_file_btn, "clicked", G_CALLBACK(on_db_file), p);
@@ -1265,7 +1289,7 @@ struct ks_prefs *ks_prefs_new(struct ks_service *svc, struct ks_settings *settin
     p->loading = true;
 
     p->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(p->win), "Preferences");
+    gtk_window_set_title(GTK_WINDOW(p->win), _("Preferences"));
     gtk_window_set_default_size(GTK_WINDOW(p->win), 680, 560);
     if (parent != NULL)
         gtk_window_set_transient_for(GTK_WINDOW(p->win), parent);
@@ -1275,11 +1299,11 @@ struct ks_prefs *ks_prefs_new(struct ks_service *svc, struct ks_settings *settin
     gtk_container_add(GTK_CONTAINER(p->win), vbox);
 
     p->nb = gtk_notebook_new();
-    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_popups(p), gtk_label_new("Pop-ups"));
-    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_ui(p), gtk_label_new("UI"));
-    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_rules(p), gtk_label_new("Rules"));
-    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_nodes(p), gtk_label_new("Nodes"));
-    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_db(p), gtk_label_new("Database"));
+    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_popups(p), gtk_label_new(_("Pop-ups")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_ui(p), gtk_label_new(_("UI")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_rules(p), gtk_label_new(_("Rules")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_nodes(p), gtk_label_new(_("Nodes")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(p->nb), build_db(p), gtk_label_new(_("Database")));
     gtk_box_pack_start(GTK_BOX(vbox), p->nb, TRUE, TRUE, 0);
 
     p->status = gtk_label_new("");

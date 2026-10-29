@@ -22,6 +22,7 @@
 #include "common/json_util.h"
 #include "common/log.h"
 #include "ui/res.h"
+#include "ui/i18n.h"
 
 #define HELP_CONFIG_URL "https://github.com/evilsocket/opensnitch/wiki/Configurations"
 #define ICON_PX 64
@@ -167,12 +168,12 @@ void ks_tray_update(struct ks_tray *t)
         icon = ICON_ALERT;
     if (t->pix[icon])
         gtk_status_icon_set_from_pixbuf(t->icon, t->pix[icon]);
-    gtk_menu_item_set_label(GTK_MENU_ITEM(t->fw_item), st.fw_enabled ? "Disable" : "Enable");
+    gtk_menu_item_set_label(GTK_MENU_ITEM(t->fw_item), st.fw_enabled ? _("Disable") : _("Enable"));
     gtk_widget_set_sensitive(t->fw_item, st.fw_menu_enabled);
     gtk_status_icon_set_tooltip_text(
-        t->icon, !st.connected ? "Kisnitch: no daemon connected"
-                 : st.fw_enabled ? "Kisnitch: interception enabled"
-                                 : "Kisnitch: interception disabled");
+        t->icon, !st.connected ? _("Kisnitch: no daemon connected")
+                 : st.fw_enabled ? _("Kisnitch: interception enabled")
+                                 : _("Kisnitch: interception disabled"));
 }
 
 void ks_tray_status_changed(struct ks_tray *t)
@@ -280,13 +281,13 @@ struct ks_tray *ks_tray_new(struct ks_service *svc, void (*on_open)(void *),
     gtk_status_icon_set_title(t->icon, "Kisnitch");
 
     t->menu = gtk_menu_new();
-    t->stats_item = gtk_menu_item_new_with_label("Open main window");
+    t->stats_item = gtk_menu_item_new_with_label(_("Open main window"));
     g_signal_connect(t->stats_item, "activate", G_CALLBACK(on_stats_item), t);
-    t->fw_item = gtk_menu_item_new_with_label("Disable");
+    t->fw_item = gtk_menu_item_new_with_label(_("Disable"));
     gtk_widget_set_sensitive(t->fw_item, FALSE);
-    t->autostart_item = gtk_check_menu_item_new_with_label("Autostart");
-    GtkWidget *help = gtk_menu_item_new_with_label("Help");
-    GtkWidget *close = gtk_menu_item_new_with_label("Close");
+    t->autostart_item = gtk_check_menu_item_new_with_label(_("Autostart"));
+    GtkWidget *help = gtk_menu_item_new_with_label(_("Help"));
+    GtkWidget *close = gtk_menu_item_new_with_label(_("Close"));
     GtkMenuShell *ms = GTK_MENU_SHELL(t->menu);
     gtk_menu_shell_append(ms, t->stats_item);
     gtk_menu_shell_append(ms, t->fw_item);

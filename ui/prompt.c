@@ -8,6 +8,7 @@
  * Copyright (C) 2026 the Kisnitch contributors.
  */
 #include "ui/prompt.h"
+#include "ui/i18n.h"
 
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
@@ -55,7 +56,8 @@ struct ks_prompt {
 };
 
 /* with mnemonics: Alt+D, Alt+A, Alt+R */
-static const char *const action_text[] = {"_Deny", "_Allow", "_Reject"};
+static const char *const action_ids[] = {N_("_Deny"), N_("_Allow"), N_("_Reject")};
+#define ACTION_TEXT(i) _(action_ids[i])
 
 /* ---- countdown --------------------------------------------------------- */
 
@@ -79,12 +81,12 @@ static void set_cmd_action_text(struct ks_prompt *p)
     if (idx < 0 || idx > 2)
         idx = 0;
     if (idx == KS_CFG_ACTION_ALLOW_IDX) {
-        snprintf(buf, sizeof(buf), "%s (%d)", action_text[1], p->tick);
+        snprintf(buf, sizeof(buf), "%s (%d)", ACTION_TEXT(1), p->tick);
         gtk_button_set_label(GTK_BUTTON(p->allow_button), buf);
-        gtk_button_set_label(GTK_BUTTON(p->action_button), action_text[0]);
+        gtk_button_set_label(GTK_BUTTON(p->action_button), ACTION_TEXT(0));
     } else {
-        gtk_button_set_label(GTK_BUTTON(p->allow_button), action_text[1]);
-        snprintf(buf, sizeof(buf), "%s (%d)", action_text[idx], p->tick);
+        gtk_button_set_label(GTK_BUTTON(p->allow_button), ACTION_TEXT(1));
+        snprintf(buf, sizeof(buf), "%s (%d)", ACTION_TEXT(idx), p->tick);
         gtk_button_set_label(GTK_BUTTON(p->action_button), buf);
     }
 }
@@ -98,9 +100,9 @@ static void stop_countdown(struct ks_prompt *p)
     if (idx < 0 || idx > 2)
         idx = 0;
     if (idx == KS_CFG_ACTION_ALLOW_IDX)
-        gtk_button_set_label(GTK_BUTTON(p->allow_button), action_text[1]);
+        gtk_button_set_label(GTK_BUTTON(p->allow_button), ACTION_TEXT(1));
     else
-        gtk_button_set_label(GTK_BUTTON(p->action_button), action_text[idx]);
+        gtk_button_set_label(GTK_BUTTON(p->action_button), ACTION_TEXT(idx));
     p->stopped = true;
 }
 
@@ -349,7 +351,7 @@ static void update_rules(struct ks_prompt *p, bool all)
         if (r == NULL) {
             char buf[512];
             snprintf(buf, sizeof(buf),
-                     "<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>",
+                     _("<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>"),
                      p->checksum_names[i]);
             gtk_label_set_markup(GTK_LABEL(p->checksum_status), buf);
             ks_arena_free(&a);
@@ -364,7 +366,7 @@ static void update_rules(struct ks_prompt *p, bool all)
         ks_nodes_send(ks_service_nodes(p->svc), p->ask->node, &ntf, NULL, NULL);
         ks_arena_free(&a);
         gtk_label_set_markup(GTK_LABEL(p->checksum_status),
-                             "<span foreground=\"green\">✔Rule updated.</span>");
+                             _("<span foreground=\"green\">✔Rule updated.</span>"));
         if (!all)
             break;
     }
@@ -402,14 +404,14 @@ static void display_checksums_warning(struct ks_prompt *p)
     if (bad) {
         gtk_label_set_markup(
             GTK_LABEL(p->message),
-            "<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-checksum\">More "
-            "info</a>)</span>");
+            _("<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-checksum\">More "
+            "info</a>)</span>"));
         char *md5 = ks_markup_escape(ks_prompt_md5(ask->con));
         char *exp = ks_markup_escape(expected ? expected : "[]");
         char note[2048];
         snprintf(note, sizeof(note),
-                 "<span foreground=\"red\">WARNING, checksums differ for at least one "
-                 "rule.</span>\n\nCurrent process (%u):\n%s\n\nExpected from the rule:\n%s",
+                 _("<span foreground=\"red\">WARNING, checksums differ for at least one "
+                 "rule.</span>\n\nCurrent process (%u):\n%s\n\nExpected from the rule:\n%s"),
                  ask->con->process_id, md5 ? md5 : "", exp ? exp : "");
         gtk_label_set_markup(GTK_LABEL(p->checksum_note), note);
         free(md5);
@@ -514,7 +516,7 @@ static void render(struct ks_prompt *p)
     char *path = ks_prompt_path_label(app_name, args->str, con);
     if (path != NULL) {
         char tip[4200];
-        snprintf(tip, sizeof(tip), "Process path: %s", con->process_path);
+        snprintf(tip, sizeof(tip), _("Process path: %s"), con->process_path);
         gtk_widget_set_tooltip_text(p->app_path, tip);
         set_label(p->app_path, path);
         gtk_widget_show(p->app_path);
@@ -542,8 +544,8 @@ static void render(struct ks_prompt *p)
         gtk_widget_hide(p->app_path);
         gtk_widget_hide(p->args);
         set_label(p->args, "");
-        display_name = g_strdup_printf("Unknown process %s", con->process_path);
-        gtk_label_set_markup(GTK_LABEL(p->app_name), "<b><big>Outgoing connection</big></b>");
+        display_name = g_strdup_printf(_("Unknown process %s"), con->process_path);
+        gtk_label_set_markup(GTK_LABEL(p->app_name), _("<b><big>Outgoing connection</big></b>"));
     } else {
         display_name = g_strdup(app_name);
         char *t = ks_prompt_truncate(app_name, 42);
@@ -556,7 +558,7 @@ static void render(struct ks_prompt *p)
         free(t);
     }
 
-    char *cwd_tip = g_strdup_printf("Process launched from: %s", con->process_cwd);
+    char *cwd_tip = g_strdup_printf(_("Process launched from: %s"), con->process_cwd);
     gtk_widget_set_tooltip_text(p->cwd, cwd_tip);
     g_free(cwd_tip);
     char *cwd = ks_prompt_truncate(con->process_cwd ? con->process_cwd : "", 32);
@@ -736,7 +738,7 @@ static GtkWidget *build_main_page(struct ks_prompt *p)
     gtk_button_set_image(GTK_BUTTON(info),
                          gtk_image_new_from_stock(GTK_STOCK_INFO, GTK_ICON_SIZE_BUTTON));
     gtk_button_set_relief(GTK_BUTTON(info), GTK_RELIEF_NONE);
-    gtk_widget_set_tooltip_text(info, "Details");
+    gtk_widget_set_tooltip_text(info, _("Details"));
     g_signal_connect(info, "clicked", G_CALLBACK(on_info), p);
     gtk_box_pack_start(GTK_BOX(top), info, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), top, FALSE, FALSE, 0);
@@ -758,8 +760,8 @@ static GtkWidget *build_main_page(struct ks_prompt *p)
     p->dst_port = label("", true);
     p->uid = label("", true);
     p->checksum = label("", true);
-    p->dst_port_title = bold_label("Destination Port");
-    p->checksum_title = bold_label("Checksum");
+    p->dst_port_title = bold_label(_("Destination Port"));
+    p->checksum_title = bold_label(_("Checksum"));
     p->check_dst_ip = gtk_check_button_new();
     p->check_dst_port = gtk_check_button_new();
     p->check_uid = gtk_check_button_new();
@@ -769,16 +771,16 @@ static GtkWidget *build_main_page(struct ks_prompt *p)
     gtk_box_pack_start(GTK_BOX(ipbox), p->dst_ip, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(ipbox), p->what_ip_combo, TRUE, TRUE, 0);
     GtkAttachOptions fill = GTK_FILL, grow = GTK_FILL | GTK_EXPAND;
-    gtk_table_attach(GTK_TABLE(t), bold_label("Executed from"), 1, 2, 0, 1, fill, fill, 0, 0);
+    gtk_table_attach(GTK_TABLE(t), bold_label(_("Executed from")), 1, 2, 0, 1, fill, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->cwd, 2, 3, 0, 1, grow, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->check_dst_ip, 0, 1, 1, 2, fill, fill, 0, 0);
-    gtk_table_attach(GTK_TABLE(t), bold_label("Destination IP"), 1, 2, 1, 2, fill, fill, 0, 0);
+    gtk_table_attach(GTK_TABLE(t), bold_label(_("Destination IP")), 1, 2, 1, 2, fill, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), ipbox, 2, 3, 1, 2, grow, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->check_dst_port, 0, 1, 2, 3, fill, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->dst_port_title, 1, 2, 2, 3, fill, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->dst_port, 2, 3, 2, 3, grow, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->check_uid, 0, 1, 3, 4, fill, fill, 0, 0);
-    gtk_table_attach(GTK_TABLE(t), bold_label("User ID"), 1, 2, 3, 4, fill, fill, 0, 0);
+    gtk_table_attach(GTK_TABLE(t), bold_label(_("User ID")), 1, 2, 3, 4, fill, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->uid, 2, 3, 3, 4, grow, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->check_sum, 0, 1, 4, 5, fill, fill, 0, 0);
     gtk_table_attach(GTK_TABLE(t), p->checksum_title, 1, 2, 4, 5, fill, fill, 0, 0);
@@ -790,16 +792,16 @@ static GtkWidget *build_main_page(struct ks_prompt *p)
     p->what_combo = new_combo();
     p->duration_combo = gtk_combo_box_new_text();
     for (int i = 0; i < KS_DURATION_COUNT; i++)
-        gtk_combo_box_append_text(GTK_COMBO_BOX(p->duration_combo), ks_duration_labels[i]);
+        gtk_combo_box_append_text(GTK_COMBO_BOX(p->duration_combo), _(ks_duration_labels[i]));
     p->advanced = gtk_toggle_button_new_with_label("+");
-    gtk_widget_set_tooltip_text(p->advanced, "Advanced options");
-    p->action_button = gtk_button_new_with_mnemonic(action_text[0]);
+    gtk_widget_set_tooltip_text(p->advanced, _("Advanced options"));
+    p->action_button = gtk_button_new_with_mnemonic(ACTION_TEXT(0));
     gtk_button_set_use_underline(GTK_BUTTON(p->action_button), TRUE);
     gtk_button_set_image(GTK_BUTTON(p->action_button),
                          gtk_image_new_from_stock(GTK_STOCK_NO, GTK_ICON_SIZE_BUTTON));
     GtkWidget *arrow = gtk_button_new();
     gtk_container_add(GTK_CONTAINER(arrow), gtk_arrow_new(GTK_ARROW_DOWN, GTK_SHADOW_NONE));
-    p->allow_button = gtk_button_new_with_mnemonic(action_text[1]);
+    p->allow_button = gtk_button_new_with_mnemonic(ACTION_TEXT(1));
     gtk_button_set_image(GTK_BUTTON(p->allow_button),
                          gtk_image_new_from_stock(GTK_STOCK_YES, GTK_ICON_SIZE_BUTTON));
     gtk_box_pack_start(GTK_BOX(row), p->what_combo, TRUE, TRUE, 0);
@@ -815,8 +817,8 @@ static GtkWidget *build_main_page(struct ks_prompt *p)
     gtk_box_pack_start(GTK_BOX(vbox), buttons, FALSE, FALSE, 0);
 
     p->action_menu = gtk_menu_new();
-    GtkWidget *deny = gtk_menu_item_new_with_mnemonic(action_text[0]);
-    GtkWidget *reject = gtk_menu_item_new_with_mnemonic(action_text[2]);
+    GtkWidget *deny = gtk_menu_item_new_with_mnemonic(ACTION_TEXT(0));
+    GtkWidget *reject = gtk_menu_item_new_with_mnemonic(ACTION_TEXT(2));
     gtk_menu_shell_append(GTK_MENU_SHELL(p->action_menu), deny);
     gtk_menu_shell_append(GTK_MENU_SHELL(p->action_menu), reject);
     gtk_widget_show_all(p->action_menu);
@@ -878,8 +880,8 @@ static GtkWidget *build_checksums_page(struct ks_prompt *p)
     p->checksum_status = label("", false);
     gtk_box_pack_start(GTK_BOX(vbox), p->checksum_status, FALSE, FALSE, 0);
     GtkWidget *bb = gtk_hbox_new(FALSE, 4);
-    GtkWidget *upd = gtk_button_new_with_label("Update rule");
-    GtkWidget *all = gtk_button_new_with_label("Update All");
+    GtkWidget *upd = gtk_button_new_with_label(_("Update rule"));
+    GtkWidget *all = gtk_button_new_with_label(_("Update All"));
     g_signal_connect(upd, "clicked", G_CALLBACK(on_update_rule), p);
     g_signal_connect(all, "clicked", G_CALLBACK(on_update_all), p);
     gtk_box_pack_start(GTK_BOX(bb), upd, FALSE, FALSE, 0);

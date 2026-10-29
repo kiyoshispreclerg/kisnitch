@@ -1,0 +1,1593 @@
+# Translation of Kisnitch to tr_TR, converted from the upstream
+# Qt .ts by tools/ts2po.py. Don't edit by hand: send fixes to the
+# OpenSnitch translations and run tools/update-po.sh.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kisnitch\n"
+"Language: tr_TR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+msgid "    Apply this rule to %s  "
+msgstr ""
+
+msgid "   Outgoing:"
+msgstr ""
+
+msgid "#"
+msgstr ""
+
+#, c-format
+msgid "%s node is not connected"
+msgstr ""
+
+msgid "-"
+msgstr "-"
+
+msgid "12h"
+msgstr "12sa"
+
+msgid "15m"
+msgstr "15dak"
+
+msgid "15m or less"
+msgstr "15dak veya daha az"
+
+msgid "1h"
+msgstr "1sa"
+
+msgid "1h or less"
+msgstr "1sa veya daha az"
+
+msgid "30m"
+msgstr "30dak"
+
+msgid "30m or less"
+msgstr "30dak veya daha az"
+
+msgid "30s"
+msgstr "30sn"
+
+msgid "30s or less"
+msgstr "30sn veya daha az"
+
+msgid "5m"
+msgstr "5dak"
+
+msgid "5m or less"
+msgstr "5dak veya daha az"
+
+#, c-format
+msgid ""
+"<b>%s</b>\n"
+"\n"
+"<b>Time:</b> %s\n"
+"\n"
+"<b>Process:</b>\n"
+"%s\n"
+"<b>Cmdline:</b>\n"
+"%s\n"
+"<b>CWD:</b>\n"
+"%s\n"
+"\n"
+"<b>UID:</b> %s <b>PID:</b> %s\n"
+"\n"
+"<b>Node:</b> %s\n"
+"\n"
+"<b>%s</b> %s:%s -> %s (%s):%s\n"
+"\n"
+"<b>Rule:</b>\n"
+"%s"
+msgstr ""
+
+msgid "<b><big>Outgoing connection</big></b>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<b>daemon uptime:</b> %s\n"
+"<b>Version:</b> %s\n"
+"<b>Kernel:</b> %s"
+msgstr ""
+
+msgid "<span foreground=\"green\">✔Rule updated.</span>"
+msgstr ""
+
+msgid "<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-checksum\">More info</a>)</span>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<span foreground=\"red\">WARNING, checksums differ for at least one rule.</span>\n"
+"\n"
+"Current process (%u):\n"
+"%s\n"
+"\n"
+"Expected from the rule:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>"
+msgstr ""
+
+msgid "A port (22), a list (80,443) or a range (6000-6007). Empty: any port"
+msgstr ""
+
+msgid "A_pplication"
+msgstr ""
+
+msgid "Absolute path to the CA cert file"
+msgstr ""
+
+msgid "Absolute path to the cert file"
+msgstr ""
+
+msgid "Absolute path to the cert key file"
+msgstr ""
+
+msgid "Action"
+msgstr "Eylem"
+
+msgid "ActionParms"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Add at least one statement."
+msgstr ""
+
+msgid "Add new condition"
+msgstr "Yeni koşul ekle"
+
+msgid "Adding rule, wait"
+msgstr "Kural ekleniyor, bekleyin"
+
+msgid "Address"
+msgstr "Adres"
+
+msgid "Address of the node."
+msgstr ""
+
+msgid "Addresses"
+msgstr "Adresler"
+
+msgid "Advanced"
+msgstr "Gelişmiş"
+
+msgid "Advanced _editor"
+msgstr ""
+
+msgid "Advanced options"
+msgstr ""
+
+msgid "Alert"
+msgstr ""
+
+msgid "Alerts"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All applications"
+msgstr "Tüm uygulamalar"
+
+msgid "Allow"
+msgstr "İzin ver"
+
+msgid "Allow inbound connections to a port"
+msgstr "Bir bağlantı noktasına gelen bağlantılara izin ver"
+
+msgid "Allow inbound connections to the selected port."
+msgstr "Seçilen bağlantı noktasına gelen bağlantılara izin ver."
+
+msgid "Allow outbound connections to the selected port."
+msgstr "Seçilen bağlantı noktasına giden bağlantılara izin ver."
+
+msgid "Allow service (_IN)"
+msgstr "Hizmete izin ver (GELEN)"
+
+msgid "Allow service (_OUT)"
+msgstr "Hizmete izin ver (GİDEN)"
+
+msgid "Allow will allow the connection"
+msgstr "İzin ver seçeneği bağlantıya izin verecektir"
+
+msgid "Allow, deny or reject by port, address and interface, in a table (like ufw)"
+msgstr ""
+
+msgid "Always"
+msgstr "Her zaman"
+
+msgid "Any"
+msgstr ""
+
+msgid "Application pids"
+msgstr "Uygulama işlem kimlikleri"
+
+msgid "Applications"
+msgstr "Uygulamalar"
+
+msgid "Apply configuration to all nodes"
+msgstr "Yapılandırmayı tüm düğümlere uygula"
+
+msgid "Apply rule to all nodes"
+msgstr "Kuralı tüm düğümlere uygula"
+
+msgid "Apply to"
+msgstr "Uygula"
+
+msgid "Applying changes..."
+msgstr "Değişiklikler uygulanıyor..."
+
+#, c-format
+msgid "Applying configuration on %s ..."
+msgstr ""
+
+msgid "Are you sure?"
+msgstr ""
+
+msgid "Auth type changed"
+msgstr ""
+
+msgid "Authentication"
+msgstr ""
+
+msgid "Authentication type"
+msgstr ""
+
+msgid "Autostart"
+msgstr ""
+
+msgid "Autostart the GUI upon login"
+msgstr ""
+
+msgid "Block outbound network traffic if the daemon unexpectedly dies"
+msgstr ""
+
+msgid "By default the GUI is started when login"
+msgstr ""
+
+msgid "By default, the field of the rules are case-insensitive."
+msgstr ""
+
+msgid "CA cert file"
+msgstr ""
+
+msgid "Case-sensitive"
+msgstr "Büyük/küçük harfe duyarlı"
+
+msgid "Cert file"
+msgstr ""
+
+msgid "Cert key file"
+msgstr ""
+
+msgid "Certificates changed"
+msgstr ""
+
+#, c-format
+msgid "Change default firewall to 'nftables' on node %s?"
+msgstr ""
+
+msgid "Check every n seconds that the interception rules are present."
+msgstr ""
+
+msgid "Checksum"
+msgstr ""
+
+msgid "Client certificate verification"
+msgstr ""
+
+msgid "Close"
+msgstr "Kapat"
+
+msgid "Command line"
+msgstr "Komut satırı"
+
+msgid "Command line regexp error"
+msgstr "Komut satırı düzenli ifade hatası"
+
+msgid "Configuration applied."
+msgstr "Yapılandırma uygulandı."
+
+msgid "Connection details"
+msgstr ""
+
+msgid "Connections"
+msgstr "Bağlantılar"
+
+msgid "Create a new rule"
+msgstr "Yeni bir kural oluştur"
+
+msgid "DB journal_mode changed"
+msgstr ""
+
+msgid "DB type changed"
+msgstr "V.T. türü değişti"
+
+msgid "DCCP"
+msgstr ""
+
+msgid "D_escription"
+msgstr "Açıklama"
+
+msgid "Daemon version"
+msgstr ""
+
+msgid "Database"
+msgstr "Veri tabanı"
+
+msgid "Database type"
+msgstr "Veri tabanı türü"
+
+msgid "Debug invalid connections"
+msgstr "Geçersiz bağlantılarda hata ayıkla"
+
+msgid "Default action when the GUI is disconnected"
+msgstr "GUI bağlantısı kesildiğinde öntanımlı eylem"
+
+msgid "Default log level"
+msgstr "Öntanımlı günlük kaydı düzeyi"
+
+msgid "Default position on screen"
+msgstr "Ekranda öntanımlı konum"
+
+msgid "Default target"
+msgstr "Öntanımlı hedef"
+
+msgid "Default timeout"
+msgstr "Öntanımlı zaman aşımı"
+
+msgid "Delete"
+msgstr "Sil"
+
+msgid "Delete all intercepted events"
+msgstr "Araya girilen tüm olayları sil"
+
+msgid "Delete this node"
+msgstr "Bu düğümü sil"
+
+msgid "Delete this rule?"
+msgstr ""
+
+msgid "Deleting rule, wait"
+msgstr "Kural siliniyor, bekleyin"
+
+msgid "Deny"
+msgstr "Reddet"
+
+msgid "Deny will just discard the connection"
+msgstr "Reddet seçeneği yalnızca bağlantıyı iptal edecektir"
+
+msgid "Description"
+msgstr "Açıklama"
+
+msgid "Desktop notifications"
+msgstr "Masaüstü bildirimleri"
+
+msgid "Dest IP"
+msgstr "Hedef IP"
+
+msgid "Dest IP/Network can not be empty"
+msgstr "Hedef IP/Ağ boş olamaz"
+
+msgid "Dest host"
+msgstr ""
+
+msgid "Dest host can not be empty"
+msgstr "Hedef ana makine boş olamaz"
+
+msgid "Dest port"
+msgstr ""
+
+msgid "Dest port can not be empty"
+msgstr "Hedef bağlantı noktası boş olamaz"
+
+msgid "Destination IP"
+msgstr "Hedef IP"
+
+msgid "Destination Port"
+msgstr "Hedef bağlantı noktası"
+
+msgid "Destination address, network or range. Empty: any"
+msgstr ""
+
+msgid "Destination port"
+msgstr "Hedef bağlantı noktası"
+
+msgid "Details"
+msgstr "Ayrıntılar"
+
+msgid "Direction"
+msgstr "Yön"
+
+msgid "Disable"
+msgstr "Devre dışı bırak"
+
+msgid "Disable pop-ups, only display a notification"
+msgstr "Açılır pencereleri devre dışı bırak, yalnızca bir bildirim görüntüle"
+
+msgid "Disabling firewall..."
+msgstr "Güvenlik duvarı devre dışı bırakılıyor..."
+
+msgid "Do_wn"
+msgstr ""
+
+msgid "Domains separated by commas, or a regular expression (www.domain.org, .*\\.domain.org)."
+msgstr ""
+
+msgid "Don't log connections"
+msgstr "Bağlantıları günlüğe kaydetme"
+
+msgid "Don't save/Delete rules of duration"
+msgstr "Süre kurallarını kaydetme/silme"
+
+msgid "Don't verify certs"
+msgstr ""
+
+msgid "Dropped"
+msgstr "Bırakıldı"
+
+msgid "Dst IP regexp error"
+msgstr "Hedef IP düzenli ifade hatası"
+
+msgid "Dst host regexp error"
+msgstr "Hedef ana makine düzenli ifade hatası"
+
+msgid "Dst port regexp error"
+msgstr "Hedef bağlantı noktası düzenli ifade hatası"
+
+msgid "Duplicate"
+msgstr "Çoğalt"
+
+msgid "Duration"
+msgstr "Süre"
+
+msgid "Edit"
+msgstr "Düzenle"
+
+msgid "Edit rule"
+msgstr "Kuralı düzenle"
+
+msgid "Enable"
+msgstr "Etkinleştir"
+
+msgid "Enable DB Write-Ahead Logging (WAL)"
+msgstr ""
+
+msgid "Enable checksums verification"
+msgstr ""
+
+msgid "Enabled"
+msgstr "Etkin"
+
+msgid "Enabling firewall..."
+msgstr "Güvenlik duvarı etkinleştiriliyor..."
+
+msgid "Environment variables"
+msgstr "Ortam değişkenleri"
+
+msgid "Equal"
+msgstr "Eşit"
+
+msgid "Error"
+msgstr "Hata"
+
+#, c-format
+msgid "Error adding rule: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error adding rules:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error applying configuration: %s"
+msgstr ""
+
+#, c-format
+msgid "Error applying rule: %s"
+msgstr ""
+
+#, c-format
+msgid "Error creating new rule from event (%s)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error deleting node\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error deleting rule, %s"
+msgstr ""
+
+msgid "Error exporting rules"
+msgstr "Kuralları dışa aktarırken hata oluştu"
+
+#, c-format
+msgid ""
+"Error exporting rules of the following nodes:\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error exporting the following rules:\n"
+"%s"
+msgstr ""
+
+msgid "Error getting INPUT chain policy"
+msgstr "INPUT zinciri politikası alınırken hata oluştu"
+
+msgid "Error getting OUTPUT chain policy"
+msgstr "OUTPUT zinciri politikası alınırken hata oluştu"
+
+#, c-format
+msgid "Error importing rules from %s"
+msgstr ""
+
+#, c-format
+msgid "Error loading config %s: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error loading process information:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error loading rule"
+msgstr ""
+
+msgid "Error saving rule"
+msgstr ""
+
+#, c-format
+msgid "Error saving rule %s"
+msgstr ""
+
+msgid "Error saving the CSV file"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error stopping monitoring process:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error:"
+msgstr ""
+
+msgid "Events"
+msgstr "Olaylar"
+
+msgid "Events tab columns"
+msgstr "Olaylar sekmesi sütunları"
+
+msgid "Exclude outbound connections to a port from being intercepted"
+msgstr "Bir bağlantı noktasına giden bağlantıları araya girmekten hariç tut"
+
+msgid "Exclude service"
+msgstr "Hizmeti hariç tut"
+
+msgid "Executed from"
+msgstr ""
+
+msgid "Export"
+msgstr "Dışa aktar"
+
+msgid "Export events to CSV"
+msgstr "Olayları CSV dosyasına aktar"
+
+msgid "Export rules"
+msgstr "Kuralları dışa aktar"
+
+msgid "Family"
+msgstr ""
+
+msgid "File"
+msgstr "Dosya"
+
+msgid "Filter"
+msgstr "Filtrele"
+
+msgid "Filter connections also by:"
+msgstr "Bağlantıları şuna göre de filtrele:"
+
+msgid "Filter files"
+msgstr ""
+
+msgid "Filter sockets"
+msgstr ""
+
+msgid "Firewall"
+msgstr "Güvenlik duvarı"
+
+msgid "Firewall rule"
+msgstr "Güvenlik duvarı kuralı"
+
+msgid "Firewall rules"
+msgstr ""
+
+msgid "Firewall rules monitoring interval (seconds)"
+msgstr ""
+
+msgid "Firewall status error (report on github please): no firewall configuration"
+msgstr ""
+
+msgid "Flush connections on start"
+msgstr ""
+
+msgid "From"
+msgstr ""
+
+msgid "From this IP / Network"
+msgstr "Bu IP / Ağdan"
+
+msgid "From this PID"
+msgstr "Bu işlem kimliğinden"
+
+msgid "From this command line"
+msgstr "Bu komut satırından"
+
+msgid "From this executable"
+msgstr "Bu programdan"
+
+msgid "From this port"
+msgstr "Bu bağlantı noktasından"
+
+msgid "From this user ID"
+msgstr "Bu kullanıcı kimliğinden"
+
+msgid "Garbage collector percentage"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Greater or equal than"
+msgstr "Büyük veya eşit"
+
+msgid "Greater than"
+msgstr "Büyük"
+
+msgid "Help"
+msgstr "Yardım"
+
+msgid "Hook"
+msgstr ""
+
+msgid "HostName"
+msgstr "Ana makine adı"
+
+msgid "Hosts"
+msgstr "Ana makineler"
+
+msgid "I/O Statistics"
+msgstr "G/Ç İstatistikleri"
+
+msgid "ICMP"
+msgstr "ICMP"
+
+msgid "If checked, this field will be selected when a pop-up is displayed."
+msgstr ""
+
+msgid "If checked, this rule will take precedence over the rest of the rules (except the ones with the same name or priority)."
+msgstr ""
+
+msgid "If empty, default rules path will be /etc/opensnitchd/rules"
+msgstr ""
+
+msgid "Import rules"
+msgstr "Kuralları içe aktar"
+
+msgid "In"
+msgstr ""
+
+msgid "In (incoming)"
+msgstr ""
+
+msgid "In development"
+msgstr ""
+
+msgid "In memory"
+msgstr "Bellekte"
+
+msgid "In order to configure firewall rules from the GUI, we need to use 'nftables' instead of 'iptables'"
+msgstr "Grafiksel arayüzden güvenlik duvarı kurallarını yapılandırmak için 'iptables' yerine 'nftables' kullanmamız gerekir"
+
+msgid "Inbound"
+msgstr "Gelen"
+
+msgid "Incoming:"
+msgstr ""
+
+msgid "Info"
+msgstr "Bilgi"
+
+msgid "Interface"
+msgstr ""
+
+msgid "Internal"
+msgstr ""
+
+msgid "Invalid UID, it must be a digit."
+msgstr ""
+
+#, c-format
+msgid "Invalid action."
+msgstr ""
+
+#, c-format
+msgid "Invalid rule name (not allowed characters: '%s' )"
+msgstr ""
+
+#, c-format
+msgid "Invalid rule: %s"
+msgstr ""
+
+msgid "Is regular expression"
+msgstr "Düzenli ifadedir"
+
+msgid "Kisnitch: interception disabled"
+msgstr ""
+
+msgid "Kisnitch: interception enabled"
+msgstr ""
+
+msgid "Kisnitch: no daemon connected"
+msgstr ""
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Language changed"
+msgstr "Dil değişti"
+
+msgid "Less or equal than"
+msgstr "Küçük veya eşit"
+
+msgid "Less than"
+msgstr "Küçük"
+
+msgid "Lists"
+msgstr ""
+
+msgid "Lists field cannot be empty"
+msgstr "Listeler alanı boş olamaz"
+
+msgid "Lists field must be a directory"
+msgstr "Listeler alanı bir dizin olmalıdır"
+
+msgid "Log UTC timestamps"
+msgstr ""
+
+msgid "Log file"
+msgstr "Günlük kaydı dosyası"
+
+msgid "Log timestamp microseconds"
+msgstr ""
+
+msgid "Logging"
+msgstr ""
+
+msgid "Max events"
+msgstr ""
+
+msgid "Max gRPC channel size"
+msgstr ""
+
+msgid "Max server clients"
+msgstr ""
+
+msgid "Max server workers"
+msgstr ""
+
+msgid "Max stats"
+msgstr ""
+
+msgid "Maximum days of events to keep"
+msgstr "Saklanacak azami etkinlik günü sayısı"
+
+msgid "Maximum size of each message from nodes. Default 4MB"
+msgstr ""
+
+msgid "Memory mapped files"
+msgstr "Bellek eşlemeli dosyalar"
+
+msgid "Minutes between events purges"
+msgstr "Olay temizlemeleri arasındaki dakikalar"
+
+msgid "Mutual TLS"
+msgstr ""
+
+msgid "Name"
+msgstr "Ad"
+
+msgid "Netstat"
+msgstr ""
+
+msgid "Network"
+msgstr "Ağ"
+
+msgid "Network interface"
+msgstr "Ağ arayüzü"
+
+msgid "Network interface (in: where it arrives, out: where it leaves). Empty: any"
+msgstr ""
+
+msgid "Network interface can not be empty"
+msgstr "Ağ arayüzü boş olamaz"
+
+msgid "Network interface regexp error"
+msgstr "Ağ arayüzü düzenli ifade hatası"
+
+msgid "New"
+msgstr "Yeni"
+
+msgid "New node connected"
+msgstr "Yeni düğüm bağlandı"
+
+msgid "New rule"
+msgstr "Yeni kural"
+
+msgid "New rule error"
+msgstr ""
+
+msgid "No nodes connected"
+msgstr ""
+
+msgid "No ufw application profiles installed"
+msgstr ""
+
+msgid "Node"
+msgstr "Düğüm"
+
+msgid "Node address changed (update GUI address if needed)"
+msgstr ""
+
+msgid "Nodes"
+msgstr "Düğümler"
+
+msgid "Not equal"
+msgstr "Eşit değil"
+
+msgid "On"
+msgstr ""
+
+msgid "Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression or a list separated by commas."
+msgstr ""
+
+msgid "Open files"
+msgstr "Açık dosyalar"
+
+msgid "Open main window"
+msgstr ""
+
+msgid "Open the rule in the full firewall rule editor"
+msgstr ""
+
+msgid "OpenSnitch version mismatch!"
+msgstr ""
+
+msgid "Out"
+msgstr ""
+
+msgid "Out (outgoing)"
+msgstr ""
+
+msgid "Outbound"
+msgstr "Giden"
+
+msgid "PID"
+msgstr ""
+
+msgid "PID field can not be empty"
+msgstr "İşlem kimliği alanı boş olamaz"
+
+msgid "PID field regexp error"
+msgstr "İşlem kimliği alanı düzenli ifade hatası"
+
+msgid "P_ort"
+msgstr ""
+
+msgid "P_rotocol"
+msgstr "İletişim kuralı"
+
+msgid "Parameters"
+msgstr ""
+
+msgid "Path"
+msgstr ""
+
+msgid "Permanent"
+msgstr "Kalıcı"
+
+msgid "Policy"
+msgstr ""
+
+#, c-format
+msgid "Policy not applied: %s"
+msgstr ""
+
+msgid "Pop-up default action."
+msgstr ""
+
+msgid "Pop-up default duration"
+msgstr "Öntanımlı açılır pencere süresi"
+
+msgid "Pop-ups"
+msgstr "Açılır pencereler"
+
+msgid "Port"
+msgstr ""
+
+msgid "Ports"
+msgstr "Bağlantı noktaları"
+
+msgid "Preferences"
+msgstr "Tercihler"
+
+msgid "Priority rule"
+msgstr "Öncelik kuralı"
+
+msgid "Process"
+msgstr "İşlem"
+
+msgid "Process details"
+msgstr "İşlem ayrıntıları"
+
+#, c-format
+msgid "Process launched from: %s"
+msgstr ""
+
+msgid "Process monitor method"
+msgstr "İşlem izleme yöntemi"
+
+msgid "Process path must be checked in order to verify checksums."
+msgstr ""
+
+msgid "Process path regexp error"
+msgstr "İşlem yolu düzenli ifade hatası"
+
+#, c-format
+msgid "Process path: %s"
+msgstr ""
+
+msgid "Profile"
+msgstr "Profil"
+
+msgid "Protocol"
+msgstr "İletişim kuralı"
+
+msgid "Protocol regexp error"
+msgstr "İletişim kuralı düzenli ifade hatası"
+
+msgid "Quit"
+msgstr "Çıkış"
+
+msgid "Refresh interval"
+msgstr ""
+
+msgid "Refresh interval (seconds)"
+msgstr ""
+
+msgid "Reject"
+msgstr "Geri çevir"
+
+msgid "Reject will drop the connection, and kill the socket that initiated it"
+msgstr "Geri çevir seçeneği bağlantıyı kesecek ve onu başlatan soketi sonlandıracaktır"
+
+msgid "Remove selected condition"
+msgstr "Seçilen koşulu kaldır"
+
+msgid "Reset"
+msgstr ""
+
+msgid "Restart the GUI in order changes to take effect"
+msgstr ""
+
+msgid "Rule"
+msgstr "Kural"
+
+msgid "Rule added"
+msgstr "Kural eklendi"
+
+msgid "Rule applied."
+msgstr "Kural uygulandı."
+
+msgid "Rule deleted"
+msgstr "Kural silindi"
+
+msgid "Rule hook (invalid) not supported yet"
+msgstr ""
+
+msgid "Rule not found by that name and node"
+msgstr "Bu ada ve düğüme göre kural bulunamadı"
+
+msgid "Rule not supported"
+msgstr ""
+
+msgid "Rule saved"
+msgstr ""
+
+#, c-format
+msgid ""
+"Rule saved, but there're other rules with errors (REVIEW):\n"
+"%s"
+msgstr ""
+
+msgid "Rules"
+msgstr "Kurallar"
+
+msgid "Rules are checked in order: the first one that matches decides"
+msgstr ""
+
+msgid "Rules export"
+msgstr ""
+
+msgid "Rules export error"
+msgstr ""
+
+#, c-format
+msgid "Rules exported to %s"
+msgstr ""
+
+msgid "Rules import"
+msgstr ""
+
+msgid "Rules import error"
+msgstr ""
+
+msgid "Rules imported fine"
+msgstr "Kurallar başarıyla içe aktarıldı"
+
+msgid "Rules path"
+msgstr ""
+
+msgid "SCTP"
+msgstr "SCTP"
+
+msgid "Save as CSV"
+msgstr "CSV olarak kaydet"
+
+msgid "Saving configuration..."
+msgstr ""
+
+msgid "Saving rule, wait"
+msgstr ""
+
+msgid "Select"
+msgstr "Seç"
+
+msgid "Select a directory to export rules"
+msgstr "Kuralları dışa aktarmak için bir dizin seçin"
+
+msgid "Select a directory with files containing lists of IPs."
+msgstr ""
+
+msgid "Select a directory with files containing lists of network ranges."
+msgstr ""
+
+msgid "Select a directory with files containing regular expressions."
+msgstr ""
+
+msgid "Select a directory with lists of domains to block."
+msgstr ""
+
+msgid "Select a directory with rules to import (JSON files)"
+msgstr "İçe aktarılacak kuralları (JSON dosyaları) içeren bir dizin seçin"
+
+msgid "Select at least one field."
+msgstr "En az bir alan seçin."
+
+#, c-format
+msgid "Select the protocol of the port."
+msgstr ""
+
+msgid "Server"
+msgstr ""
+
+msgid "Server address changed"
+msgstr ""
+
+msgid "Server cert file"
+msgstr ""
+
+msgid "Server max clients changed"
+msgstr ""
+
+msgid "Server max workers changed"
+msgstr ""
+
+msgid "Server options changed"
+msgstr ""
+
+msgid "Show advanced view by default"
+msgstr "Öntanımlı olarak gelişmiş görünümü göster"
+
+msgid "Show the preferences of this node"
+msgstr "Bu düğümün tercihlerini göster"
+
+msgid "Simple"
+msgstr "Basit"
+
+msgid "Simple TLS"
+msgstr ""
+
+msgid "Simple: no authentication. TLS comes with phase 10."
+msgstr ""
+
+msgid "Source IP"
+msgstr "Kaynak IP"
+
+msgid "Source IP regexp error"
+msgstr "Kaynak IP düzenli ifade hatası"
+
+msgid "Source IP/Network can not be empty"
+msgstr "Kaynak IP/Ağ boş olamaz"
+
+msgid "Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 address matches IPv4 only: add another rule for IPv6"
+msgstr ""
+
+msgid "Source port"
+msgstr ""
+
+msgid "Source port can not be empty"
+msgstr "Kaynak bağlantı noktası boş olamaz"
+
+msgid "Source port regexp error"
+msgstr "Kaynak bağlantı noktası düzenli ifade hatası"
+
+msgid "Stack"
+msgstr "Yığın"
+
+msgid "Start"
+msgstr ""
+
+msgid "Start or Stop interception"
+msgstr "Araya girmeyi başlat veya durdur"
+
+msgid "Start or stop interception of this node"
+msgstr "Bu düğümün araya girmesini başlat veya durdur"
+
+msgid "Start or stop monitoring this process"
+msgstr "Bu işlemi izlemeyi başlat veya durdur"
+
+msgid "Start/Stop"
+msgstr ""
+
+msgid "State"
+msgstr ""
+
+msgid "Status"
+msgstr "Durum"
+
+msgid "System default"
+msgstr "Sistem öntanımlı değeri"
+
+msgid "System firewall"
+msgstr ""
+
+msgid "TCP"
+msgstr "TCP"
+
+msgid "TCP and UDP"
+msgstr ""
+
+#, c-format
+msgid "TCP and UDP need a port; without a port, select one protocol or \"any\"."
+msgstr ""
+
+msgid "TLS is not supported by this build (TLS=1), the server stays on Simple"
+msgstr ""
+
+msgid "Table"
+msgstr ""
+
+msgid "Temporary"
+msgstr "Geçici"
+
+msgid "Test"
+msgstr "Test"
+
+msgid "The address where the GUI is listening for new nodes."
+msgstr ""
+
+msgid "The advanced view allows you to easily select multiple fields."
+msgstr ""
+
+#, c-format
+msgid ""
+"The firewall configuration is outdated,\n"
+"you need to update it to the new format: <a href=\"%s\">learn more</a>"
+msgstr ""
+
+msgid "The input or output chain is missing from this node's firewall."
+msgstr ""
+
+msgid "The rules are checked in alphabetical order, so you can name them accordingly to control which ones are checked first."
+msgstr ""
+
+#, c-format
+msgid "The source and destination addresses must be both IPv4 or both IPv6."
+msgstr ""
+
+msgid "The system firewall is disabled: these rules apply once it's enabled in the Firewall window."
+msgstr ""
+
+msgid "The value of this field is always the absolute path of the executable."
+msgstr ""
+
+#, c-format
+msgid "There was an error: %s"
+msgstr ""
+
+msgid "There're no nodes connected"
+msgstr "Bağlı düğüm yok"
+
+msgid "There're no nodes connected."
+msgstr "Bağlı düğüm yok."
+
+msgid "There's already a rule with this name."
+msgstr "Bu ada sahip bir kural zaten var."
+
+msgid "This field will contain and match the command line of the process."
+msgstr ""
+
+msgid "This node has no firewall configuration (it must use nftables)."
+msgstr ""
+
+#, c-format
+msgid "This node has no firewall configuration."
+msgstr ""
+
+msgid "This option limits the number of nodes (incoming connections)."
+msgstr ""
+
+msgid "This timeout is the countdown you see on the pop-up."
+msgstr ""
+
+#, c-format
+msgid "This type of rule (%s) is not supported by version %s"
+msgstr ""
+
+msgid "Time"
+msgstr "Zaman"
+
+msgid "To"
+msgstr ""
+
+msgid "To clipboard"
+msgstr "Panoya"
+
+msgid "To disk"
+msgstr "Diske"
+
+msgid "To this IP / Network"
+msgstr "Bu IP'ye / Ağa"
+
+msgid "To this host"
+msgstr "Bu ana makineye"
+
+msgid "To this list of IPs"
+msgstr "Bu IP listesine"
+
+msgid "To this list of domains"
+msgstr "Bu etki alanı listesine"
+
+msgid "To this list of domains (regular expressions)"
+msgstr ""
+
+msgid "To this list of network ranges"
+msgstr "Bu ağ aralıkları listesine"
+
+msgid "To this port"
+msgstr "Bu bağlantı noktasına"
+
+msgid "UDP"
+msgstr ""
+
+msgid "UDP-Lite"
+msgstr ""
+
+msgid "UI"
+msgstr "Kullanıcı arayüzü"
+
+msgid "UID"
+msgstr ""
+
+#, c-format
+msgid "Unable to load connection, unknown node? (%d)"
+msgstr ""
+
+#, c-format
+msgid "Unknown process %s"
+msgstr ""
+
+msgid "Until reboot"
+msgstr "Yeniden başlatılana kadar"
+
+msgid "Update All"
+msgstr "Hepsini güncelle"
+
+msgid "Update rule"
+msgstr "kuralı güncelle"
+
+msgid "Uptime"
+msgstr "Çalışma süresi"
+
+msgid "Use system notifications"
+msgstr "Sistem bildirimlerini kullan"
+
+msgid "Use the tray icon's alert"
+msgstr ""
+
+msgid "User ID"
+msgstr "Kullanıcı Kimliği"
+
+msgid "User ID can not be empty"
+msgstr "Kullanıcı kimliği boş olamaz"
+
+msgid "User ID regexp error"
+msgstr "Kullanıcı kimliği düzenli ifade hatası"
+
+msgid "Users"
+msgstr "Kullanıcılar"
+
+msgid "Version"
+msgstr "Sürüm"
+
+msgid "View"
+msgstr ""
+
+msgid "Warning"
+msgstr "Uyarı"
+
+msgid "Warning: Output policy configured to drop. If OpenSnitch dies, outbound network traffic will be blocked."
+msgstr ""
+
+msgid "What happens to incoming connections that no rule allows. Deny keeps loopback and replies to your own connections working."
+msgstr ""
+
+msgid "What happens to outgoing connections that no rule allows (before OpenSnitch asks)."
+msgstr ""
+
+msgid "When this option is on, all the existing sockets will be killed."
+msgstr ""
+
+msgid "When this option is selected, the rules of the selected duration are not saved, and the ones already saved are deleted."
+msgstr ""
+
+#, c-format
+msgid "You are running version <b>%s</b> of the daemon, while the UI is at version <b>%s</b>, they might not be fully compatible."
+msgstr ""
+
+msgid "You can specify a single IP, a network range (192.168.1.0/24), a regular expression, or a list separated by commas."
+msgstr ""
+
+msgid "You can specify multiple ports using regular expressions or a list separated by commas."
+msgstr ""
+
+msgid ""
+"You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n"
+"\n"
+"ports: 22 or 22,443 or 50000-60000\n"
+"IPs: 192.168.1.1 or 192.168.1.30-192.168.1.130\n"
+"Values: echo-reply,echo-request\n"
+"Values: new,established,related"
+msgstr ""
+
+msgid ""
+"You must select a file for the database\n"
+"or choose \"In memory\" type."
+msgstr ""
+
+msgid "_Action"
+msgstr "Eylem"
+
+msgid "_Add"
+msgstr "Ekle"
+
+msgid "_Allow"
+msgstr "İzin ver"
+
+msgid "_Close"
+msgstr "Kapat"
+
+msgid "_Delete"
+msgstr "Sil"
+
+msgid "_Deny"
+msgstr "Reddet"
+
+msgid "_Direction"
+msgstr "Yön"
+
+msgid "_Edit"
+msgstr "Düzenle"
+
+msgid "_From"
+msgstr ""
+
+msgid "_Interface"
+msgstr ""
+
+msgid "_New rule"
+msgstr "Yeni kural"
+
+msgid "_Reject"
+msgstr "Geri çevir"
+
+msgid "_Rules (simple)"
+msgstr ""
+
+msgid "_To"
+msgstr ""
+
+msgid "_Up"
+msgstr ""
+
+msgid "any temporary rules"
+msgstr "herhangi bir geçici kural"
+
+msgid "bottom left"
+msgstr "sol alt"
+
+msgid "bottom right"
+msgstr "sağ alt"
+
+msgid "by PID"
+msgstr "işlem kimliğine göre"
+
+msgid "by command line"
+msgstr "komut satırına göre"
+
+msgid "by destination ip"
+msgstr "hedef IP'ye göre"
+
+msgid "by destination port"
+msgstr "hedef bağlantı noktasına göre"
+
+msgid "by executable"
+msgstr "programa göre"
+
+msgid "by user id"
+msgstr "kullanıcı kimliğine göre"
+
+msgid "center"
+msgstr "merkez"
+
+msgid "checksum"
+msgstr ""
+
+msgid "command line can not be empty"
+msgstr "komut satırı boş olamaz"
+
+msgid "days"
+msgstr "gün"
+
+msgid ""
+"depending on the Action (i.e.: target), the syntaxis of the parameters will vary.\n"
+"Some examples:\n"
+"\n"
+" to 1.2.3.4 (snat, dnat)\n"
+" to :8080 (redirect, tproxy)\n"
+" to 1.2.3.4:8080 (snat, dnat)\n"
+" num 1 (queue)\n"
+" to 1024-2048 (masquerade)"
+msgstr ""
+
+#, c-format
+msgid "error loading: %s"
+msgstr ""
+
+#, c-format
+msgid "error starting netstat table: %s"
+msgstr ""
+
+msgid "forever"
+msgstr "sonsuza kadar"
+
+msgid "from this PID"
+msgstr "bu işlem kimliğinden"
+
+msgid "from this command line"
+msgstr "bu komut satırından"
+
+msgid "from this executable"
+msgstr "bu programdan"
+
+msgid "from user "
+msgstr ""
+
+msgid "is regular expression"
+msgstr "düzenli ifadedir"
+
+#, c-format
+msgid "loading in %s..."
+msgstr ""
+
+msgid "md5"
+msgstr ""
+
+msgid "md5 field regexp error"
+msgstr ""
+
+msgid "md5 line cannot be empty"
+msgstr ""
+
+msgid "minutes"
+msgstr "dakika"
+
+msgid "no node"
+msgstr ""
+
+#, c-format
+msgid "node %s not connected"
+msgstr ""
+
+msgid "node exited"
+msgstr ""
+
+#, c-format
+msgid "node not found: %s"
+msgstr ""
+
+msgid "once"
+msgstr "bir kere"
+
+msgid "out of memory"
+msgstr ""
+
+msgid "process path can not be empty"
+msgstr "işlem yolu boş olamaz"
+
+msgid "protocol can not be empty, or uncheck it"
+msgstr "iletişim kuralı boş olamaz veya işaretini kaldırın"
+
+msgid "refreshing..."
+msgstr "yenileniyor..."
+
+msgid "to "
+msgstr ""
+
+msgid "to *."
+msgstr ""
+
+msgid "to port "
+msgstr ""
+
+msgid "top left"
+msgstr "sol üst"
+
+msgid "top right"
+msgstr "sağ üst"
+
+msgid "ufw application profiles (/etc/ufw/applications.d)"
+msgstr ""
+
+msgid "until reboot"
+msgstr "yeniden başlatılana kadar"
+
+#, c-format
+msgid "{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": \"5s\"}}"
+msgstr ""
+
+#, c-format
+msgid "{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": %d, \"proto\": %d, \"family\": %d}}"
+msgstr ""

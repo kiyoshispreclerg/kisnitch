@@ -14,6 +14,7 @@
 
 #include "ui/fwrules.h"
 #include "ui/nodes.h"
+#include "ui/i18n.h"
 
 #define ALL_NODES "all"
 
@@ -236,14 +237,14 @@ static struct stm *add_statement(struct ks_fwrule_dlg *d)
     for (int i = 0; i <= KS_FWF_NSTATM; i++)
         gtk_combo_box_append_text(GTK_COMBO_BOX(s->what), ks_fwf_statm_labels[i]);
     s->opts = text_combo();
-    gtk_combo_box_append_text(GTK_COMBO_BOX(s->opts), "TCP");
-    gtk_combo_box_append_text(GTK_COMBO_BOX(s->opts), "UDP");
-    gtk_combo_box_append_text(GTK_COMBO_BOX(s->opts), "ICMP");
+    gtk_combo_box_append_text(GTK_COMBO_BOX(s->opts), _("TCP"));
+    gtk_combo_box_append_text(GTK_COMBO_BOX(s->opts), _("UDP"));
+    gtk_combo_box_append_text(GTK_COMBO_BOX(s->opts), _("ICMP"));
     s->op = text_combo();
-    static const char *const ops[] = {"Equal", "Not equal", "Greater or equal than",
-                                      "Greater than", "Less or equal than", "Less than"};
+    static const char *const ops[] = {N_("Equal"), N_("Not equal"), N_("Greater or equal than"),
+                                      N_("Greater than"), N_("Less or equal than"), N_("Less than")};
     for (int i = 0; i < 6; i++)
-        gtk_combo_box_append_text(GTK_COMBO_BOX(s->op), ops[i]);
+        gtk_combo_box_append_text(GTK_COMBO_BOX(s->op), _(ops[i]));
     gtk_combo_box_set_active(GTK_COMBO_BOX(s->op), 0);
     s->value = gtk_combo_box_entry_new_text();
     gtk_box_pack_start(GTK_BOX(h1), s->what, TRUE, TRUE, 0);
@@ -461,25 +462,25 @@ static void on_reply(const char *addr, const Protocol__NotificationReply *r, voi
     if (r->code == PROTOCOL__NOTIFICATION_REPLY_CODE__OK) {
         if (rep->op == OP_DELETE) {
             gtk_widget_set_sensitive(d->box, FALSE);
-            set_status_successful(d, "Rule deleted");
+            set_status_successful(d, _("Rule deleted"));
             disable_controls(d);
         } else if (rep->op == OP_SAVE) {
-            set_status_successful(d, "Rule saved");
+            set_status_successful(d, _("Rule saved"));
         } else {
             gtk_widget_set_visible(d->b_add, FALSE);
             gtk_widget_set_visible(d->b_save, TRUE);
-            set_status_successful(d, "Rule added");
+            set_status_successful(d, _("Rule added"));
         }
     } else {
-        char *msg = g_strdup_printf("Error adding rules:\n%s", data);
+        char *msg = g_strdup_printf(_("Error adding rules:\n%s"), data);
         bool shown = false;
         if (rep->op == OP_SAVE) {
             if (rep->uuid[0] != '\0' && strstr(data, rep->uuid) != NULL) {
                 g_free(msg);
-                msg = g_strdup("Error saving rule");
+                msg = g_strdup(_("Error saving rule"));
             } else {
                 char *m = g_strdup_printf(
-                    "Rule saved, but there're other rules with errors (REVIEW):\n%s", data);
+                    _("Rule saved, but there're other rules with errors (REVIEW):\n%s"), data);
                 set_status_message(d, m);
                 g_free(m);
                 shown = true;
@@ -514,7 +515,7 @@ static char *add_rule(struct ks_fwrule_dlg *d, const char *addr, const struct ks
 {
     const char *err = "this node doesn't have a firewall configuration, review it.";
     if (ks_fwr_insert(node_fw(d, addr), c, 0, &err) < 0)
-        return g_strdup_printf("Error adding rule: %s", err);
+        return g_strdup_printf(_("Error adding rule: %s"), err);
     send_notification(d, addr, OP_NEW, KS_SYSFW_RULE(c, 0)->uuid);
     return NULL;
 }
@@ -523,7 +524,7 @@ static char *save_rule(struct ks_fwrule_dlg *d, const char *addr, const struct k
 {
     const char *err = "this node doesn't have a firewall configuration, review it.";
     if (ks_fwr_update(node_fw(d, addr), d->uuid, c, &err) < 0)
-        return g_strdup_printf("Error saving rule %s", err);
+        return g_strdup_printf(_("Error saving rule %s"), err);
     send_notification(d, addr, OP_SAVE, d->uuid);
     return NULL;
 }
@@ -531,7 +532,7 @@ static char *save_rule(struct ks_fwrule_dlg *d, const char *addr, const struct k
 static char *delete_rule(struct ks_fwrule_dlg *d, const char *addr)
 {
     if (ks_fwr_delete(node_fw(d, addr), d->uuid) < 0)
-        return g_strdup_printf("Error deleting rule, %s", addr);
+        return g_strdup_printf(_("Error deleting rule, %s"), addr);
     send_notification(d, addr, OP_DELETE, d->uuid);
     return NULL;
 }
@@ -543,7 +544,7 @@ static bool form_rule(struct ks_fwrule_dlg *d, struct ks_fw_chain *c)
     read_form(d, &f);
     char err[512];
     if (ks_fwf_to_rule(&f, &d->services, c, err, sizeof(err)) < 0) {
-        char *m = g_strdup_printf("Invalid rule: %s", err);
+        char *m = g_strdup_printf(_("Invalid rule: %s"), err);
         set_status_error(d, m);
         g_free(m);
         return false;
@@ -567,7 +568,7 @@ static void for_nodes(struct ks_fwrule_dlg *d, node_op op, const struct ks_fw_ch
         }
         return;
     }
-    char *e = addr != NULL ? op(d, addr, c) : g_strdup("no node");
+    char *e = addr != NULL ? op(d, addr, c) : g_strdup(_("no node"));
     if (e != NULL) {
         set_status_error(d, e);
         g_free(e);
@@ -587,13 +588,13 @@ static void on_add(GtkButton *b, gpointer ud)
     (void)b;
     struct ks_fwrule_dlg *d = ud;
     if (d->stms->len == 0) {
-        set_status_message(d, "Add at least one statement.");
+        set_status_message(d, _("Add at least one statement."));
         return;
     }
     struct ks_fw_chain c;
     if (!form_rule(d, &c))
         return;
-    set_status_message(d, "Adding rule, wait");
+    set_status_message(d, _("Adding rule, wait"));
     for_nodes(d, add_rule, &c);
     ks_fwr_free_chain(&c);
 }
@@ -603,13 +604,13 @@ static void on_save(GtkButton *b, gpointer ud)
     (void)b;
     struct ks_fwrule_dlg *d = ud;
     if (d->stms->len == 0) {
-        set_status_message(d, "Add at least one statement.");
+        set_status_message(d, _("Add at least one statement."));
         return;
     }
     struct ks_fw_chain c;
     if (!form_rule(d, &c))
         return;
-    set_status_message(d, "Saving rule, wait");
+    set_status_message(d, _("Saving rule, wait"));
     for_nodes(d, save_rule, &c);
     ks_fwr_free_chain(&c);
 }
@@ -621,7 +622,7 @@ static void on_delete(GtkButton *b, gpointer ud)
     struct ks_fw_chain c;
     if (!form_rule(d, &c))
         return;
-    set_status_message(d, "Deleting rule, wait");
+    set_status_message(d, _("Deleting rule, wait"));
     for_nodes(d, delete_op, &c);
     ks_fwr_free_chain(&c);
 }
@@ -641,11 +642,11 @@ static void on_help(GtkButton *b, gpointer ud)
     struct ks_fwrule_dlg *d = ud;
     GtkWidget *w = gtk_message_dialog_new_with_markup(
         GTK_WINDOW(d->win), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-        "You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n\n"
+        _("You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n\n"
         "ports: 22 or 22,443 or 50000-60000\n"
         "IPs: 192.168.1.1 or 192.168.1.30-192.168.1.130\n"
         "Values: echo-reply,echo-request\n"
-        "Values: new,established,related");
+        "Values: new,established,related"));
     g_signal_connect_swapped(w, "response", G_CALLBACK(gtk_widget_destroy), w);
     gtk_widget_show(w);
 }
@@ -706,7 +707,7 @@ struct ks_fwrule_dlg *ks_fwrule_dlg_new(struct ks_service *svc, GtkWindow *paren
     ks_fw_services_load(&d->services, NULL);
 
     d->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(d->win), "Firewall rule");
+    gtk_window_set_title(GTK_WINDOW(d->win), _("Firewall rule"));
     gtk_window_set_default_size(GTK_WINDOW(d->win), 440, 460);
     if (parent != NULL)
         gtk_window_set_transient_for(GTK_WINDOW(d->win), parent);
@@ -717,7 +718,7 @@ struct ks_fwrule_dlg *ks_fwrule_dlg_new(struct ks_service *svc, GtkWindow *paren
 
     /* labelNode, comboNodes */
     GtkWidget *h = gtk_hbox_new(FALSE, 6);
-    d->label_node = gtk_label_new("Node");
+    d->label_node = gtk_label_new(_("Node"));
     d->nodes = text_combo();
     gtk_box_pack_start(GTK_BOX(h), d->label_node, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(h), d->nodes, TRUE, TRUE, 0);
@@ -728,7 +729,7 @@ struct ks_fwrule_dlg *ks_fwrule_dlg_new(struct ks_service *svc, GtkWindow *paren
     gtk_box_pack_start(GTK_BOX(v), d->enable, FALSE, FALSE, 0);
     h = gtk_hbox_new(FALSE, 6);
     d->desc = gtk_entry_new();
-    gtk_box_pack_start(GTK_BOX(h), gtk_label_new("Description"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(h), gtk_label_new(_("Description")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(h), d->desc, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(v), h, FALSE, FALSE, 0);
 
@@ -745,8 +746,8 @@ struct ks_fwrule_dlg *ks_fwrule_dlg_new(struct ks_service *svc, GtkWindow *paren
     /* hboxAdvanced: add / remove condition */
     d->advanced = gtk_hbox_new(FALSE, 6);
     GtkWidget *add = icon_button(NULL, GTK_STOCK_ADD), *del = icon_button(NULL, GTK_STOCK_REMOVE);
-    gtk_widget_set_tooltip_text(add, "Add new condition");
-    gtk_widget_set_tooltip_text(del, "Remove selected condition");
+    gtk_widget_set_tooltip_text(add, _("Add new condition"));
+    gtk_widget_set_tooltip_text(del, _("Remove selected condition"));
     gtk_box_pack_end(GTK_BOX(d->advanced), del, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(d->advanced), add, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v), d->advanced, FALSE, FALSE, 0);
@@ -770,14 +771,14 @@ struct ks_fwrule_dlg *ks_fwrule_dlg_new(struct ks_service *svc, GtkWindow *paren
     d->verdict_parms = gtk_entry_new();
     gtk_widget_set_tooltip_text(
         d->verdict_parms,
-        "depending on the Action (i.e.: target), the syntaxis of the parameters will vary.\n"
+        _("depending on the Action (i.e.: target), the syntaxis of the parameters will vary.\n"
         "Some examples:\n\n to 1.2.3.4 (snat, dnat)\n to :8080 (redirect, tproxy)\n to "
-        "1.2.3.4:8080 (snat, dnat)\n num 1 (queue)\n to 1024-2048 (masquerade)");
-    gtk_table_attach(GTK_TABLE(d->frame_dir), gtk_label_new("Direction"), 0, 1, 0, 1, GTK_FILL,
+        "1.2.3.4:8080 (snat, dnat)\n num 1 (queue)\n to 1024-2048 (masquerade)"));
+    gtk_table_attach(GTK_TABLE(d->frame_dir), gtk_label_new(_("Direction")), 0, 1, 0, 1, GTK_FILL,
                      GTK_FILL, 0, 0);
     gtk_table_attach(GTK_TABLE(d->frame_dir), d->direction, 1, 4, 0, 1,
                      GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
-    gtk_table_attach(GTK_TABLE(d->frame_dir), gtk_label_new("Action"), 0, 1, 1, 2, GTK_FILL,
+    gtk_table_attach(GTK_TABLE(d->frame_dir), gtk_label_new(_("Action")), 0, 1, 1, 2, GTK_FILL,
                      GTK_FILL, 0, 0);
     gtk_table_attach(GTK_TABLE(d->frame_dir), d->verdict, 1, 2, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
     gtk_table_attach(GTK_TABLE(d->frame_dir), d->verdict_parms_combo, 2, 3, 1, 2, GTK_FILL,
@@ -849,7 +850,7 @@ static void load_nodes(struct ks_fwrule_dlg *d)
     struct ks_nodes *nodes = ks_service_nodes(d->svc);
     combo_clear(d->nodes);
     g_ptr_array_set_size(d->node_addrs, 0);
-    gtk_combo_box_append_text(GTK_COMBO_BOX(d->nodes), "All");
+    gtk_combo_box_append_text(GTK_COMBO_BOX(d->nodes), _("All"));
     g_ptr_array_add(d->node_addrs, g_strdup(ALL_NODES));
     for (size_t i = 0; i < nodes->len; i++) {
         const char *a = nodes->items[i]->addr;
@@ -872,7 +873,7 @@ static void show_reset(struct ks_fwrule_dlg *d)
 {
     d->loading = true;
     d->form_type = KS_FWF_SIMPLE;
-    gtk_window_set_title(GTK_WINDOW(d->win), "Firewall rule");
+    gtk_window_set_title(GTK_WINDOW(d->win), _("Firewall rule"));
     gtk_widget_set_visible(d->b_delete, FALSE);
     gtk_widget_set_visible(d->b_save, FALSE);
     gtk_widget_set_visible(d->b_add, TRUE);
@@ -913,14 +914,14 @@ void ks_fwrule_dlg_exclude_service(struct ks_fwrule_dlg *d, int direction)
 {
     show_reset(d);
     reset_statements(d);
-    gtk_window_set_title(GTK_WINDOW(d->win), "Exclude service");
+    gtk_window_set_title(GTK_WINDOW(d->win), _("Exclude service"));
     gtk_widget_set_visible(d->b_reset, FALSE);
     gtk_widget_set_visible(d->enable, FALSE);
     gtk_widget_set_visible(d->advanced, FALSE);
     d->form_type = KS_FWF_ALLOW_IN_SERVICE;
-    gtk_label_set_text(GTK_LABEL(d->tip), "Allow inbound connections to the selected port.");
+    gtk_label_set_text(GTK_LABEL(d->tip), _("Allow inbound connections to the selected port."));
     if (direction == KS_FWF_OUT) {
-        gtk_label_set_text(GTK_LABEL(d->tip), "Allow outbound connections to the selected port.");
+        gtk_label_set_text(GTK_LABEL(d->tip), _("Allow outbound connections to the selected port."));
         d->form_type = KS_FWF_EXCLUDE_SERVICE;
     }
     struct stm *s = add_statement(d);
@@ -941,7 +942,7 @@ void ks_fwrule_dlg_load(struct ks_fwrule_dlg *d, const char *addr, const char *u
         if (strcmp(g_ptr_array_index(d->node_addrs, i), addr) == 0)
             ni = (int)i;
     if (ni < 0) {
-        char *m = g_strdup_printf("node not found: %s", addr);
+        char *m = g_strdup_printf(_("node not found: %s"), addr);
         set_status_message(d, m);
         g_free(m);
         return;
@@ -962,7 +963,7 @@ void ks_fwrule_dlg_load(struct ks_fwrule_dlg *d, const char *addr, const char *u
     gtk_widget_set_visible(d->advanced, TRUE);
     struct ks_sysfw *fw = node_fw(d, addr);
     if (fw == NULL || ks_fwr_flat_by_uuid(fw, uuid, &flat) < 0) {
-        set_status_error(d, "Rule hook (invalid) not supported yet");
+        set_status_error(d, _("Rule hook (invalid) not supported yet"));
         disable_controls(d);
         return;
     }

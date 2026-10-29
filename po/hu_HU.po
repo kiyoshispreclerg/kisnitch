@@ -1,0 +1,1593 @@
+# Translation of Kisnitch to hu_HU, converted from the upstream
+# Qt .ts by tools/ts2po.py. Don't edit by hand: send fixes to the
+# OpenSnitch translations and run tools/update-po.sh.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kisnitch\n"
+"Language: hu_HU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+msgid "    Apply this rule to %s  "
+msgstr ""
+
+msgid "   Outgoing:"
+msgstr ""
+
+msgid "#"
+msgstr ""
+
+#, c-format
+msgid "%s node is not connected"
+msgstr ""
+
+msgid "-"
+msgstr "-"
+
+msgid "12h"
+msgstr ""
+
+msgid "15m"
+msgstr "15 perc"
+
+msgid "15m or less"
+msgstr "15 perc vagy kevesebb"
+
+msgid "1h"
+msgstr "1 óra"
+
+msgid "1h or less"
+msgstr "1 óra vagy kevesebb"
+
+msgid "30m"
+msgstr "30 perc"
+
+msgid "30m or less"
+msgstr "30 perc vagy kevesebb"
+
+msgid "30s"
+msgstr "30 másodperc"
+
+msgid "30s or less"
+msgstr "30 másodperc vagy kevesebb"
+
+msgid "5m"
+msgstr "5 perc"
+
+msgid "5m or less"
+msgstr "5 perc vagy kevesebb"
+
+#, c-format
+msgid ""
+"<b>%s</b>\n"
+"\n"
+"<b>Time:</b> %s\n"
+"\n"
+"<b>Process:</b>\n"
+"%s\n"
+"<b>Cmdline:</b>\n"
+"%s\n"
+"<b>CWD:</b>\n"
+"%s\n"
+"\n"
+"<b>UID:</b> %s <b>PID:</b> %s\n"
+"\n"
+"<b>Node:</b> %s\n"
+"\n"
+"<b>%s</b> %s:%s -> %s (%s):%s\n"
+"\n"
+"<b>Rule:</b>\n"
+"%s"
+msgstr ""
+
+msgid "<b><big>Outgoing connection</big></b>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<b>daemon uptime:</b> %s\n"
+"<b>Version:</b> %s\n"
+"<b>Kernel:</b> %s"
+msgstr ""
+
+msgid "<span foreground=\"green\">✔Rule updated.</span>"
+msgstr ""
+
+msgid "<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-checksum\">More info</a>)</span>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<span foreground=\"red\">WARNING, checksums differ for at least one rule.</span>\n"
+"\n"
+"Current process (%u):\n"
+"%s\n"
+"\n"
+"Expected from the rule:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>"
+msgstr ""
+
+msgid "A port (22), a list (80,443) or a range (6000-6007). Empty: any port"
+msgstr ""
+
+msgid "A_pplication"
+msgstr ""
+
+msgid "Absolute path to the CA cert file"
+msgstr ""
+
+msgid "Absolute path to the cert file"
+msgstr ""
+
+msgid "Absolute path to the cert key file"
+msgstr ""
+
+msgid "Action"
+msgstr "Művelet"
+
+msgid "ActionParms"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Add at least one statement."
+msgstr ""
+
+msgid "Add new condition"
+msgstr "Új feltétel hozzáadása"
+
+msgid "Adding rule, wait"
+msgstr "Szabály hozzáadása, kérjük, várjon"
+
+msgid "Address"
+msgstr "Cím"
+
+msgid "Address of the node."
+msgstr ""
+
+msgid "Addresses"
+msgstr "Címek"
+
+msgid "Advanced"
+msgstr "Haladó"
+
+msgid "Advanced _editor"
+msgstr ""
+
+msgid "Advanced options"
+msgstr ""
+
+msgid "Alert"
+msgstr ""
+
+msgid "Alerts"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All applications"
+msgstr "Minden alkalmazás"
+
+msgid "Allow"
+msgstr "Engedélyezés"
+
+msgid "Allow inbound connections to a port"
+msgstr "Bejövő kapcsolatok engedélyezése egy kikötőhöz"
+
+msgid "Allow inbound connections to the selected port."
+msgstr "Bejövő kapcsolatok engedélyezése a kiválasztott kikötőhöz."
+
+msgid "Allow outbound connections to the selected port."
+msgstr "Kimenő kapcsolatok engedélyezése a kiválasztott kikötőhöz."
+
+msgid "Allow service (_IN)"
+msgstr "Szolgáltatás engedélyezése (BE)"
+
+msgid "Allow service (_OUT)"
+msgstr "Szolgáltatás engedélyezése (KI)"
+
+msgid "Allow will allow the connection"
+msgstr "Engedélyezés lehetővé teszi a kapcsolatot"
+
+msgid "Allow, deny or reject by port, address and interface, in a table (like ufw)"
+msgstr ""
+
+msgid "Always"
+msgstr "Mindig"
+
+msgid "Any"
+msgstr ""
+
+msgid "Application pids"
+msgstr "Alkalmazás folyamatazonosítók"
+
+msgid "Applications"
+msgstr "Alkalmazások"
+
+msgid "Apply configuration to all nodes"
+msgstr "Beállítások alkalmazása az összes csomópontra"
+
+msgid "Apply rule to all nodes"
+msgstr "Alkalmazzon szabályt minden csomópontra"
+
+msgid "Apply to"
+msgstr "Alkalmazás a következőre"
+
+msgid "Applying changes..."
+msgstr "Módosítások alkalmazása…"
+
+#, c-format
+msgid "Applying configuration on %s ..."
+msgstr ""
+
+msgid "Are you sure?"
+msgstr ""
+
+msgid "Auth type changed"
+msgstr ""
+
+msgid "Authentication"
+msgstr ""
+
+msgid "Authentication type"
+msgstr ""
+
+msgid "Autostart"
+msgstr ""
+
+msgid "Autostart the GUI upon login"
+msgstr ""
+
+msgid "Block outbound network traffic if the daemon unexpectedly dies"
+msgstr ""
+
+msgid "By default the GUI is started when login"
+msgstr ""
+
+msgid "By default, the field of the rules are case-insensitive."
+msgstr ""
+
+msgid "CA cert file"
+msgstr ""
+
+msgid "Case-sensitive"
+msgstr "Kis- és nagybetűk felismerése"
+
+msgid "Cert file"
+msgstr ""
+
+msgid "Cert key file"
+msgstr ""
+
+msgid "Certificates changed"
+msgstr ""
+
+#, c-format
+msgid "Change default firewall to 'nftables' on node %s?"
+msgstr ""
+
+msgid "Check every n seconds that the interception rules are present."
+msgstr ""
+
+msgid "Checksum"
+msgstr ""
+
+msgid "Client certificate verification"
+msgstr ""
+
+msgid "Close"
+msgstr "Bezárás"
+
+msgid "Command line"
+msgstr "Parancssor"
+
+msgid "Command line regexp error"
+msgstr "Parancssor szabályos kifejezéshibája"
+
+msgid "Configuration applied."
+msgstr "Beállítás alkalmazva."
+
+msgid "Connection details"
+msgstr ""
+
+msgid "Connections"
+msgstr "Kapcsolatok"
+
+msgid "Create a new rule"
+msgstr "Új szabály létrehozása"
+
+msgid "DB journal_mode changed"
+msgstr ""
+
+msgid "DB type changed"
+msgstr "DB típusa megváltozott"
+
+msgid "DCCP"
+msgstr ""
+
+msgid "D_escription"
+msgstr "Leírás"
+
+msgid "Daemon version"
+msgstr ""
+
+msgid "Database"
+msgstr "Adatbázis"
+
+msgid "Database type"
+msgstr "Adatbázistípus"
+
+msgid "Debug invalid connections"
+msgstr "Érvénytelen kapcsolatok hibakeresése"
+
+msgid "Default action when the GUI is disconnected"
+msgstr "Alapértelmezett művelet a grafikus felhasználói felület leválasztása esetén"
+
+msgid "Default log level"
+msgstr "Alapértelmezett naplószint"
+
+msgid "Default position on screen"
+msgstr "Alapértelmezett hely a képernyőn"
+
+msgid "Default target"
+msgstr "Alapértelmezett cél"
+
+msgid "Default timeout"
+msgstr "Alapértelmezett időtúllépés"
+
+msgid "Delete"
+msgstr "Törlés"
+
+msgid "Delete all intercepted events"
+msgstr "Az összes elfogott esemény törlése"
+
+msgid "Delete this node"
+msgstr "Csomópont törlése"
+
+msgid "Delete this rule?"
+msgstr ""
+
+msgid "Deleting rule, wait"
+msgstr "Szabály törlése, kérjük, várjon"
+
+msgid "Deny"
+msgstr "Megtagadás"
+
+msgid "Deny will just discard the connection"
+msgstr "Megtagadás csak elveti a kapcsolatot"
+
+msgid "Description"
+msgstr "Leírás"
+
+msgid "Desktop notifications"
+msgstr "Asztali értesítések"
+
+msgid "Dest IP"
+msgstr "Cél IP-cím"
+
+msgid "Dest IP/Network can not be empty"
+msgstr "Cél IP-cím/hálózat nem lehet üres"
+
+msgid "Dest host"
+msgstr ""
+
+msgid "Dest host can not be empty"
+msgstr "Célállomás nem lehet üres"
+
+msgid "Dest port"
+msgstr ""
+
+msgid "Dest port can not be empty"
+msgstr "Célkikötő nem lehet üres"
+
+msgid "Destination IP"
+msgstr "Cél IP-címe"
+
+msgid "Destination Port"
+msgstr ""
+
+msgid "Destination address, network or range. Empty: any"
+msgstr ""
+
+msgid "Destination port"
+msgstr "Célkikötő"
+
+msgid "Details"
+msgstr "Részletek"
+
+msgid "Direction"
+msgstr "Irány"
+
+msgid "Disable"
+msgstr "Letiltás"
+
+msgid "Disable pop-ups, only display a notification"
+msgstr "Előugró ablakok letiltása, csak értesítés megjelenítése"
+
+msgid "Disabling firewall..."
+msgstr "Tűzfal letiltása…"
+
+msgid "Do_wn"
+msgstr ""
+
+msgid "Domains separated by commas, or a regular expression (www.domain.org, .*\\.domain.org)."
+msgstr ""
+
+msgid "Don't log connections"
+msgstr "Ne naplózza a kapcsolatokat"
+
+msgid "Don't save/Delete rules of duration"
+msgstr "Ne mentse/törölje az időtartamra vonatkozó szabályokat:"
+
+msgid "Don't verify certs"
+msgstr ""
+
+msgid "Dropped"
+msgstr "Elvetve"
+
+msgid "Dst IP regexp error"
+msgstr "Cél IP-cím szabályos kifejezéshibája"
+
+msgid "Dst host regexp error"
+msgstr "Célállomás szabályos kifejezéshibája"
+
+msgid "Dst port regexp error"
+msgstr "Célkikötő szabványos kifejezéshibája"
+
+msgid "Duplicate"
+msgstr "Másolás"
+
+msgid "Duration"
+msgstr "Időtartam"
+
+msgid "Edit"
+msgstr "Szerkesztés"
+
+msgid "Edit rule"
+msgstr "Szabály szerkesztése"
+
+msgid "Enable"
+msgstr "Engedélyezés"
+
+msgid "Enable DB Write-Ahead Logging (WAL)"
+msgstr ""
+
+msgid "Enable checksums verification"
+msgstr ""
+
+msgid "Enabled"
+msgstr "Engedélyezve"
+
+msgid "Enabling firewall..."
+msgstr "Tűzfal engedélyezése…"
+
+msgid "Environment variables"
+msgstr "Környezeti változók"
+
+msgid "Equal"
+msgstr "Egyenlő"
+
+msgid "Error"
+msgstr "Hiba"
+
+#, c-format
+msgid "Error adding rule: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error adding rules:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error applying configuration: %s"
+msgstr ""
+
+#, c-format
+msgid "Error applying rule: %s"
+msgstr ""
+
+#, c-format
+msgid "Error creating new rule from event (%s)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error deleting node\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error deleting rule, %s"
+msgstr ""
+
+msgid "Error exporting rules"
+msgstr "Hiba történt a szabályok exportálásakor"
+
+#, c-format
+msgid ""
+"Error exporting rules of the following nodes:\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error exporting the following rules:\n"
+"%s"
+msgstr ""
+
+msgid "Error getting INPUT chain policy"
+msgstr "Hiba történt a BEMENET láncszabályzat lekérésekor"
+
+msgid "Error getting OUTPUT chain policy"
+msgstr "Hiba történt a KIMENET láncszabályzat lekérésekor"
+
+#, c-format
+msgid "Error importing rules from %s"
+msgstr ""
+
+#, c-format
+msgid "Error loading config %s: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error loading process information:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error loading rule"
+msgstr ""
+
+msgid "Error saving rule"
+msgstr ""
+
+#, c-format
+msgid "Error saving rule %s"
+msgstr ""
+
+msgid "Error saving the CSV file"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error stopping monitoring process:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error:"
+msgstr ""
+
+msgid "Events"
+msgstr "Események"
+
+msgid "Events tab columns"
+msgstr "Események lap oszlopai"
+
+msgid "Exclude outbound connections to a port from being intercepted"
+msgstr "A kikötőhöz tartó kimenő kapcsolatok kizárása az elfogásból"
+
+msgid "Exclude service"
+msgstr "Szolgáltatás kizárása"
+
+msgid "Executed from"
+msgstr ""
+
+msgid "Export"
+msgstr "Exportálás"
+
+msgid "Export events to CSV"
+msgstr "Események exportálása CSV-fájlként"
+
+msgid "Export rules"
+msgstr "Exportszabályok"
+
+msgid "Family"
+msgstr ""
+
+msgid "File"
+msgstr "Fájl"
+
+msgid "Filter"
+msgstr "Szűrő"
+
+msgid "Filter connections also by:"
+msgstr "Szűrje a csatlakozásokat az alábbiak szerint is:"
+
+msgid "Filter files"
+msgstr ""
+
+msgid "Filter sockets"
+msgstr ""
+
+msgid "Firewall"
+msgstr "Tűzfal"
+
+msgid "Firewall rule"
+msgstr "Tűzfalszabály"
+
+msgid "Firewall rules"
+msgstr ""
+
+msgid "Firewall rules monitoring interval (seconds)"
+msgstr ""
+
+msgid "Firewall status error (report on github please): no firewall configuration"
+msgstr ""
+
+msgid "Flush connections on start"
+msgstr ""
+
+msgid "From"
+msgstr ""
+
+msgid "From this IP / Network"
+msgstr "Erről az IP-címről/hálózatról"
+
+msgid "From this PID"
+msgstr "Ebből a folyamatazonosítóból"
+
+msgid "From this command line"
+msgstr "Ebből a parancssorból"
+
+msgid "From this executable"
+msgstr "Ebből a futtatható fájlból"
+
+msgid "From this port"
+msgstr "Ebből a kikötőből"
+
+msgid "From this user ID"
+msgstr "Ebből a felhasználói azonosítóból"
+
+msgid "Garbage collector percentage"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Greater or equal than"
+msgstr "Egyenlő vagy nagyobb, mint"
+
+msgid "Greater than"
+msgstr "Nagyobb, mint"
+
+msgid "Help"
+msgstr "Súgó"
+
+msgid "Hook"
+msgstr ""
+
+msgid "HostName"
+msgstr "Állomásnév"
+
+msgid "Hosts"
+msgstr "Gazdagépek"
+
+msgid "I/O Statistics"
+msgstr "I/O statisztika"
+
+msgid "ICMP"
+msgstr "ICMP"
+
+msgid "If checked, this field will be selected when a pop-up is displayed."
+msgstr ""
+
+msgid "If checked, this rule will take precedence over the rest of the rules (except the ones with the same name or priority)."
+msgstr ""
+
+msgid "If empty, default rules path will be /etc/opensnitchd/rules"
+msgstr ""
+
+msgid "Import rules"
+msgstr "Importszabályok"
+
+msgid "In"
+msgstr ""
+
+msgid "In (incoming)"
+msgstr ""
+
+msgid "In development"
+msgstr ""
+
+msgid "In memory"
+msgstr "Memóriabeli"
+
+msgid "In order to configure firewall rules from the GUI, we need to use 'nftables' instead of 'iptables'"
+msgstr "A tűzfalszabályok grafikus felhasználói felületről történő beállításához az „iptables” helyett az „nftables”-t kell használni"
+
+msgid "Inbound"
+msgstr "Bejövő"
+
+msgid "Incoming:"
+msgstr ""
+
+msgid "Info"
+msgstr "Adat"
+
+msgid "Interface"
+msgstr ""
+
+msgid "Internal"
+msgstr ""
+
+msgid "Invalid UID, it must be a digit."
+msgstr ""
+
+#, c-format
+msgid "Invalid action."
+msgstr ""
+
+#, c-format
+msgid "Invalid rule name (not allowed characters: '%s' )"
+msgstr ""
+
+#, c-format
+msgid "Invalid rule: %s"
+msgstr ""
+
+msgid "Is regular expression"
+msgstr "Szabályos kifejezés"
+
+msgid "Kisnitch: interception disabled"
+msgstr ""
+
+msgid "Kisnitch: interception enabled"
+msgstr ""
+
+msgid "Kisnitch: no daemon connected"
+msgstr ""
+
+msgid "Language"
+msgstr "Nyelv"
+
+msgid "Language changed"
+msgstr "Nyelv módosítva"
+
+msgid "Less or equal than"
+msgstr "Egyenlő vagy kisebb, mint"
+
+msgid "Less than"
+msgstr "Kisebb, mint"
+
+msgid "Lists"
+msgstr ""
+
+msgid "Lists field cannot be empty"
+msgstr "Listamező nem lehet üres"
+
+msgid "Lists field must be a directory"
+msgstr "Listmezők könyvtárnak kell lennie"
+
+msgid "Log UTC timestamps"
+msgstr ""
+
+msgid "Log file"
+msgstr "Naplófájl"
+
+msgid "Log timestamp microseconds"
+msgstr ""
+
+msgid "Logging"
+msgstr ""
+
+msgid "Max events"
+msgstr ""
+
+msgid "Max gRPC channel size"
+msgstr ""
+
+msgid "Max server clients"
+msgstr ""
+
+msgid "Max server workers"
+msgstr ""
+
+msgid "Max stats"
+msgstr ""
+
+msgid "Maximum days of events to keep"
+msgstr "Események megtartására nyitva álló napok száma"
+
+msgid "Maximum size of each message from nodes. Default 4MB"
+msgstr ""
+
+msgid "Memory mapped files"
+msgstr "Memóriába ágyazott fájlok"
+
+msgid "Minutes between events purges"
+msgstr "Eseménytisztítások közötti percek száma"
+
+msgid "Mutual TLS"
+msgstr ""
+
+msgid "Name"
+msgstr "Név"
+
+msgid "Netstat"
+msgstr ""
+
+msgid "Network"
+msgstr "Hálózat"
+
+msgid "Network interface"
+msgstr "Hálózati felület"
+
+msgid "Network interface (in: where it arrives, out: where it leaves). Empty: any"
+msgstr ""
+
+msgid "Network interface can not be empty"
+msgstr "Hálózati felület nem lehet üres"
+
+msgid "Network interface regexp error"
+msgstr "Hálózati felület szabályos kifejezéshibája"
+
+msgid "New"
+msgstr "Új"
+
+msgid "New node connected"
+msgstr "Új csomópont csatlakoztatva"
+
+msgid "New rule"
+msgstr "Új szabály"
+
+msgid "New rule error"
+msgstr ""
+
+msgid "No nodes connected"
+msgstr ""
+
+msgid "No ufw application profiles installed"
+msgstr ""
+
+msgid "Node"
+msgstr "Csomópont"
+
+msgid "Node address changed (update GUI address if needed)"
+msgstr ""
+
+msgid "Nodes"
+msgstr "Csomópontok"
+
+msgid "Not equal"
+msgstr "Nem egyenlő"
+
+msgid "On"
+msgstr ""
+
+msgid "Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression or a list separated by commas."
+msgstr ""
+
+msgid "Open files"
+msgstr "Fájlok megnyitása"
+
+msgid "Open main window"
+msgstr ""
+
+msgid "Open the rule in the full firewall rule editor"
+msgstr ""
+
+msgid "OpenSnitch version mismatch!"
+msgstr ""
+
+msgid "Out"
+msgstr ""
+
+msgid "Out (outgoing)"
+msgstr ""
+
+msgid "Outbound"
+msgstr "Kimenő"
+
+msgid "PID"
+msgstr ""
+
+msgid "PID field can not be empty"
+msgstr "Folyamatazonosító mező nem lehet üres"
+
+msgid "PID field regexp error"
+msgstr "Folyamatazonosító mező szabványos kifejezéshibája"
+
+msgid "P_ort"
+msgstr ""
+
+msgid "P_rotocol"
+msgstr "Protokoll"
+
+msgid "Parameters"
+msgstr ""
+
+msgid "Path"
+msgstr ""
+
+msgid "Permanent"
+msgstr "Állandó"
+
+msgid "Policy"
+msgstr ""
+
+#, c-format
+msgid "Policy not applied: %s"
+msgstr ""
+
+msgid "Pop-up default action."
+msgstr ""
+
+msgid "Pop-up default duration"
+msgstr "Előugró ablak alapértelmezett időtartama"
+
+msgid "Pop-ups"
+msgstr "Előugró ablakok"
+
+msgid "Port"
+msgstr ""
+
+msgid "Ports"
+msgstr "Kikötők"
+
+msgid "Preferences"
+msgstr "Beállítások"
+
+msgid "Priority rule"
+msgstr "Elsőbbségi szabály"
+
+msgid "Process"
+msgstr "Folyamat"
+
+msgid "Process details"
+msgstr "Folyamat részletei"
+
+#, c-format
+msgid "Process launched from: %s"
+msgstr ""
+
+msgid "Process monitor method"
+msgstr "Folyamatfigyelés módszer"
+
+msgid "Process path must be checked in order to verify checksums."
+msgstr ""
+
+msgid "Process path regexp error"
+msgstr "Folyamat útvonala szabályos kifejezéshibája"
+
+#, c-format
+msgid "Process path: %s"
+msgstr ""
+
+msgid "Profile"
+msgstr "Profil"
+
+msgid "Protocol"
+msgstr "Protokoll"
+
+msgid "Protocol regexp error"
+msgstr "Protokoll szabályos kifejezéshibája"
+
+msgid "Quit"
+msgstr "Kilépés"
+
+msgid "Refresh interval"
+msgstr ""
+
+msgid "Refresh interval (seconds)"
+msgstr ""
+
+msgid "Reject"
+msgstr "Elutasítás"
+
+msgid "Reject will drop the connection, and kill the socket that initiated it"
+msgstr "Elutasítás megszakítja a kapcsolatot, és leállítja azt a szoftvercsatornát, amelyik kezdeményezte"
+
+msgid "Remove selected condition"
+msgstr "Kiválasztott feltétel eltávolítása"
+
+msgid "Reset"
+msgstr ""
+
+msgid "Restart the GUI in order changes to take effect"
+msgstr ""
+
+msgid "Rule"
+msgstr "Szabály"
+
+msgid "Rule added"
+msgstr "Szabály hozzáadva"
+
+msgid "Rule applied."
+msgstr "A szabály alkalmazva."
+
+msgid "Rule deleted"
+msgstr "Szabály törölve"
+
+msgid "Rule hook (invalid) not supported yet"
+msgstr ""
+
+msgid "Rule not found by that name and node"
+msgstr "A szabály nem található ezen a néven és csomóponton"
+
+msgid "Rule not supported"
+msgstr ""
+
+msgid "Rule saved"
+msgstr ""
+
+#, c-format
+msgid ""
+"Rule saved, but there're other rules with errors (REVIEW):\n"
+"%s"
+msgstr ""
+
+msgid "Rules"
+msgstr "Szabályok"
+
+msgid "Rules are checked in order: the first one that matches decides"
+msgstr ""
+
+msgid "Rules export"
+msgstr ""
+
+msgid "Rules export error"
+msgstr ""
+
+#, c-format
+msgid "Rules exported to %s"
+msgstr ""
+
+msgid "Rules import"
+msgstr ""
+
+msgid "Rules import error"
+msgstr ""
+
+msgid "Rules imported fine"
+msgstr "Szabályok sikeresen importálva"
+
+msgid "Rules path"
+msgstr ""
+
+msgid "SCTP"
+msgstr "SCTP"
+
+msgid "Save as CSV"
+msgstr "Mentés CSV-fájlként"
+
+msgid "Saving configuration..."
+msgstr ""
+
+msgid "Saving rule, wait"
+msgstr ""
+
+msgid "Select"
+msgstr "Kijelölés"
+
+msgid "Select a directory to export rules"
+msgstr "Exportszabályok könyvtár kiválasztása"
+
+msgid "Select a directory with files containing lists of IPs."
+msgstr ""
+
+msgid "Select a directory with files containing lists of network ranges."
+msgstr ""
+
+msgid "Select a directory with files containing regular expressions."
+msgstr ""
+
+msgid "Select a directory with lists of domains to block."
+msgstr ""
+
+msgid "Select a directory with rules to import (JSON files)"
+msgstr "Importszabályok (JSON-fájlok) könyvtár kiválasztása"
+
+msgid "Select at least one field."
+msgstr "Jelöljön ki legalább egy mezőt."
+
+#, c-format
+msgid "Select the protocol of the port."
+msgstr ""
+
+msgid "Server"
+msgstr ""
+
+msgid "Server address changed"
+msgstr ""
+
+msgid "Server cert file"
+msgstr ""
+
+msgid "Server max clients changed"
+msgstr ""
+
+msgid "Server max workers changed"
+msgstr ""
+
+msgid "Server options changed"
+msgstr ""
+
+msgid "Show advanced view by default"
+msgstr "Alapértelmezés szerint a haladó nézet megjelenítése"
+
+msgid "Show the preferences of this node"
+msgstr "Csomópont-beállítások megjelenítése"
+
+msgid "Simple"
+msgstr "Egyszerű"
+
+msgid "Simple TLS"
+msgstr ""
+
+msgid "Simple: no authentication. TLS comes with phase 10."
+msgstr ""
+
+msgid "Source IP"
+msgstr "Forrás IP-cím"
+
+msgid "Source IP regexp error"
+msgstr "ForrásIP-cím szabályos kifejezési hiba"
+
+msgid "Source IP/Network can not be empty"
+msgstr "Forrás IP-címe/hálózata nem lehet üres"
+
+msgid "Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 address matches IPv4 only: add another rule for IPv6"
+msgstr ""
+
+msgid "Source port"
+msgstr ""
+
+msgid "Source port can not be empty"
+msgstr "Forráskikötő nem lehet üres"
+
+msgid "Source port regexp error"
+msgstr "Forráskikötő szabályos kifejezési hiba"
+
+msgid "Stack"
+msgstr "Verem"
+
+msgid "Start"
+msgstr ""
+
+msgid "Start or Stop interception"
+msgstr "Adatelérés indítása/leállítása"
+
+msgid "Start or stop interception of this node"
+msgstr "Csomópont adatelérés indítása/leállítása"
+
+msgid "Start or stop monitoring this process"
+msgstr "Folyamatfigyelés indítsa/leállítása"
+
+msgid "Start/Stop"
+msgstr ""
+
+msgid "State"
+msgstr ""
+
+msgid "Status"
+msgstr "Állapot"
+
+msgid "System default"
+msgstr "Rendszer alapértelmezett"
+
+msgid "System firewall"
+msgstr ""
+
+msgid "TCP"
+msgstr "TCP"
+
+msgid "TCP and UDP"
+msgstr ""
+
+#, c-format
+msgid "TCP and UDP need a port; without a port, select one protocol or \"any\"."
+msgstr ""
+
+msgid "TLS is not supported by this build (TLS=1), the server stays on Simple"
+msgstr ""
+
+msgid "Table"
+msgstr ""
+
+msgid "Temporary"
+msgstr "Ideiglenes"
+
+msgid "Test"
+msgstr "Tesztelés"
+
+msgid "The address where the GUI is listening for new nodes."
+msgstr ""
+
+msgid "The advanced view allows you to easily select multiple fields."
+msgstr ""
+
+#, c-format
+msgid ""
+"The firewall configuration is outdated,\n"
+"you need to update it to the new format: <a href=\"%s\">learn more</a>"
+msgstr ""
+
+msgid "The input or output chain is missing from this node's firewall."
+msgstr ""
+
+msgid "The rules are checked in alphabetical order, so you can name them accordingly to control which ones are checked first."
+msgstr ""
+
+#, c-format
+msgid "The source and destination addresses must be both IPv4 or both IPv6."
+msgstr ""
+
+msgid "The system firewall is disabled: these rules apply once it's enabled in the Firewall window."
+msgstr ""
+
+msgid "The value of this field is always the absolute path of the executable."
+msgstr ""
+
+#, c-format
+msgid "There was an error: %s"
+msgstr ""
+
+msgid "There're no nodes connected"
+msgstr "Nincsenek csomópontok összekapcsolva"
+
+msgid "There're no nodes connected."
+msgstr "Nincsenek csomópontok csatlakoztatva."
+
+msgid "There's already a rule with this name."
+msgstr "Már van egy szabály ezzel a névvel."
+
+msgid "This field will contain and match the command line of the process."
+msgstr ""
+
+msgid "This node has no firewall configuration (it must use nftables)."
+msgstr ""
+
+#, c-format
+msgid "This node has no firewall configuration."
+msgstr ""
+
+msgid "This option limits the number of nodes (incoming connections)."
+msgstr ""
+
+msgid "This timeout is the countdown you see on the pop-up."
+msgstr ""
+
+#, c-format
+msgid "This type of rule (%s) is not supported by version %s"
+msgstr ""
+
+msgid "Time"
+msgstr "Idő"
+
+msgid "To"
+msgstr ""
+
+msgid "To clipboard"
+msgstr "A vágólapra"
+
+msgid "To disk"
+msgstr "Lemezre"
+
+msgid "To this IP / Network"
+msgstr "Erre az IP-címre vagy a hálózatra"
+
+msgid "To this host"
+msgstr "Erre az állomásra"
+
+msgid "To this list of IPs"
+msgstr "Ehhez az IP-címlistához"
+
+msgid "To this list of domains"
+msgstr "Ehhez a tartománylistához"
+
+msgid "To this list of domains (regular expressions)"
+msgstr ""
+
+msgid "To this list of network ranges"
+msgstr "Ehhez a hálózati tartományok listájához"
+
+msgid "To this port"
+msgstr "Erre a kikötőre"
+
+msgid "UDP"
+msgstr ""
+
+msgid "UDP-Lite"
+msgstr ""
+
+msgid "UI"
+msgstr "Felhasználói felület"
+
+msgid "UID"
+msgstr ""
+
+#, c-format
+msgid "Unable to load connection, unknown node? (%d)"
+msgstr ""
+
+#, c-format
+msgid "Unknown process %s"
+msgstr ""
+
+msgid "Until reboot"
+msgstr "Újraindításig"
+
+msgid "Update All"
+msgstr ""
+
+msgid "Update rule"
+msgstr ""
+
+msgid "Uptime"
+msgstr "Hasznos üzemidő"
+
+msgid "Use system notifications"
+msgstr "Rendszerértesítések használata"
+
+msgid "Use the tray icon's alert"
+msgstr ""
+
+msgid "User ID"
+msgstr "Felhasználói azonosító"
+
+msgid "User ID can not be empty"
+msgstr "Felhasználói azonosító nem lehet üres"
+
+msgid "User ID regexp error"
+msgstr "Felhasználói azonosító szabályos kifejezéshibája"
+
+msgid "Users"
+msgstr "Felhasználók"
+
+msgid "Version"
+msgstr "Változat"
+
+msgid "View"
+msgstr ""
+
+msgid "Warning"
+msgstr "Figyelmeztetés"
+
+msgid "Warning: Output policy configured to drop. If OpenSnitch dies, outbound network traffic will be blocked."
+msgstr ""
+
+msgid "What happens to incoming connections that no rule allows. Deny keeps loopback and replies to your own connections working."
+msgstr ""
+
+msgid "What happens to outgoing connections that no rule allows (before OpenSnitch asks)."
+msgstr ""
+
+msgid "When this option is on, all the existing sockets will be killed."
+msgstr ""
+
+msgid "When this option is selected, the rules of the selected duration are not saved, and the ones already saved are deleted."
+msgstr ""
+
+#, c-format
+msgid "You are running version <b>%s</b> of the daemon, while the UI is at version <b>%s</b>, they might not be fully compatible."
+msgstr ""
+
+msgid "You can specify a single IP, a network range (192.168.1.0/24), a regular expression, or a list separated by commas."
+msgstr ""
+
+msgid "You can specify multiple ports using regular expressions or a list separated by commas."
+msgstr ""
+
+msgid ""
+"You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n"
+"\n"
+"ports: 22 or 22,443 or 50000-60000\n"
+"IPs: 192.168.1.1 or 192.168.1.30-192.168.1.130\n"
+"Values: echo-reply,echo-request\n"
+"Values: new,established,related"
+msgstr ""
+
+msgid ""
+"You must select a file for the database\n"
+"or choose \"In memory\" type."
+msgstr ""
+
+msgid "_Action"
+msgstr "Művelet"
+
+msgid "_Add"
+msgstr "Hozzáadás"
+
+msgid "_Allow"
+msgstr "Engedélyezés"
+
+msgid "_Close"
+msgstr "Bezárás"
+
+msgid "_Delete"
+msgstr "Törlés"
+
+msgid "_Deny"
+msgstr "Megtagadás"
+
+msgid "_Direction"
+msgstr "Irány"
+
+msgid "_Edit"
+msgstr "Szerkesztés"
+
+msgid "_From"
+msgstr ""
+
+msgid "_Interface"
+msgstr ""
+
+msgid "_New rule"
+msgstr "Új szabály"
+
+msgid "_Reject"
+msgstr "Elutasítás"
+
+msgid "_Rules (simple)"
+msgstr ""
+
+msgid "_To"
+msgstr ""
+
+msgid "_Up"
+msgstr ""
+
+msgid "any temporary rules"
+msgstr "bármilyen ideiglenes szabályt"
+
+msgid "bottom left"
+msgstr "bal alsó"
+
+msgid "bottom right"
+msgstr "jobb alsó"
+
+msgid "by PID"
+msgstr "folyamatazonosító által"
+
+msgid "by command line"
+msgstr "parancssor szerint"
+
+msgid "by destination ip"
+msgstr "rendeltetési hely IP címe szerint"
+
+msgid "by destination port"
+msgstr "célkikötő szerint"
+
+msgid "by executable"
+msgstr "futtatható fájl szerint"
+
+msgid "by user id"
+msgstr "felhasználói azonosító szerint"
+
+msgid "center"
+msgstr "középre"
+
+msgid "checksum"
+msgstr ""
+
+msgid "command line can not be empty"
+msgstr "parancssor nem lehet üres"
+
+msgid "days"
+msgstr "nap"
+
+msgid ""
+"depending on the Action (i.e.: target), the syntaxis of the parameters will vary.\n"
+"Some examples:\n"
+"\n"
+" to 1.2.3.4 (snat, dnat)\n"
+" to :8080 (redirect, tproxy)\n"
+" to 1.2.3.4:8080 (snat, dnat)\n"
+" num 1 (queue)\n"
+" to 1024-2048 (masquerade)"
+msgstr ""
+
+#, c-format
+msgid "error loading: %s"
+msgstr ""
+
+#, c-format
+msgid "error starting netstat table: %s"
+msgstr ""
+
+msgid "forever"
+msgstr "örökre"
+
+msgid "from this PID"
+msgstr "ebből a folyamatazonosítóból"
+
+msgid "from this command line"
+msgstr "erről a parancssorról"
+
+msgid "from this executable"
+msgstr "ettől a futtatható fájltól"
+
+msgid "from user "
+msgstr ""
+
+msgid "is regular expression"
+msgstr "szabályos kifejezés"
+
+#, c-format
+msgid "loading in %s..."
+msgstr ""
+
+msgid "md5"
+msgstr ""
+
+msgid "md5 field regexp error"
+msgstr ""
+
+msgid "md5 line cannot be empty"
+msgstr ""
+
+msgid "minutes"
+msgstr "perc"
+
+msgid "no node"
+msgstr ""
+
+#, c-format
+msgid "node %s not connected"
+msgstr ""
+
+msgid "node exited"
+msgstr ""
+
+#, c-format
+msgid "node not found: %s"
+msgstr ""
+
+msgid "once"
+msgstr "egyszer"
+
+msgid "out of memory"
+msgstr ""
+
+msgid "process path can not be empty"
+msgstr "folyamat útvonal nem lehet üres"
+
+msgid "protocol can not be empty, or uncheck it"
+msgstr "a protokoll nem lehet üres, és nem szüntetheti meg a kijelölést"
+
+msgid "refreshing..."
+msgstr ""
+
+msgid "to "
+msgstr ""
+
+msgid "to *."
+msgstr ""
+
+msgid "to port "
+msgstr ""
+
+msgid "top left"
+msgstr "bal felső"
+
+msgid "top right"
+msgstr "jobb felső"
+
+msgid "ufw application profiles (/etc/ufw/applications.d)"
+msgstr ""
+
+msgid "until reboot"
+msgstr "újraindításig"
+
+#, c-format
+msgid "{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": \"5s\"}}"
+msgstr ""
+
+#, c-format
+msgid "{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": %d, \"proto\": %d, \"family\": %d}}"
+msgstr ""

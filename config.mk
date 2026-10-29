@@ -10,6 +10,7 @@ PREFIX     ?= /usr/local
 BINDIR     ?= $(PREFIX)/bin
 SBINDIR    ?= $(PREFIX)/sbin
 SYSCONFDIR ?= /etc
+DATADIR    ?= $(PREFIX)/share
 DESTDIR    ?=
 
 # Optional features (0 = off, 1 = on). TLS=1: TLS between daemon and UI

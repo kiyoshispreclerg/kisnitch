@@ -1,0 +1,1593 @@
+# Translation of Kisnitch to ru_RU, converted from the upstream
+# Qt .ts by tools/ts2po.py. Don't edit by hand: send fixes to the
+# OpenSnitch translations and run tools/update-po.sh.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kisnitch\n"
+"Language: ru_RU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+msgid "    Apply this rule to %s  "
+msgstr ""
+
+msgid "   Outgoing:"
+msgstr ""
+
+msgid "#"
+msgstr ""
+
+#, c-format
+msgid "%s node is not connected"
+msgstr ""
+
+msgid "-"
+msgstr "-"
+
+msgid "12h"
+msgstr ""
+
+msgid "15m"
+msgstr "15 мин"
+
+msgid "15m or less"
+msgstr "Не более 15 мин"
+
+msgid "1h"
+msgstr "1 ч"
+
+msgid "1h or less"
+msgstr "Не более 1 ч"
+
+msgid "30m"
+msgstr "30 мин"
+
+msgid "30m or less"
+msgstr "Не более 30 мин"
+
+msgid "30s"
+msgstr "30 с"
+
+msgid "30s or less"
+msgstr "Не более 30 с"
+
+msgid "5m"
+msgstr "5 мин"
+
+msgid "5m or less"
+msgstr "Не более 5 мин"
+
+#, c-format
+msgid ""
+"<b>%s</b>\n"
+"\n"
+"<b>Time:</b> %s\n"
+"\n"
+"<b>Process:</b>\n"
+"%s\n"
+"<b>Cmdline:</b>\n"
+"%s\n"
+"<b>CWD:</b>\n"
+"%s\n"
+"\n"
+"<b>UID:</b> %s <b>PID:</b> %s\n"
+"\n"
+"<b>Node:</b> %s\n"
+"\n"
+"<b>%s</b> %s:%s -> %s (%s):%s\n"
+"\n"
+"<b>Rule:</b>\n"
+"%s"
+msgstr ""
+
+msgid "<b><big>Outgoing connection</big></b>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<b>daemon uptime:</b> %s\n"
+"<b>Version:</b> %s\n"
+"<b>Kernel:</b> %s"
+msgstr ""
+
+msgid "<span foreground=\"green\">✔Rule updated.</span>"
+msgstr ""
+
+msgid "<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-checksum\">More info</a>)</span>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<span foreground=\"red\">WARNING, checksums differ for at least one rule.</span>\n"
+"\n"
+"Current process (%u):\n"
+"%s\n"
+"\n"
+"Expected from the rule:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>"
+msgstr ""
+
+msgid "A port (22), a list (80,443) or a range (6000-6007). Empty: any port"
+msgstr ""
+
+msgid "A_pplication"
+msgstr ""
+
+msgid "Absolute path to the CA cert file"
+msgstr ""
+
+msgid "Absolute path to the cert file"
+msgstr ""
+
+msgid "Absolute path to the cert key file"
+msgstr ""
+
+msgid "Action"
+msgstr "Действие"
+
+msgid "ActionParms"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Add at least one statement."
+msgstr ""
+
+msgid "Add new condition"
+msgstr "Добавить новое условие"
+
+msgid "Adding rule, wait"
+msgstr "Добавляем правило, подождите"
+
+msgid "Address"
+msgstr "Адрес"
+
+msgid "Address of the node."
+msgstr ""
+
+msgid "Addresses"
+msgstr "Адреса"
+
+msgid "Advanced"
+msgstr "Сложно"
+
+msgid "Advanced _editor"
+msgstr ""
+
+msgid "Advanced options"
+msgstr ""
+
+msgid "Alert"
+msgstr ""
+
+msgid "Alerts"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All applications"
+msgstr "Все приложения"
+
+msgid "Allow"
+msgstr "Разрешить"
+
+msgid "Allow inbound connections to a port"
+msgstr "Разрешить входящие соединения на порт"
+
+msgid "Allow inbound connections to the selected port."
+msgstr "Разрешить входящие подключения к выбранному порту."
+
+msgid "Allow outbound connections to the selected port."
+msgstr "Разрешить исходящие подключения к выбранному порту."
+
+msgid "Allow service (_IN)"
+msgstr "Разрешить сервис (ВХОДЯЩИЕ)"
+
+msgid "Allow service (_OUT)"
+msgstr "Разрешить сервис (ИСХОДЯЩИЕ)"
+
+msgid "Allow will allow the connection"
+msgstr "Разрешить разрешит соединения"
+
+msgid "Allow, deny or reject by port, address and interface, in a table (like ufw)"
+msgstr ""
+
+msgid "Always"
+msgstr "Всегда"
+
+msgid "Any"
+msgstr ""
+
+msgid "Application pids"
+msgstr "PIDы приложений"
+
+msgid "Applications"
+msgstr "Приложения"
+
+msgid "Apply configuration to all nodes"
+msgstr "Применить конфигурацию ко всем узлам"
+
+msgid "Apply rule to all nodes"
+msgstr "Применить правило ко всем узлам"
+
+msgid "Apply to"
+msgstr "Применить к"
+
+msgid "Applying changes..."
+msgstr "Применение изменений..."
+
+#, c-format
+msgid "Applying configuration on %s ..."
+msgstr ""
+
+msgid "Are you sure?"
+msgstr ""
+
+msgid "Auth type changed"
+msgstr ""
+
+msgid "Authentication"
+msgstr ""
+
+msgid "Authentication type"
+msgstr ""
+
+msgid "Autostart"
+msgstr ""
+
+msgid "Autostart the GUI upon login"
+msgstr ""
+
+msgid "Block outbound network traffic if the daemon unexpectedly dies"
+msgstr ""
+
+msgid "By default the GUI is started when login"
+msgstr ""
+
+msgid "By default, the field of the rules are case-insensitive."
+msgstr ""
+
+msgid "CA cert file"
+msgstr ""
+
+msgid "Case-sensitive"
+msgstr "Чувствительно к регистру"
+
+msgid "Cert file"
+msgstr ""
+
+msgid "Cert key file"
+msgstr ""
+
+msgid "Certificates changed"
+msgstr ""
+
+#, c-format
+msgid "Change default firewall to 'nftables' on node %s?"
+msgstr ""
+
+msgid "Check every n seconds that the interception rules are present."
+msgstr ""
+
+msgid "Checksum"
+msgstr ""
+
+msgid "Client certificate verification"
+msgstr ""
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Command line"
+msgstr "Командная строка"
+
+msgid "Command line regexp error"
+msgstr "Ошибка регулярного выражения командной строки"
+
+msgid "Configuration applied."
+msgstr "Конфигурация применена."
+
+msgid "Connection details"
+msgstr ""
+
+msgid "Connections"
+msgstr "Соединения"
+
+msgid "Create a new rule"
+msgstr "Создать новое правило"
+
+msgid "DB journal_mode changed"
+msgstr ""
+
+msgid "DB type changed"
+msgstr "Тип БД изменен"
+
+msgid "DCCP"
+msgstr ""
+
+msgid "D_escription"
+msgstr "Описание"
+
+msgid "Daemon version"
+msgstr ""
+
+msgid "Database"
+msgstr "База данных"
+
+msgid "Database type"
+msgstr "Тип базы данных"
+
+msgid "Debug invalid connections"
+msgstr "Отладка недействительных соединений"
+
+msgid "Default action when the GUI is disconnected"
+msgstr "Действие по умолчанию, когда интерфейс отключён"
+
+msgid "Default log level"
+msgstr "Уровень логирования по умолчанию"
+
+msgid "Default position on screen"
+msgstr "Положение по умолчанию на экране"
+
+msgid "Default target"
+msgstr "Цель по умолчанию"
+
+msgid "Default timeout"
+msgstr "Тайм-аут по умолчанию"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "Delete all intercepted events"
+msgstr "Удалить все перехваченные события"
+
+msgid "Delete this node"
+msgstr "Удалить этот узел"
+
+msgid "Delete this rule?"
+msgstr ""
+
+msgid "Deleting rule, wait"
+msgstr "Удаляем правило, подождите"
+
+msgid "Deny"
+msgstr "Запретить"
+
+msgid "Deny will just discard the connection"
+msgstr "Отказ мгновенно разорвёт соединение"
+
+msgid "Description"
+msgstr "Описание"
+
+msgid "Desktop notifications"
+msgstr "Уведомления на рабочем столе"
+
+msgid "Dest IP"
+msgstr "Целевой IP"
+
+msgid "Dest IP/Network can not be empty"
+msgstr "Целевой IP/сеть не могут быть пустыми"
+
+msgid "Dest host"
+msgstr ""
+
+msgid "Dest host can not be empty"
+msgstr "Целевой хост не может быть пустым"
+
+msgid "Dest port"
+msgstr ""
+
+msgid "Dest port can not be empty"
+msgstr "Целевой порт не может быть пустым"
+
+msgid "Destination IP"
+msgstr "Целевой IP"
+
+msgid "Destination Port"
+msgstr ""
+
+msgid "Destination address, network or range. Empty: any"
+msgstr ""
+
+msgid "Destination port"
+msgstr "Целевой порт"
+
+msgid "Details"
+msgstr "Подробности"
+
+msgid "Direction"
+msgstr "Направление"
+
+msgid "Disable"
+msgstr "Выключить"
+
+msgid "Disable pop-ups, only display a notification"
+msgstr "Запретить всплывающие окна, показывать только уведомления"
+
+msgid "Disabling firewall..."
+msgstr "Выключение межсетевого экрана..."
+
+msgid "Do_wn"
+msgstr ""
+
+msgid "Domains separated by commas, or a regular expression (www.domain.org, .*\\.domain.org)."
+msgstr ""
+
+msgid "Don't log connections"
+msgstr "Не логировать соединения"
+
+msgid "Don't save/Delete rules of duration"
+msgstr "Не сохранять/Удалить правила по продолжительности"
+
+msgid "Don't verify certs"
+msgstr ""
+
+msgid "Dropped"
+msgstr "Сброшено"
+
+msgid "Dst IP regexp error"
+msgstr "Ошибка регулярного выражения Целевой IP"
+
+msgid "Dst host regexp error"
+msgstr "Ошибка регулярного выражения целевого хоста"
+
+msgid "Dst port regexp error"
+msgstr "Ошибка регулярного выражения целевого порта"
+
+msgid "Duplicate"
+msgstr "Дублировать"
+
+msgid "Duration"
+msgstr "Длительность"
+
+msgid "Edit"
+msgstr "Редактировать"
+
+msgid "Edit rule"
+msgstr "Редактировать правило"
+
+msgid "Enable"
+msgstr "Включить"
+
+msgid "Enable DB Write-Ahead Logging (WAL)"
+msgstr ""
+
+msgid "Enable checksums verification"
+msgstr ""
+
+msgid "Enabled"
+msgstr "Включено"
+
+msgid "Enabling firewall..."
+msgstr "Включение межсетевого экрана..."
+
+msgid "Environment variables"
+msgstr "Переменные среды"
+
+msgid "Equal"
+msgstr "Равно"
+
+msgid "Error"
+msgstr "Ошибка"
+
+#, c-format
+msgid "Error adding rule: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error adding rules:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error applying configuration: %s"
+msgstr ""
+
+#, c-format
+msgid "Error applying rule: %s"
+msgstr ""
+
+#, c-format
+msgid "Error creating new rule from event (%s)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error deleting node\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error deleting rule, %s"
+msgstr ""
+
+msgid "Error exporting rules"
+msgstr "Ошибка экспорта правил"
+
+#, c-format
+msgid ""
+"Error exporting rules of the following nodes:\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error exporting the following rules:\n"
+"%s"
+msgstr ""
+
+msgid "Error getting INPUT chain policy"
+msgstr "Ошибка получения политики цепочки INPUT"
+
+msgid "Error getting OUTPUT chain policy"
+msgstr "Ошибка получения политики цепочки OUTPUT"
+
+#, c-format
+msgid "Error importing rules from %s"
+msgstr ""
+
+#, c-format
+msgid "Error loading config %s: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error loading process information:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error loading rule"
+msgstr ""
+
+msgid "Error saving rule"
+msgstr ""
+
+#, c-format
+msgid "Error saving rule %s"
+msgstr ""
+
+msgid "Error saving the CSV file"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error stopping monitoring process:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error:"
+msgstr ""
+
+msgid "Events"
+msgstr "События"
+
+msgid "Events tab columns"
+msgstr "Столбцы вкладки \"События\""
+
+msgid "Exclude outbound connections to a port from being intercepted"
+msgstr "Исключение исходящих подключений к порту от перехвата"
+
+msgid "Exclude service"
+msgstr "Исключить сервис"
+
+msgid "Executed from"
+msgstr ""
+
+msgid "Export"
+msgstr "Экспортировать"
+
+msgid "Export events to CSV"
+msgstr "Экспортиовать события в CSV"
+
+msgid "Export rules"
+msgstr "Экспортировать правила"
+
+msgid "Family"
+msgstr ""
+
+msgid "File"
+msgstr "Файл"
+
+msgid "Filter"
+msgstr "Фильтр"
+
+msgid "Filter connections also by:"
+msgstr "Также фильтровать соединения по:"
+
+msgid "Filter files"
+msgstr ""
+
+msgid "Filter sockets"
+msgstr ""
+
+msgid "Firewall"
+msgstr "Межсетевой экран"
+
+msgid "Firewall rule"
+msgstr "Правило межсетевого экрана"
+
+msgid "Firewall rules"
+msgstr ""
+
+msgid "Firewall rules monitoring interval (seconds)"
+msgstr ""
+
+msgid "Firewall status error (report on github please): no firewall configuration"
+msgstr ""
+
+msgid "Flush connections on start"
+msgstr ""
+
+msgid "From"
+msgstr ""
+
+msgid "From this IP / Network"
+msgstr "От этого IP / Сети"
+
+msgid "From this PID"
+msgstr "Из этого PIDа"
+
+msgid "From this command line"
+msgstr "Из этой командной строки"
+
+msgid "From this executable"
+msgstr "Из этого исполняемого файла"
+
+msgid "From this port"
+msgstr "От этого порта"
+
+msgid "From this user ID"
+msgstr "От этого ID пользователя"
+
+msgid "Garbage collector percentage"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Greater or equal than"
+msgstr "Больше или равно чем"
+
+msgid "Greater than"
+msgstr "Больше чем"
+
+msgid "Help"
+msgstr "Помощь"
+
+msgid "Hook"
+msgstr ""
+
+msgid "HostName"
+msgstr "Имя хоста"
+
+msgid "Hosts"
+msgstr "Хосты"
+
+msgid "I/O Statistics"
+msgstr "I/O Статистика"
+
+msgid "ICMP"
+msgstr "ICMP"
+
+msgid "If checked, this field will be selected when a pop-up is displayed."
+msgstr ""
+
+msgid "If checked, this rule will take precedence over the rest of the rules (except the ones with the same name or priority)."
+msgstr ""
+
+msgid "If empty, default rules path will be /etc/opensnitchd/rules"
+msgstr ""
+
+msgid "Import rules"
+msgstr "Импортиовать правила"
+
+msgid "In"
+msgstr ""
+
+msgid "In (incoming)"
+msgstr ""
+
+msgid "In development"
+msgstr ""
+
+msgid "In memory"
+msgstr "В памяти"
+
+msgid "In order to configure firewall rules from the GUI, we need to use 'nftables' instead of 'iptables'"
+msgstr "Чтобы настроить правила межсетевого экрана из оболочки, нам нужно использовать 'nftables' вместо 'iptables'"
+
+msgid "Inbound"
+msgstr "Входящие"
+
+msgid "Incoming:"
+msgstr ""
+
+msgid "Info"
+msgstr "Информация"
+
+msgid "Interface"
+msgstr ""
+
+msgid "Internal"
+msgstr ""
+
+msgid "Invalid UID, it must be a digit."
+msgstr ""
+
+#, c-format
+msgid "Invalid action."
+msgstr ""
+
+#, c-format
+msgid "Invalid rule name (not allowed characters: '%s' )"
+msgstr ""
+
+#, c-format
+msgid "Invalid rule: %s"
+msgstr ""
+
+msgid "Is regular expression"
+msgstr "Регулярное выражение"
+
+msgid "Kisnitch: interception disabled"
+msgstr ""
+
+msgid "Kisnitch: interception enabled"
+msgstr ""
+
+msgid "Kisnitch: no daemon connected"
+msgstr ""
+
+msgid "Language"
+msgstr "Язык"
+
+msgid "Language changed"
+msgstr "Язык изменён"
+
+msgid "Less or equal than"
+msgstr "Меньше или равно чем"
+
+msgid "Less than"
+msgstr "Меньше чем"
+
+msgid "Lists"
+msgstr ""
+
+msgid "Lists field cannot be empty"
+msgstr "Поле списков не может быть пустым"
+
+msgid "Lists field must be a directory"
+msgstr "Поле списков должно быть каталогом"
+
+msgid "Log UTC timestamps"
+msgstr ""
+
+msgid "Log file"
+msgstr "Лог файл"
+
+msgid "Log timestamp microseconds"
+msgstr ""
+
+msgid "Logging"
+msgstr ""
+
+msgid "Max events"
+msgstr ""
+
+msgid "Max gRPC channel size"
+msgstr ""
+
+msgid "Max server clients"
+msgstr ""
+
+msgid "Max server workers"
+msgstr ""
+
+msgid "Max stats"
+msgstr ""
+
+msgid "Maximum days of events to keep"
+msgstr "Максимальное количество дней для сохранения событий"
+
+msgid "Maximum size of each message from nodes. Default 4MB"
+msgstr ""
+
+msgid "Memory mapped files"
+msgstr "Файлы с отображением памяти"
+
+msgid "Minutes between events purges"
+msgstr "Минут между очисткой событий"
+
+msgid "Mutual TLS"
+msgstr ""
+
+msgid "Name"
+msgstr "Имя"
+
+msgid "Netstat"
+msgstr ""
+
+msgid "Network"
+msgstr "Сеть"
+
+msgid "Network interface"
+msgstr "Сетевой интерфейс"
+
+msgid "Network interface (in: where it arrives, out: where it leaves). Empty: any"
+msgstr ""
+
+msgid "Network interface can not be empty"
+msgstr "Название сетевого интерфейса не может быть пустым"
+
+msgid "Network interface regexp error"
+msgstr "Ошибка регулярного выражения сетевого интерфейса"
+
+msgid "New"
+msgstr "Новое"
+
+msgid "New node connected"
+msgstr "Подключен новый узел"
+
+msgid "New rule"
+msgstr "Новое правило"
+
+msgid "New rule error"
+msgstr ""
+
+msgid "No nodes connected"
+msgstr ""
+
+msgid "No ufw application profiles installed"
+msgstr ""
+
+msgid "Node"
+msgstr "Узел"
+
+msgid "Node address changed (update GUI address if needed)"
+msgstr ""
+
+msgid "Nodes"
+msgstr "Узлы"
+
+msgid "Not equal"
+msgstr "Не равно"
+
+msgid "On"
+msgstr ""
+
+msgid "Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression or a list separated by commas."
+msgstr ""
+
+msgid "Open files"
+msgstr "Открыть файлы"
+
+msgid "Open main window"
+msgstr ""
+
+msgid "Open the rule in the full firewall rule editor"
+msgstr ""
+
+msgid "OpenSnitch version mismatch!"
+msgstr ""
+
+msgid "Out"
+msgstr ""
+
+msgid "Out (outgoing)"
+msgstr ""
+
+msgid "Outbound"
+msgstr "Исходящие"
+
+msgid "PID"
+msgstr ""
+
+msgid "PID field can not be empty"
+msgstr "Поле PID не может быть пустым"
+
+msgid "PID field regexp error"
+msgstr "Ошибка регулярного выражения поля PID"
+
+msgid "P_ort"
+msgstr ""
+
+msgid "P_rotocol"
+msgstr "Протокол"
+
+msgid "Parameters"
+msgstr ""
+
+msgid "Path"
+msgstr ""
+
+msgid "Permanent"
+msgstr "Постоянно"
+
+msgid "Policy"
+msgstr ""
+
+#, c-format
+msgid "Policy not applied: %s"
+msgstr ""
+
+msgid "Pop-up default action."
+msgstr ""
+
+msgid "Pop-up default duration"
+msgstr "Продолжительность уведомления по умолчанию"
+
+msgid "Pop-ups"
+msgstr "Всплывающие окна"
+
+msgid "Port"
+msgstr ""
+
+msgid "Ports"
+msgstr "Порты"
+
+msgid "Preferences"
+msgstr ""
+
+msgid "Priority rule"
+msgstr "Приоритетное правило"
+
+msgid "Process"
+msgstr "Процесс"
+
+msgid "Process details"
+msgstr "Детали процесса"
+
+#, c-format
+msgid "Process launched from: %s"
+msgstr ""
+
+msgid "Process monitor method"
+msgstr "Метод мониторинга процесса"
+
+msgid "Process path must be checked in order to verify checksums."
+msgstr ""
+
+msgid "Process path regexp error"
+msgstr "Ошибка регулярного выражения пути процесса"
+
+#, c-format
+msgid "Process path: %s"
+msgstr ""
+
+msgid "Profile"
+msgstr "Профиль"
+
+msgid "Protocol"
+msgstr "Протокол"
+
+msgid "Protocol regexp error"
+msgstr "Ошибка регулярного выражения протокола"
+
+msgid "Quit"
+msgstr "Выйти"
+
+msgid "Refresh interval"
+msgstr ""
+
+msgid "Refresh interval (seconds)"
+msgstr ""
+
+msgid "Reject"
+msgstr "Отклонить"
+
+msgid "Reject will drop the connection, and kill the socket that initiated it"
+msgstr "Отклонение приведет к разрыву соединения и уничтожению сокета, который его инициировал"
+
+msgid "Remove selected condition"
+msgstr "Удалить выбранное условие"
+
+msgid "Reset"
+msgstr ""
+
+msgid "Restart the GUI in order changes to take effect"
+msgstr ""
+
+msgid "Rule"
+msgstr "Правило"
+
+msgid "Rule added"
+msgstr "Правило добавлено"
+
+msgid "Rule applied."
+msgstr "Правило применено."
+
+msgid "Rule deleted"
+msgstr "Правило удалено"
+
+msgid "Rule hook (invalid) not supported yet"
+msgstr ""
+
+msgid "Rule not found by that name and node"
+msgstr "Правило не найдено по этому имени и узлу"
+
+msgid "Rule not supported"
+msgstr ""
+
+msgid "Rule saved"
+msgstr ""
+
+#, c-format
+msgid ""
+"Rule saved, but there're other rules with errors (REVIEW):\n"
+"%s"
+msgstr ""
+
+msgid "Rules"
+msgstr "Правила"
+
+msgid "Rules are checked in order: the first one that matches decides"
+msgstr ""
+
+msgid "Rules export"
+msgstr ""
+
+msgid "Rules export error"
+msgstr ""
+
+#, c-format
+msgid "Rules exported to %s"
+msgstr ""
+
+msgid "Rules import"
+msgstr ""
+
+msgid "Rules import error"
+msgstr ""
+
+msgid "Rules imported fine"
+msgstr "Правила импортированы нормально"
+
+msgid "Rules path"
+msgstr ""
+
+msgid "SCTP"
+msgstr "SCTP"
+
+msgid "Save as CSV"
+msgstr "Сохранить как CSV"
+
+msgid "Saving configuration..."
+msgstr ""
+
+msgid "Saving rule, wait"
+msgstr ""
+
+msgid "Select"
+msgstr "Выбрать"
+
+msgid "Select a directory to export rules"
+msgstr "Выберите директорию для экспортирования правил"
+
+msgid "Select a directory with files containing lists of IPs."
+msgstr ""
+
+msgid "Select a directory with files containing lists of network ranges."
+msgstr ""
+
+msgid "Select a directory with files containing regular expressions."
+msgstr ""
+
+msgid "Select a directory with lists of domains to block."
+msgstr ""
+
+msgid "Select a directory with rules to import (JSON files)"
+msgstr "Выберите директорию для импорта (JSON) файлов с правилами"
+
+msgid "Select at least one field."
+msgstr "Выберите хотя бы одно поле."
+
+#, c-format
+msgid "Select the protocol of the port."
+msgstr ""
+
+msgid "Server"
+msgstr ""
+
+msgid "Server address changed"
+msgstr ""
+
+msgid "Server cert file"
+msgstr ""
+
+msgid "Server max clients changed"
+msgstr ""
+
+msgid "Server max workers changed"
+msgstr ""
+
+msgid "Server options changed"
+msgstr ""
+
+msgid "Show advanced view by default"
+msgstr "Показывать расширенный вид по умолчанию"
+
+msgid "Show the preferences of this node"
+msgstr "Показать настройки этого узла"
+
+msgid "Simple"
+msgstr "Простой"
+
+msgid "Simple TLS"
+msgstr ""
+
+msgid "Simple: no authentication. TLS comes with phase 10."
+msgstr ""
+
+msgid "Source IP"
+msgstr "Исходный IP"
+
+msgid "Source IP regexp error"
+msgstr "Ошибка регулярного выражения исходного IP"
+
+msgid "Source IP/Network can not be empty"
+msgstr "Исходный IP/Сеть не может быть пустым"
+
+msgid "Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 address matches IPv4 only: add another rule for IPv6"
+msgstr ""
+
+msgid "Source port"
+msgstr ""
+
+msgid "Source port can not be empty"
+msgstr "Исходный порт не может быть пустым"
+
+msgid "Source port regexp error"
+msgstr "Ошибка регулярного выражения исходного порта"
+
+msgid "Stack"
+msgstr "Стек"
+
+msgid "Start"
+msgstr ""
+
+msgid "Start or Stop interception"
+msgstr "Начать или остановить перехват"
+
+msgid "Start or stop interception of this node"
+msgstr "Запустить или остановить перехват этого узла"
+
+msgid "Start or stop monitoring this process"
+msgstr "Начать или остановить мониторинг этого процесса"
+
+msgid "Start/Stop"
+msgstr ""
+
+msgid "State"
+msgstr ""
+
+msgid "Status"
+msgstr "Состояние"
+
+msgid "System default"
+msgstr "Системное значение по умолчанию"
+
+msgid "System firewall"
+msgstr ""
+
+msgid "TCP"
+msgstr "TCP"
+
+msgid "TCP and UDP"
+msgstr ""
+
+#, c-format
+msgid "TCP and UDP need a port; without a port, select one protocol or \"any\"."
+msgstr ""
+
+msgid "TLS is not supported by this build (TLS=1), the server stays on Simple"
+msgstr ""
+
+msgid "Table"
+msgstr ""
+
+msgid "Temporary"
+msgstr "Временно"
+
+msgid "Test"
+msgstr "Тест"
+
+msgid "The address where the GUI is listening for new nodes."
+msgstr ""
+
+msgid "The advanced view allows you to easily select multiple fields."
+msgstr ""
+
+#, c-format
+msgid ""
+"The firewall configuration is outdated,\n"
+"you need to update it to the new format: <a href=\"%s\">learn more</a>"
+msgstr ""
+
+msgid "The input or output chain is missing from this node's firewall."
+msgstr ""
+
+msgid "The rules are checked in alphabetical order, so you can name them accordingly to control which ones are checked first."
+msgstr ""
+
+#, c-format
+msgid "The source and destination addresses must be both IPv4 or both IPv6."
+msgstr ""
+
+msgid "The system firewall is disabled: these rules apply once it's enabled in the Firewall window."
+msgstr ""
+
+msgid "The value of this field is always the absolute path of the executable."
+msgstr ""
+
+#, c-format
+msgid "There was an error: %s"
+msgstr ""
+
+msgid "There're no nodes connected"
+msgstr "Нет подключенных узлов"
+
+msgid "There're no nodes connected."
+msgstr "Нет подключенных узлов."
+
+msgid "There's already a rule with this name."
+msgstr "Правило с таким названием уже существует."
+
+msgid "This field will contain and match the command line of the process."
+msgstr ""
+
+msgid "This node has no firewall configuration (it must use nftables)."
+msgstr ""
+
+#, c-format
+msgid "This node has no firewall configuration."
+msgstr ""
+
+msgid "This option limits the number of nodes (incoming connections)."
+msgstr ""
+
+msgid "This timeout is the countdown you see on the pop-up."
+msgstr ""
+
+#, c-format
+msgid "This type of rule (%s) is not supported by version %s"
+msgstr ""
+
+msgid "Time"
+msgstr "Время"
+
+msgid "To"
+msgstr ""
+
+msgid "To clipboard"
+msgstr "В буфер обмена"
+
+msgid "To disk"
+msgstr "На диск"
+
+msgid "To this IP / Network"
+msgstr "К этому IP / Сети"
+
+msgid "To this host"
+msgstr "К этому хосту"
+
+msgid "To this list of IPs"
+msgstr "К этому списку IP-адресов"
+
+msgid "To this list of domains"
+msgstr "К этому списку доменов"
+
+msgid "To this list of domains (regular expressions)"
+msgstr ""
+
+msgid "To this list of network ranges"
+msgstr "К этому списку сетевых диапазонов"
+
+msgid "To this port"
+msgstr "К этому порту"
+
+msgid "UDP"
+msgstr ""
+
+msgid "UDP-Lite"
+msgstr ""
+
+msgid "UI"
+msgstr "Интерфейс"
+
+msgid "UID"
+msgstr ""
+
+#, c-format
+msgid "Unable to load connection, unknown node? (%d)"
+msgstr ""
+
+#, c-format
+msgid "Unknown process %s"
+msgstr ""
+
+msgid "Until reboot"
+msgstr "До перезагрузки"
+
+msgid "Update All"
+msgstr ""
+
+msgid "Update rule"
+msgstr "Обновить правило"
+
+msgid "Uptime"
+msgstr "Время работы"
+
+msgid "Use system notifications"
+msgstr "Использовать системные уведомления"
+
+msgid "Use the tray icon's alert"
+msgstr ""
+
+msgid "User ID"
+msgstr "ID пользователя"
+
+msgid "User ID can not be empty"
+msgstr "Укажите идентификатор пользователя"
+
+msgid "User ID regexp error"
+msgstr "Ошибка регулярного выражения ID пользователя"
+
+msgid "Users"
+msgstr "Пользователи"
+
+msgid "Version"
+msgstr "Версия"
+
+msgid "View"
+msgstr ""
+
+msgid "Warning"
+msgstr "Предупреждение"
+
+msgid "Warning: Output policy configured to drop. If OpenSnitch dies, outbound network traffic will be blocked."
+msgstr ""
+
+msgid "What happens to incoming connections that no rule allows. Deny keeps loopback and replies to your own connections working."
+msgstr ""
+
+msgid "What happens to outgoing connections that no rule allows (before OpenSnitch asks)."
+msgstr ""
+
+msgid "When this option is on, all the existing sockets will be killed."
+msgstr ""
+
+msgid "When this option is selected, the rules of the selected duration are not saved, and the ones already saved are deleted."
+msgstr ""
+
+#, c-format
+msgid "You are running version <b>%s</b> of the daemon, while the UI is at version <b>%s</b>, they might not be fully compatible."
+msgstr ""
+
+msgid "You can specify a single IP, a network range (192.168.1.0/24), a regular expression, or a list separated by commas."
+msgstr ""
+
+msgid "You can specify multiple ports using regular expressions or a list separated by commas."
+msgstr ""
+
+msgid ""
+"You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n"
+"\n"
+"ports: 22 or 22,443 or 50000-60000\n"
+"IPs: 192.168.1.1 or 192.168.1.30-192.168.1.130\n"
+"Values: echo-reply,echo-request\n"
+"Values: new,established,related"
+msgstr ""
+
+msgid ""
+"You must select a file for the database\n"
+"or choose \"In memory\" type."
+msgstr ""
+
+msgid "_Action"
+msgstr "Действие"
+
+msgid "_Add"
+msgstr "Добавить"
+
+msgid "_Allow"
+msgstr "Разрешить"
+
+msgid "_Close"
+msgstr "Закрыть"
+
+msgid "_Delete"
+msgstr "Удалить"
+
+msgid "_Deny"
+msgstr "Запретить"
+
+msgid "_Direction"
+msgstr "Направление"
+
+msgid "_Edit"
+msgstr "Редактировать"
+
+msgid "_From"
+msgstr ""
+
+msgid "_Interface"
+msgstr ""
+
+msgid "_New rule"
+msgstr "Новое правило"
+
+msgid "_Reject"
+msgstr "Отклонить"
+
+msgid "_Rules (simple)"
+msgstr ""
+
+msgid "_To"
+msgstr ""
+
+msgid "_Up"
+msgstr ""
+
+msgid "any temporary rules"
+msgstr "любые временные правила"
+
+msgid "bottom left"
+msgstr "в нижнем левом углу"
+
+msgid "bottom right"
+msgstr "в нижнем правом углу"
+
+msgid "by PID"
+msgstr "по PIDу"
+
+msgid "by command line"
+msgstr "по командной строке"
+
+msgid "by destination ip"
+msgstr "по целевому IP-адресу"
+
+msgid "by destination port"
+msgstr "по целевому порту"
+
+msgid "by executable"
+msgstr "исполняемым файлом"
+
+msgid "by user id"
+msgstr "по ID пользователя"
+
+msgid "center"
+msgstr "в центре"
+
+msgid "checksum"
+msgstr ""
+
+msgid "command line can not be empty"
+msgstr "командная строка не может быть пустой"
+
+msgid "days"
+msgstr "дни"
+
+msgid ""
+"depending on the Action (i.e.: target), the syntaxis of the parameters will vary.\n"
+"Some examples:\n"
+"\n"
+" to 1.2.3.4 (snat, dnat)\n"
+" to :8080 (redirect, tproxy)\n"
+" to 1.2.3.4:8080 (snat, dnat)\n"
+" num 1 (queue)\n"
+" to 1024-2048 (masquerade)"
+msgstr ""
+
+#, c-format
+msgid "error loading: %s"
+msgstr ""
+
+#, c-format
+msgid "error starting netstat table: %s"
+msgstr ""
+
+msgid "forever"
+msgstr "навсегда"
+
+msgid "from this PID"
+msgstr "из этого PID'а"
+
+msgid "from this command line"
+msgstr "из этой командной строки"
+
+msgid "from this executable"
+msgstr "из этого исполняемого файла"
+
+msgid "from user "
+msgstr ""
+
+msgid "is regular expression"
+msgstr "регулярное выражение"
+
+#, c-format
+msgid "loading in %s..."
+msgstr ""
+
+msgid "md5"
+msgstr ""
+
+msgid "md5 field regexp error"
+msgstr ""
+
+msgid "md5 line cannot be empty"
+msgstr ""
+
+msgid "minutes"
+msgstr "минут"
+
+msgid "no node"
+msgstr ""
+
+#, c-format
+msgid "node %s not connected"
+msgstr ""
+
+msgid "node exited"
+msgstr ""
+
+#, c-format
+msgid "node not found: %s"
+msgstr ""
+
+msgid "once"
+msgstr "один раз"
+
+msgid "out of memory"
+msgstr ""
+
+msgid "process path can not be empty"
+msgstr "путь процесса не может быть пустым"
+
+msgid "protocol can not be empty, or uncheck it"
+msgstr "протокол не может быть пустым, или снимите галочку"
+
+msgid "refreshing..."
+msgstr ""
+
+msgid "to "
+msgstr ""
+
+msgid "to *."
+msgstr ""
+
+msgid "to port "
+msgstr ""
+
+msgid "top left"
+msgstr "в левом верхнем углу"
+
+msgid "top right"
+msgstr "в правом верхнем углу"
+
+msgid "ufw application profiles (/etc/ufw/applications.d)"
+msgstr ""
+
+msgid "until reboot"
+msgstr "до перезагрузки"
+
+#, c-format
+msgid "{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": \"5s\"}}"
+msgstr ""
+
+#, c-format
+msgid "{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": %d, \"proto\": %d, \"family\": %d}}"
+msgstr ""

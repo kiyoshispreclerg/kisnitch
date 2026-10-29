@@ -13,6 +13,7 @@
 #include "common/log.h"
 #include "ui/fwsimple.h"
 #include "ui/nodes.h"
+#include "ui/i18n.h"
 
 enum {
     COL_POS, COL_ENABLED, COL_ACTION, COL_DIR, COL_PORT, COL_FROM, COL_TO, COL_IFACE, COL_DESC,
@@ -120,13 +121,13 @@ static void load_rules(struct ks_fws_dlg *d, const char *keep_uuid)
             gtk_list_store_set(d->store, &it, COL_POS, pos, COL_ENABLED, r->enabled,
                                COL_ACTION, ks_fws_action_text(s->action), COL_DIR,
                                ks_fws_direction_text(s->direction), COL_PORT, port, COL_FROM,
-                               from[0] ? from : "Any", COL_TO, to[0] ? to : "Any",
-                               COL_IFACE, s->iface[0] ? s->iface : "Any", COL_DESC,
+                               from[0] ? from : _("Any"), COL_TO, to[0] ? to : _("Any"),
+                               COL_IFACE, s->iface[0] ? s->iface : _("Any"), COL_DESC,
                                s->description, COL_UUID, r->uuid, COL_KIND, r->kind, COL_STYLE,
                                PANGO_STYLE_NORMAL, -1);
         } else {
             gtk_list_store_set(d->store, &it, COL_POS, pos, COL_ENABLED, r->enabled,
-                               COL_ACTION, r->kind == KS_FWS_ROW_POLICY ? "Policy" : "Advanced",
+                               COL_ACTION, r->kind == KS_FWS_ROW_POLICY ? _("Policy") : _("Advanced"),
                                COL_DIR, r->chain, COL_PORT, "", COL_FROM, "", COL_TO, "",
                                COL_IFACE, "", COL_DESC, r->summary, COL_UUID, r->uuid, COL_KIND,
                                r->kind, COL_STYLE, PANGO_STYLE_ITALIC, -1);
@@ -156,15 +157,15 @@ static void load_policies(struct ks_fws_dlg *d)
     gtk_widget_set_sensitive(d->combo_out, ok_out);
     const char *warn = NULL;
     if (fw == NULL)
-        warn = "This node has no firewall configuration (it must use nftables).";
+        warn = _("This node has no firewall configuration (it must use nftables).");
     else if (!fw->enabled)
-        warn = "The system firewall is disabled: these rules apply once it's enabled in the "
-               "Firewall window.";
+        warn = _("The system firewall is disabled: these rules apply once it's enabled in the "
+               "Firewall window.");
     else if (!ok_in || !ok_out)
-        warn = "The input or output chain is missing from this node's firewall.";
+        warn = _("The input or output chain is missing from this node's firewall.");
     else if (dout)
-        warn = "Warning: Output policy configured to drop. If OpenSnitch dies, outbound "
-               "network traffic will be blocked.";
+        warn = _("Warning: Output policy configured to drop. If OpenSnitch dies, outbound "
+               "network traffic will be blocked.");
     gtk_label_set_text(GTK_LABEL(d->warning), warn != NULL ? warn : "");
     gtk_widget_set_visible(d->warning, warn != NULL);
     d->loading = false;
@@ -210,9 +211,9 @@ static void on_reply(const char *addr, const Protocol__NotificationReply *r, voi
         if (g_array_index(d->sent, uint64_t, i) != r->id)
             continue;
         if (r->code == PROTOCOL__NOTIFICATION_REPLY_CODE__OK) {
-            status(d, "green", "Configuration applied.");
+            status(d, "green", _("Configuration applied."));
         } else {
-            char *m = g_strdup_printf("There was an error: %s", r->data != NULL ? r->data : "");
+            char *m = g_strdup_printf(_("There was an error: %s"), r->data != NULL ? r->data : "");
             status(d, "red", m);
             g_free(m);
         }
@@ -227,7 +228,7 @@ static void apply(struct ks_fws_dlg *d, const char *keep_uuid)
     const char *addr = node_addr(d);
     if (addr == NULL)
         return;
-    status(d, "darkorange", "Applying changes...");
+    status(d, "darkorange", _("Applying changes..."));
     uint64_t id = ks_nodes_reload_fw(ks_service_nodes(d->svc), addr, on_reply, d);
     if (id != 0)
         g_array_append_val(d->sent, id);
@@ -249,7 +250,7 @@ static void on_policy(GtkComboBox *c, gpointer ud)
     bool drop = gtk_combo_box_get_active(c) == 1;
     const char *err = NULL;
     if (ks_fws_set_policy(fw, dir, drop, &err) < 0) {
-        char *m = g_strdup_printf("Policy not applied: %s", err ? err : "");
+        char *m = g_strdup_printf(_("Policy not applied: %s"), err ? err : "");
         status(d, "red", m);
         g_free(m);
         load_policies(d);
@@ -308,7 +309,7 @@ static GtkWidget *combo_row(GtkWidget *table, int row, const char *label,
     gtk_misc_set_alignment(GTK_MISC(l), 0, 0.5);
     GtkWidget *c = gtk_combo_box_new_text();
     for (size_t i = 0; i < n; i++)
-        gtk_combo_box_append_text(GTK_COMBO_BOX(c), items[i]);
+        gtk_combo_box_append_text(GTK_COMBO_BOX(c), _(items[i]));
     gtk_combo_box_set_active(GTK_COMBO_BOX(c), active);
     gtk_label_set_mnemonic_widget(GTK_LABEL(l), c);
     gtk_table_attach(GTK_TABLE(table), l, 0, 1, (guint)row, (guint)row + 1, GTK_FILL, GTK_FILL, 0,
@@ -323,7 +324,7 @@ static bool edit_rule(struct ks_fws_dlg *d, struct ks_fws_rule *r)
 {
     struct edit e = {.d = d};
     bool is_new = r->uuid[0] == '\0';
-    e.dlg = gtk_dialog_new_with_buttons(is_new ? "New rule" : "Edit rule", GTK_WINDOW(d->win),
+    e.dlg = gtk_dialog_new_with_buttons(is_new ? _("New rule") : _("Edit rule"), GTK_WINDOW(d->win),
                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                         GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE,
                                         GTK_RESPONSE_OK, NULL);
@@ -334,36 +335,36 @@ static bool edit_rule(struct ks_fws_dlg *d, struct ks_fws_rule *r)
     gtk_table_set_col_spacings(GTK_TABLE(t), 10);
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(e.dlg)->vbox), t, TRUE, TRUE, 0);
 
-    static const char *const actions[] = {"Allow", "Deny", "Reject"};
-    static const char *const dirs[] = {"In (incoming)", "Out (outgoing)"};
-    static const char *const protos[] = {"Any", "TCP and UDP", "TCP",  "UDP",
-                                         "UDP-Lite", "SCTP",   "DCCP"};
-    e.action = combo_row(t, 0, "_Action", actions, 3, r->action);
-    e.dir = combo_row(t, 1, "_Direction", dirs, 2, r->direction);
+    static const char *const actions[] = {N_("Allow"), N_("Deny"), N_("Reject")};
+    static const char *const dirs[] = {N_("In (incoming)"), N_("Out (outgoing)")};
+    static const char *const protos[] = {N_("Any"), N_("TCP and UDP"), N_("TCP"),  N_("UDP"),
+                                         N_("UDP-Lite"), N_("SCTP"),   N_("DCCP")};
+    e.action = combo_row(t, 0, _("_Action"), actions, 3, r->action);
+    e.dir = combo_row(t, 1, _("_Direction"), dirs, 2, r->direction);
     /* the ufw application profiles, as shortcuts that fill the port */
     const char **apps = g_new0(const char *, d->apps.n + 1);
     apps[0] = "—";
     for (size_t i = 0; i < d->apps.n; i++)
         apps[i + 1] = d->apps.v[i].name;
-    e.app = combo_row(t, 2, "A_pplication", apps, d->apps.n + 1, 0);
+    e.app = combo_row(t, 2, _("A_pplication"), apps, d->apps.n + 1, 0);
     g_free(apps);
     gtk_widget_set_sensitive(e.app, d->apps.n > 0);
     gtk_widget_set_tooltip_text(e.app, d->apps.n > 0
-                                           ? "ufw application profiles (/etc/ufw/applications.d)"
-                                           : "No ufw application profiles installed");
-    e.proto = combo_row(t, 3, "P_rotocol", protos, 7, r->proto + 1);
-    e.port = entry_row(t, 4, "P_ort", r->port, "A port (22), a list (80,443) or a range "
-                                                "(6000-6007). Empty: any port");
+                                           ? _("ufw application profiles (/etc/ufw/applications.d)")
+                                           : _("No ufw application profiles installed"));
+    e.proto = combo_row(t, 3, _("P_rotocol"), protos, 7, r->proto + 1);
+    e.port = entry_row(t, 4, _("P_ort"), r->port, _("A port (22), a list (80,443) or a range "
+                                                "(6000-6007). Empty: any port"));
     char src[KS_FWS_TEXT_MAX], dst[KS_FWS_TEXT_MAX];
     ks_fws_addr_text(r->src, src, sizeof(src));
     ks_fws_addr_text(r->dst, dst, sizeof(dst));
-    e.src = entry_row(t, 5, "_From", src,
-                      "Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 "
-                      "address matches IPv4 only: add another rule for IPv6");
-    e.dst = entry_row(t, 6, "_To", dst, "Destination address, network or range. Empty: any");
-    e.iface = entry_row(t, 7, "_Interface", r->iface,
-                        "Network interface (in: where it arrives, out: where it leaves). "
-                        "Empty: any");
+    e.src = entry_row(t, 5, _("_From"), src,
+                      _("Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 "
+                      "address matches IPv4 only: add another rule for IPv6"));
+    e.dst = entry_row(t, 6, _("_To"), dst, _("Destination address, network or range. Empty: any"));
+    e.iface = entry_row(t, 7, _("_Interface"), r->iface,
+                        _("Network interface (in: where it arrives, out: where it leaves). "
+                        "Empty: any"));
     /* the interfaces of this machine, as completion */
     GtkListStore *ifs = gtk_list_store_new(1, G_TYPE_STRING);
     struct if_nameindex *ni = if_nameindex();
@@ -381,7 +382,7 @@ static bool edit_rule(struct ks_fws_dlg *d, struct ks_fws_rule *r)
     gtk_entry_set_completion(GTK_ENTRY(e.iface), comp);
     g_object_unref(comp);
     g_object_unref(ifs);
-    e.desc = entry_row(t, 8, "D_escription", r->description, NULL);
+    e.desc = entry_row(t, 8, _("D_escription"), r->description, NULL);
     e.enabled = gtk_check_button_new_with_mnemonic("E_nabled");
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(e.enabled), r->enabled);
     gtk_table_attach(GTK_TABLE(t), e.enabled, 1, 2, 9, 10, GTK_FILL, GTK_FILL, 0, 0);
@@ -411,7 +412,7 @@ static bool edit_rule(struct ks_fws_dlg *d, struct ks_fws_rule *r)
         char err[512];
         struct ks_sysfw *fw = fw_of(d);
         if (fw == NULL) {
-            snprintf(err, sizeof(err), "This node has no firewall configuration.");
+            snprintf(err, sizeof(err), _("This node has no firewall configuration."));
         } else if (ks_fws_save(fw, &n, err, sizeof(err)) == 0) {
             *r = n;
             saved = true;
@@ -500,7 +501,7 @@ static void on_delete(GtkButton *b, gpointer ud)
         return;
     GtkWidget *q = gtk_message_dialog_new(GTK_WINDOW(d->win), GTK_DIALOG_MODAL,
                                           GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
-                                          "Delete this rule?");
+                                          _("Delete this rule?"));
     bool yes = gtk_dialog_run(GTK_DIALOG(q)) == GTK_RESPONSE_YES;
     gtk_widget_destroy(q);
     if (yes && ks_fwr_delete(fw, uuid) == 0)
@@ -580,8 +581,8 @@ static GtkWidget *button(const char *label, const char *stock)
 static GtkWidget *policy_combo(void)
 {
     GtkWidget *c = gtk_combo_box_new_text();
-    gtk_combo_box_append_text(GTK_COMBO_BOX(c), "Allow");
-    gtk_combo_box_append_text(GTK_COMBO_BOX(c), "Deny");
+    gtk_combo_box_append_text(GTK_COMBO_BOX(c), _("Allow"));
+    gtk_combo_box_append_text(GTK_COMBO_BOX(c), _("Deny"));
     return c;
 }
 
@@ -609,7 +610,7 @@ struct ks_fws_dlg *ks_fws_dlg_new(struct ks_service *svc, GtkWindow *parent,
     ks_fws_apps_load(&d->apps, NULL);
 
     d->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(d->win), "Firewall rules");
+    gtk_window_set_title(GTK_WINDOW(d->win), _("Firewall rules"));
     gtk_window_set_default_size(GTK_WINDOW(d->win), 820, 440);
     if (parent != NULL)
         gtk_window_set_transient_for(GTK_WINDOW(d->win), parent);
@@ -629,15 +630,15 @@ struct ks_fws_dlg *ks_fws_dlg_new(struct ks_service *svc, GtkWindow *parent,
     GtkWidget *h = gtk_hbox_new(FALSE, 8);
     d->combo_in = policy_combo();
     d->combo_out = policy_combo();
-    gtk_box_pack_start(GTK_BOX(h), gtk_label_new("Incoming:"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(h), gtk_label_new(_("Incoming:")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(h), d->combo_in, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(h), gtk_label_new("   Outgoing:"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(h), gtk_label_new(_("   Outgoing:")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(h), d->combo_out, FALSE, FALSE, 0);
-    gtk_widget_set_tooltip_text(d->combo_in, "What happens to incoming connections that no "
+    gtk_widget_set_tooltip_text(d->combo_in, _("What happens to incoming connections that no "
                                              "rule allows. Deny keeps loopback and replies to "
-                                             "your own connections working.");
-    gtk_widget_set_tooltip_text(d->combo_out, "What happens to outgoing connections that no "
-                                              "rule allows (before OpenSnitch asks).");
+                                             "your own connections working."));
+    gtk_widget_set_tooltip_text(d->combo_out, _("What happens to outgoing connections that no "
+                                              "rule allows (before OpenSnitch asks)."));
     gtk_box_pack_start(GTK_BOX(v), h, FALSE, FALSE, 0);
 
     /* the rules */
@@ -647,19 +648,19 @@ struct ks_fws_dlg *ks_fws_dlg_new(struct ks_service *svc, GtkWindow *parent,
                                   G_TYPE_INT);
     d->view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(d->store));
     gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(d->view), TRUE);
-    text_column(d, "#", COL_POS, false);
+    text_column(d, _("#"), COL_POS, false);
     GtkCellRenderer *tog = gtk_cell_renderer_toggle_new();
     g_signal_connect(tog, "toggled", G_CALLBACK(on_enabled_toggled), d);
     gtk_tree_view_append_column(GTK_TREE_VIEW(d->view),
-                                gtk_tree_view_column_new_with_attributes("On", tog, "active",
+                                gtk_tree_view_column_new_with_attributes(_("On"), tog, "active",
                                                                          COL_ENABLED, NULL));
-    text_column(d, "Action", COL_ACTION, false);
-    text_column(d, "Direction", COL_DIR, false);
-    text_column(d, "Port", COL_PORT, false);
-    text_column(d, "From", COL_FROM, false);
-    text_column(d, "To", COL_TO, false);
-    text_column(d, "Interface", COL_IFACE, false);
-    text_column(d, "Description", COL_DESC, true);
+    text_column(d, _("Action"), COL_ACTION, false);
+    text_column(d, _("Direction"), COL_DIR, false);
+    text_column(d, _("Port"), COL_PORT, false);
+    text_column(d, _("From"), COL_FROM, false);
+    text_column(d, _("To"), COL_TO, false);
+    text_column(d, _("Interface"), COL_IFACE, false);
+    text_column(d, _("Description"), COL_DESC, true);
     GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
@@ -668,15 +669,15 @@ struct ks_fws_dlg *ks_fws_dlg_new(struct ks_service *svc, GtkWindow *parent,
     gtk_box_pack_start(GTK_BOX(v), sw, TRUE, TRUE, 0);
 
     h = gtk_hbox_new(FALSE, 6);
-    d->b_add = button("_Add", GTK_STOCK_ADD);
-    d->b_edit = button("_Edit", GTK_STOCK_EDIT);
-    d->b_del = button("_Delete", GTK_STOCK_DELETE);
-    d->b_up = button("_Up", GTK_STOCK_GO_UP);
-    d->b_down = button("Do_wn", GTK_STOCK_GO_DOWN);
-    d->b_adv = button("Advanced _editor", GTK_STOCK_PROPERTIES);
-    gtk_widget_set_tooltip_text(d->b_up, "Rules are checked in order: the first one that "
-                                         "matches decides");
-    gtk_widget_set_tooltip_text(d->b_adv, "Open the rule in the full firewall rule editor");
+    d->b_add = button(_("_Add"), GTK_STOCK_ADD);
+    d->b_edit = button(_("_Edit"), GTK_STOCK_EDIT);
+    d->b_del = button(_("_Delete"), GTK_STOCK_DELETE);
+    d->b_up = button(_("_Up"), GTK_STOCK_GO_UP);
+    d->b_down = button(_("Do_wn"), GTK_STOCK_GO_DOWN);
+    d->b_adv = button(_("Advanced _editor"), GTK_STOCK_PROPERTIES);
+    gtk_widget_set_tooltip_text(d->b_up, _("Rules are checked in order: the first one that "
+                                         "matches decides"));
+    gtk_widget_set_tooltip_text(d->b_adv, _("Open the rule in the full firewall rule editor"));
     GtkWidget *ws[] = {d->b_add, d->b_edit, d->b_del, d->b_up, d->b_down};
     for (size_t i = 0; i < sizeof(ws) / sizeof(ws[0]); i++)
         gtk_box_pack_start(GTK_BOX(h), ws[i], FALSE, FALSE, 0);
@@ -688,7 +689,7 @@ struct ks_fws_dlg *ks_fws_dlg_new(struct ks_service *svc, GtkWindow *parent,
     gtk_label_set_line_wrap(GTK_LABEL(d->status), TRUE);
     gtk_box_pack_start(GTK_BOX(v), d->status, FALSE, FALSE, 0);
     h = gtk_hbox_new(FALSE, 6);
-    GtkWidget *close = button("_Close", GTK_STOCK_CLOSE);
+    GtkWidget *close = button(_("_Close"), GTK_STOCK_CLOSE);
     gtk_box_pack_end(GTK_BOX(h), close, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v), h, FALSE, FALSE, 0);
 

@@ -1,0 +1,1593 @@
+# Translation of Kisnitch to zh_TW, converted from the upstream
+# Qt .ts by tools/ts2po.py. Don't edit by hand: send fixes to the
+# OpenSnitch translations and run tools/update-po.sh.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kisnitch\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+msgid "    Apply this rule to %s  "
+msgstr ""
+
+msgid "   Outgoing:"
+msgstr ""
+
+msgid "#"
+msgstr ""
+
+#, c-format
+msgid "%s node is not connected"
+msgstr ""
+
+msgid "-"
+msgstr "-"
+
+msgid "12h"
+msgstr ""
+
+msgid "15m"
+msgstr "15 分鐘"
+
+msgid "15m or less"
+msgstr "15 分鐘或更少"
+
+msgid "1h"
+msgstr "1 小時"
+
+msgid "1h or less"
+msgstr "1 小時或更少"
+
+msgid "30m"
+msgstr "30 分鐘"
+
+msgid "30m or less"
+msgstr "30 分鐘或更少"
+
+msgid "30s"
+msgstr "30 秒"
+
+msgid "30s or less"
+msgstr "30 秒或更少"
+
+msgid "5m"
+msgstr "5 分鐘"
+
+msgid "5m or less"
+msgstr "5 分鐘或更少"
+
+#, c-format
+msgid ""
+"<b>%s</b>\n"
+"\n"
+"<b>Time:</b> %s\n"
+"\n"
+"<b>Process:</b>\n"
+"%s\n"
+"<b>Cmdline:</b>\n"
+"%s\n"
+"<b>CWD:</b>\n"
+"%s\n"
+"\n"
+"<b>UID:</b> %s <b>PID:</b> %s\n"
+"\n"
+"<b>Node:</b> %s\n"
+"\n"
+"<b>%s</b> %s:%s -> %s (%s):%s\n"
+"\n"
+"<b>Rule:</b>\n"
+"%s"
+msgstr ""
+
+msgid "<b><big>Outgoing connection</big></b>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<b>daemon uptime:</b> %s\n"
+"<b>Version:</b> %s\n"
+"<b>Kernel:</b> %s"
+msgstr ""
+
+msgid "<span foreground=\"green\">✔Rule updated.</span>"
+msgstr ""
+
+msgid "<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-checksum\">More info</a>)</span>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<span foreground=\"red\">WARNING, checksums differ for at least one rule.</span>\n"
+"\n"
+"Current process (%u):\n"
+"%s\n"
+"\n"
+"Expected from the rule:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>"
+msgstr ""
+
+msgid "A port (22), a list (80,443) or a range (6000-6007). Empty: any port"
+msgstr ""
+
+msgid "A_pplication"
+msgstr ""
+
+msgid "Absolute path to the CA cert file"
+msgstr "CA 憑證檔案的絕對路徑"
+
+msgid "Absolute path to the cert file"
+msgstr "憑證檔案的絕對路徑"
+
+msgid "Absolute path to the cert key file"
+msgstr "憑證金鑰檔案的絕對路徑"
+
+msgid "Action"
+msgstr "動作"
+
+msgid "ActionParms"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Add at least one statement."
+msgstr "至少新增一個語句。"
+
+msgid "Add new condition"
+msgstr "新增條件"
+
+msgid "Adding rule, wait"
+msgstr "正在新增規則，請稍候"
+
+msgid "Address"
+msgstr "位址"
+
+msgid "Address of the node."
+msgstr ""
+
+msgid "Addresses"
+msgstr "位址"
+
+msgid "Advanced"
+msgstr "進階"
+
+msgid "Advanced _editor"
+msgstr ""
+
+msgid "Advanced options"
+msgstr ""
+
+msgid "Alert"
+msgstr ""
+
+msgid "Alerts"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All applications"
+msgstr "所有應用程式"
+
+msgid "Allow"
+msgstr "允許"
+
+msgid "Allow inbound connections to a port"
+msgstr "允許一個連接埠的對內連線"
+
+msgid "Allow inbound connections to the selected port."
+msgstr "允許到選定連接埠的對內連接。"
+
+msgid "Allow outbound connections to the selected port."
+msgstr "允許到選定連接埠的對外連接。"
+
+msgid "Allow service (_IN)"
+msgstr "允許服務 (對內)"
+
+msgid "Allow service (_OUT)"
+msgstr "允許服務 (對外)"
+
+msgid "Allow will allow the connection"
+msgstr "允許將允許連線"
+
+msgid "Allow, deny or reject by port, address and interface, in a table (like ufw)"
+msgstr ""
+
+msgid "Always"
+msgstr "總是"
+
+msgid "Any"
+msgstr ""
+
+msgid "Application pids"
+msgstr "應用程式 PID"
+
+msgid "Applications"
+msgstr "應用程式"
+
+msgid "Apply configuration to all nodes"
+msgstr "將設定套用到所有節點"
+
+msgid "Apply rule to all nodes"
+msgstr "將規則套用到所有節點"
+
+msgid "Apply to"
+msgstr "套用於"
+
+msgid "Applying changes..."
+msgstr "正在套用更改..."
+
+#, c-format
+msgid "Applying configuration on %s ..."
+msgstr ""
+
+msgid "Are you sure?"
+msgstr ""
+
+msgid "Auth type changed"
+msgstr "認證類型已變更"
+
+msgid "Authentication"
+msgstr ""
+
+msgid "Authentication type"
+msgstr "驗證類型"
+
+msgid "Autostart"
+msgstr ""
+
+msgid "Autostart the GUI upon login"
+msgstr "登入時自動啟動圖形介面"
+
+msgid "Block outbound network traffic if the daemon unexpectedly dies"
+msgstr ""
+
+msgid "By default the GUI is started when login"
+msgstr "預設登入時啟動圖形介面"
+
+msgid "By default, the field of the rules are case-insensitive."
+msgstr ""
+
+msgid "CA cert file"
+msgstr ""
+
+msgid "Case-sensitive"
+msgstr "區分大小寫"
+
+msgid "Cert file"
+msgstr ""
+
+msgid "Cert key file"
+msgstr ""
+
+msgid "Certificates changed"
+msgstr "憑證已變更"
+
+#, c-format
+msgid "Change default firewall to 'nftables' on node %s?"
+msgstr ""
+
+msgid "Check every n seconds that the interception rules are present."
+msgstr ""
+
+msgid "Checksum"
+msgstr ""
+
+msgid "Client certificate verification"
+msgstr ""
+
+msgid "Close"
+msgstr "關閉"
+
+msgid "Command line"
+msgstr "命令列"
+
+msgid "Command line regexp error"
+msgstr "命令列正規表達式錯誤"
+
+msgid "Configuration applied."
+msgstr "設定已套用。"
+
+msgid "Connection details"
+msgstr ""
+
+msgid "Connections"
+msgstr "連線"
+
+msgid "Create a new rule"
+msgstr "建立新規則"
+
+msgid "DB journal_mode changed"
+msgstr ""
+
+msgid "DB type changed"
+msgstr "DB 類型已變更"
+
+msgid "DCCP"
+msgstr ""
+
+msgid "D_escription"
+msgstr "描述"
+
+msgid "Daemon version"
+msgstr ""
+
+msgid "Database"
+msgstr "資料庫"
+
+msgid "Database type"
+msgstr "資料庫類型"
+
+msgid "Debug invalid connections"
+msgstr "偵錯無效連線"
+
+msgid "Default action when the GUI is disconnected"
+msgstr "GUI 斷開連接時的預設動作"
+
+msgid "Default log level"
+msgstr "預設記錄等級"
+
+msgid "Default position on screen"
+msgstr "在螢幕上的預設位置"
+
+msgid "Default target"
+msgstr "預設目標"
+
+msgid "Default timeout"
+msgstr "預設逾時"
+
+msgid "Delete"
+msgstr "刪除"
+
+msgid "Delete all intercepted events"
+msgstr "刪除所有被攔截的事件"
+
+msgid "Delete this node"
+msgstr "刪除此節點"
+
+msgid "Delete this rule?"
+msgstr ""
+
+msgid "Deleting rule, wait"
+msgstr "正在刪除規則，請稍候"
+
+msgid "Deny"
+msgstr "阻擋"
+
+msgid "Deny will just discard the connection"
+msgstr "阻擋將僅丟棄連線"
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Desktop notifications"
+msgstr "桌面通知"
+
+msgid "Dest IP"
+msgstr "目標 IP"
+
+msgid "Dest IP/Network can not be empty"
+msgstr "目標 IP/網路不能為空"
+
+msgid "Dest host"
+msgstr ""
+
+msgid "Dest host can not be empty"
+msgstr "目標主機不能為空"
+
+msgid "Dest port"
+msgstr ""
+
+msgid "Dest port can not be empty"
+msgstr "目標連接埠不能為空"
+
+msgid "Destination IP"
+msgstr "目標 IP"
+
+msgid "Destination Port"
+msgstr ""
+
+msgid "Destination address, network or range. Empty: any"
+msgstr ""
+
+msgid "Destination port"
+msgstr "目標連接埠"
+
+msgid "Details"
+msgstr "詳細資訊"
+
+msgid "Direction"
+msgstr "方向"
+
+msgid "Disable"
+msgstr "停用"
+
+msgid "Disable pop-ups, only display a notification"
+msgstr "停用彈出視窗，只顯示通知"
+
+msgid "Disabling firewall..."
+msgstr "正在停用防火牆..."
+
+msgid "Do_wn"
+msgstr ""
+
+msgid "Domains separated by commas, or a regular expression (www.domain.org, .*\\.domain.org)."
+msgstr ""
+
+msgid "Don't log connections"
+msgstr "不記錄連線"
+
+msgid "Don't save/Delete rules of duration"
+msgstr "不儲存/刪除持續時間的規則"
+
+msgid "Don't verify certs"
+msgstr ""
+
+msgid "Dropped"
+msgstr "已丟棄"
+
+msgid "Dst IP regexp error"
+msgstr "目標 IP 正規表達式錯誤"
+
+msgid "Dst host regexp error"
+msgstr "目標主機正規表達式錯誤"
+
+msgid "Dst port regexp error"
+msgstr "目標連接埠正規表達式錯誤"
+
+msgid "Duplicate"
+msgstr "複製"
+
+msgid "Duration"
+msgstr "持續時間"
+
+msgid "Edit"
+msgstr "編輯"
+
+msgid "Edit rule"
+msgstr "編輯規則"
+
+msgid "Enable"
+msgstr "啟用"
+
+msgid "Enable DB Write-Ahead Logging (WAL)"
+msgstr ""
+
+msgid "Enable checksums verification"
+msgstr ""
+
+msgid "Enabled"
+msgstr "已啟用"
+
+msgid "Enabling firewall..."
+msgstr "正在啟用防火牆..."
+
+msgid "Environment variables"
+msgstr "環境變數"
+
+msgid "Equal"
+msgstr "等於"
+
+msgid "Error"
+msgstr "錯誤"
+
+#, c-format
+msgid "Error adding rule: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error adding rules:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error applying configuration: %s"
+msgstr ""
+
+#, c-format
+msgid "Error applying rule: %s"
+msgstr ""
+
+#, c-format
+msgid "Error creating new rule from event (%s)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error deleting node\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error deleting rule, %s"
+msgstr ""
+
+msgid "Error exporting rules"
+msgstr "匯出規則時出錯"
+
+#, c-format
+msgid ""
+"Error exporting rules of the following nodes:\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error exporting the following rules:\n"
+"%s"
+msgstr ""
+
+msgid "Error getting INPUT chain policy"
+msgstr "取得 INPUT 鏈策略時出錯"
+
+msgid "Error getting OUTPUT chain policy"
+msgstr "取得 OUTPUT 鏈策略時出錯"
+
+#, c-format
+msgid "Error importing rules from %s"
+msgstr ""
+
+#, c-format
+msgid "Error loading config %s: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error loading process information:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error loading rule"
+msgstr ""
+
+msgid "Error saving rule"
+msgstr "儲存規則時出錯"
+
+#, c-format
+msgid "Error saving rule %s"
+msgstr ""
+
+msgid "Error saving the CSV file"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error stopping monitoring process:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error:"
+msgstr "錯誤："
+
+msgid "Events"
+msgstr "事件"
+
+msgid "Events tab columns"
+msgstr "事件標籤欄位"
+
+msgid "Exclude outbound connections to a port from being intercepted"
+msgstr "排除被攔截到一個連接埠的對外連線"
+
+msgid "Exclude service"
+msgstr "排除服務"
+
+msgid "Executed from"
+msgstr ""
+
+msgid "Export"
+msgstr "匯出"
+
+msgid "Export events to CSV"
+msgstr "將事件匯出至 CSV"
+
+msgid "Export rules"
+msgstr "匯出規則"
+
+msgid "Family"
+msgstr ""
+
+msgid "File"
+msgstr "檔案"
+
+msgid "Filter"
+msgstr "篩選"
+
+msgid "Filter connections also by:"
+msgstr "也按以下方式篩選連線："
+
+msgid "Filter files"
+msgstr ""
+
+msgid "Filter sockets"
+msgstr ""
+
+msgid "Firewall"
+msgstr "防火牆"
+
+msgid "Firewall rule"
+msgstr "防火牆規則"
+
+msgid "Firewall rules"
+msgstr ""
+
+msgid "Firewall rules monitoring interval (seconds)"
+msgstr ""
+
+msgid "Firewall status error (report on github please): no firewall configuration"
+msgstr ""
+
+msgid "Flush connections on start"
+msgstr ""
+
+msgid "From"
+msgstr ""
+
+msgid "From this IP / Network"
+msgstr "來自此 IP / 網路"
+
+msgid "From this PID"
+msgstr "來自此 PID"
+
+msgid "From this command line"
+msgstr "來自此命令列"
+
+msgid "From this executable"
+msgstr "來自此執行檔"
+
+msgid "From this port"
+msgstr "來自此連接埠"
+
+msgid "From this user ID"
+msgstr "來自此使用者 ID"
+
+msgid "Garbage collector percentage"
+msgstr ""
+
+msgid "General"
+msgstr "一般"
+
+msgid "Greater or equal than"
+msgstr "大於或等於"
+
+msgid "Greater than"
+msgstr "大於"
+
+msgid "Help"
+msgstr "幫助"
+
+msgid "Hook"
+msgstr ""
+
+msgid "HostName"
+msgstr "主機名稱"
+
+msgid "Hosts"
+msgstr "主機"
+
+msgid "I/O Statistics"
+msgstr "I/O 統計"
+
+msgid "ICMP"
+msgstr "ICMP"
+
+msgid "If checked, this field will be selected when a pop-up is displayed."
+msgstr ""
+
+msgid "If checked, this rule will take precedence over the rest of the rules (except the ones with the same name or priority)."
+msgstr ""
+
+msgid "If empty, default rules path will be /etc/opensnitchd/rules"
+msgstr ""
+
+msgid "Import rules"
+msgstr "匯入規則"
+
+msgid "In"
+msgstr ""
+
+msgid "In (incoming)"
+msgstr ""
+
+msgid "In development"
+msgstr ""
+
+msgid "In memory"
+msgstr "在記憶體中"
+
+msgid "In order to configure firewall rules from the GUI, we need to use 'nftables' instead of 'iptables'"
+msgstr "為了從 GUI 設定防火牆規則，我們需要使用 'nftables' 而不是 'iptables'"
+
+msgid "Inbound"
+msgstr "對內"
+
+msgid "Incoming:"
+msgstr ""
+
+msgid "Info"
+msgstr "資訊"
+
+msgid "Interface"
+msgstr ""
+
+msgid "Internal"
+msgstr ""
+
+msgid "Invalid UID, it must be a digit."
+msgstr "無效的 UID，必須是數字。"
+
+#, c-format
+msgid "Invalid action."
+msgstr ""
+
+#, c-format
+msgid "Invalid rule name (not allowed characters: '%s' )"
+msgstr ""
+
+#, c-format
+msgid "Invalid rule: %s"
+msgstr ""
+
+msgid "Is regular expression"
+msgstr "是正規表達式"
+
+msgid "Kisnitch: interception disabled"
+msgstr ""
+
+msgid "Kisnitch: interception enabled"
+msgstr ""
+
+msgid "Kisnitch: no daemon connected"
+msgstr ""
+
+msgid "Language"
+msgstr "語言"
+
+msgid "Language changed"
+msgstr "語言已變更"
+
+msgid "Less or equal than"
+msgstr "小於或等於"
+
+msgid "Less than"
+msgstr "小於"
+
+msgid "Lists"
+msgstr ""
+
+msgid "Lists field cannot be empty"
+msgstr "列表欄位不能為空"
+
+msgid "Lists field must be a directory"
+msgstr "列表欄位必須是目錄"
+
+msgid "Log UTC timestamps"
+msgstr "記錄 UTC 時間戳"
+
+msgid "Log file"
+msgstr "日誌檔案"
+
+msgid "Log timestamp microseconds"
+msgstr "記錄時間戳微秒"
+
+msgid "Logging"
+msgstr "記錄"
+
+msgid "Max events"
+msgstr ""
+
+msgid "Max gRPC channel size"
+msgstr "gRPC 頻道的最大大小"
+
+msgid "Max server clients"
+msgstr ""
+
+msgid "Max server workers"
+msgstr ""
+
+msgid "Max stats"
+msgstr ""
+
+msgid "Maximum days of events to keep"
+msgstr "保留事件的最大天數"
+
+msgid "Maximum size of each message from nodes. Default 4MB"
+msgstr "來自節點的每個訊息的最大大小。預設 4MB"
+
+msgid "Memory mapped files"
+msgstr "記憶體映射檔案"
+
+msgid "Minutes between events purges"
+msgstr "事件清除之間的分鐘數"
+
+msgid "Mutual TLS"
+msgstr "雙向 TLS"
+
+msgid "Name"
+msgstr "名稱"
+
+msgid "Netstat"
+msgstr ""
+
+msgid "Network"
+msgstr "網路"
+
+msgid "Network interface"
+msgstr "網路介面"
+
+msgid "Network interface (in: where it arrives, out: where it leaves). Empty: any"
+msgstr ""
+
+msgid "Network interface can not be empty"
+msgstr "網路介面不能為空"
+
+msgid "Network interface regexp error"
+msgstr "網路介面正規表達式錯誤"
+
+msgid "New"
+msgstr "新增"
+
+msgid "New node connected"
+msgstr "新節點已連接"
+
+msgid "New rule"
+msgstr "新增規則"
+
+msgid "New rule error"
+msgstr ""
+
+msgid "No nodes connected"
+msgstr ""
+
+msgid "No ufw application profiles installed"
+msgstr ""
+
+msgid "Node"
+msgstr "節點"
+
+msgid "Node address changed (update GUI address if needed)"
+msgstr ""
+
+msgid "Nodes"
+msgstr "節點"
+
+msgid "Not equal"
+msgstr "不等於"
+
+msgid "On"
+msgstr ""
+
+msgid "Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression or a list separated by commas."
+msgstr ""
+
+msgid "Open files"
+msgstr "開啟檔案"
+
+msgid "Open main window"
+msgstr ""
+
+msgid "Open the rule in the full firewall rule editor"
+msgstr ""
+
+msgid "OpenSnitch version mismatch!"
+msgstr ""
+
+msgid "Out"
+msgstr ""
+
+msgid "Out (outgoing)"
+msgstr ""
+
+msgid "Outbound"
+msgstr "對外"
+
+msgid "PID"
+msgstr ""
+
+msgid "PID field can not be empty"
+msgstr "PID 欄位不能為空"
+
+msgid "PID field regexp error"
+msgstr "PID 欄位正規表達式錯誤"
+
+msgid "P_ort"
+msgstr ""
+
+msgid "P_rotocol"
+msgstr "通訊協定"
+
+msgid "Parameters"
+msgstr ""
+
+msgid "Path"
+msgstr ""
+
+msgid "Permanent"
+msgstr "永久"
+
+msgid "Policy"
+msgstr ""
+
+#, c-format
+msgid "Policy not applied: %s"
+msgstr ""
+
+msgid "Pop-up default action."
+msgstr ""
+
+msgid "Pop-up default duration"
+msgstr "彈出視窗的預設持續時間"
+
+msgid "Pop-ups"
+msgstr "彈出視窗"
+
+msgid "Port"
+msgstr ""
+
+msgid "Ports"
+msgstr "連接埠"
+
+msgid "Preferences"
+msgstr "偏好設定"
+
+msgid "Priority rule"
+msgstr "優先規則"
+
+msgid "Process"
+msgstr "處理程序"
+
+msgid "Process details"
+msgstr "處理程序詳細資訊"
+
+#, c-format
+msgid "Process launched from: %s"
+msgstr ""
+
+msgid "Process monitor method"
+msgstr "處理程序監控方法"
+
+msgid "Process path must be checked in order to verify checksums."
+msgstr ""
+
+msgid "Process path regexp error"
+msgstr "處理程序路徑正規表達式錯誤"
+
+#, c-format
+msgid "Process path: %s"
+msgstr ""
+
+msgid "Profile"
+msgstr "設定檔"
+
+msgid "Protocol"
+msgstr "通訊協定"
+
+msgid "Protocol regexp error"
+msgstr "通訊協定正規表達式錯誤"
+
+msgid "Quit"
+msgstr "退出"
+
+msgid "Refresh interval"
+msgstr ""
+
+msgid "Refresh interval (seconds)"
+msgstr ""
+
+msgid "Reject"
+msgstr "拒絕"
+
+msgid "Reject will drop the connection, and kill the socket that initiated it"
+msgstr "拒絕將會丟棄連線，並終止啟動它的socket"
+
+msgid "Remove selected condition"
+msgstr "移除選定的條件"
+
+msgid "Reset"
+msgstr ""
+
+msgid "Restart the GUI in order changes to take effect"
+msgstr "重新啟動 GUI 以使變更生效"
+
+msgid "Rule"
+msgstr "規則"
+
+msgid "Rule added"
+msgstr "規則已新增"
+
+msgid "Rule applied."
+msgstr "規則已套用。"
+
+msgid "Rule deleted"
+msgstr "規則已刪除"
+
+msgid "Rule hook (invalid) not supported yet"
+msgstr ""
+
+msgid "Rule not found by that name and node"
+msgstr "未找到該名稱和節點的規則"
+
+msgid "Rule not supported"
+msgstr ""
+
+msgid "Rule saved"
+msgstr "規則已儲存"
+
+#, c-format
+msgid ""
+"Rule saved, but there're other rules with errors (REVIEW):\n"
+"%s"
+msgstr ""
+
+msgid "Rules"
+msgstr "規則"
+
+msgid "Rules are checked in order: the first one that matches decides"
+msgstr ""
+
+msgid "Rules export"
+msgstr ""
+
+msgid "Rules export error"
+msgstr ""
+
+#, c-format
+msgid "Rules exported to %s"
+msgstr ""
+
+msgid "Rules import"
+msgstr ""
+
+msgid "Rules import error"
+msgstr ""
+
+msgid "Rules imported fine"
+msgstr "規則匯入成功"
+
+msgid "Rules path"
+msgstr ""
+
+msgid "SCTP"
+msgstr "SCTP"
+
+msgid "Save as CSV"
+msgstr "另存為 CSV"
+
+msgid "Saving configuration..."
+msgstr ""
+
+msgid "Saving rule, wait"
+msgstr ""
+
+msgid "Select"
+msgstr "選擇"
+
+msgid "Select a directory to export rules"
+msgstr "選擇一個目錄以匯出規則"
+
+msgid "Select a directory with files containing lists of IPs."
+msgstr ""
+
+msgid "Select a directory with files containing lists of network ranges."
+msgstr ""
+
+msgid "Select a directory with files containing regular expressions."
+msgstr ""
+
+msgid "Select a directory with lists of domains to block."
+msgstr ""
+
+msgid "Select a directory with rules to import (JSON files)"
+msgstr "選擇一個含有要匯入的規則的目錄（JSON 檔案）"
+
+msgid "Select at least one field."
+msgstr "至少選擇一個欄位。"
+
+#, c-format
+msgid "Select the protocol of the port."
+msgstr ""
+
+msgid "Server"
+msgstr "伺服器"
+
+msgid "Server address changed"
+msgstr ""
+
+msgid "Server cert file"
+msgstr ""
+
+msgid "Server max clients changed"
+msgstr ""
+
+msgid "Server max workers changed"
+msgstr ""
+
+msgid "Server options changed"
+msgstr ""
+
+msgid "Show advanced view by default"
+msgstr "預設顯示進階檢視"
+
+msgid "Show the preferences of this node"
+msgstr "顯示此節點的偏好設定"
+
+msgid "Simple"
+msgstr "簡易"
+
+msgid "Simple TLS"
+msgstr "簡易 TLS"
+
+msgid "Simple: no authentication. TLS comes with phase 10."
+msgstr ""
+
+msgid "Source IP"
+msgstr "來源 IP"
+
+msgid "Source IP regexp error"
+msgstr "來源 IP 正規表達式錯誤"
+
+msgid "Source IP/Network can not be empty"
+msgstr "來源 IP/網路不能為空"
+
+msgid "Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 address matches IPv4 only: add another rule for IPv6"
+msgstr ""
+
+msgid "Source port"
+msgstr ""
+
+msgid "Source port can not be empty"
+msgstr "來源連接埠不能為空"
+
+msgid "Source port regexp error"
+msgstr "來源連接埠正規表達式錯誤"
+
+msgid "Stack"
+msgstr "堆疊"
+
+msgid "Start"
+msgstr ""
+
+msgid "Start or Stop interception"
+msgstr "開始或停止攔截"
+
+msgid "Start or stop interception of this node"
+msgstr "開始或停止攔截此節點"
+
+msgid "Start or stop monitoring this process"
+msgstr "開始或停止監控此程序"
+
+msgid "Start/Stop"
+msgstr ""
+
+msgid "State"
+msgstr ""
+
+msgid "Status"
+msgstr "狀態"
+
+msgid "System default"
+msgstr "系統預設"
+
+msgid "System firewall"
+msgstr ""
+
+msgid "TCP"
+msgstr "TCP"
+
+msgid "TCP and UDP"
+msgstr ""
+
+#, c-format
+msgid "TCP and UDP need a port; without a port, select one protocol or \"any\"."
+msgstr ""
+
+msgid "TLS is not supported by this build (TLS=1), the server stays on Simple"
+msgstr ""
+
+msgid "Table"
+msgstr ""
+
+msgid "Temporary"
+msgstr "臨時"
+
+msgid "Test"
+msgstr "測試"
+
+msgid "The address where the GUI is listening for new nodes."
+msgstr ""
+
+msgid "The advanced view allows you to easily select multiple fields."
+msgstr ""
+
+#, c-format
+msgid ""
+"The firewall configuration is outdated,\n"
+"you need to update it to the new format: <a href=\"%s\">learn more</a>"
+msgstr ""
+
+msgid "The input or output chain is missing from this node's firewall."
+msgstr ""
+
+msgid "The rules are checked in alphabetical order, so you can name them accordingly to control which ones are checked first."
+msgstr ""
+
+#, c-format
+msgid "The source and destination addresses must be both IPv4 or both IPv6."
+msgstr ""
+
+msgid "The system firewall is disabled: these rules apply once it's enabled in the Firewall window."
+msgstr ""
+
+msgid "The value of this field is always the absolute path of the executable."
+msgstr ""
+
+#, c-format
+msgid "There was an error: %s"
+msgstr ""
+
+msgid "There're no nodes connected"
+msgstr "沒有任何節點已連線。"
+
+msgid "There're no nodes connected."
+msgstr "沒有已連線的節點。"
+
+msgid "There's already a rule with this name."
+msgstr "已經有一條相同名稱的規則。"
+
+msgid "This field will contain and match the command line of the process."
+msgstr ""
+
+msgid "This node has no firewall configuration (it must use nftables)."
+msgstr ""
+
+#, c-format
+msgid "This node has no firewall configuration."
+msgstr ""
+
+msgid "This option limits the number of nodes (incoming connections)."
+msgstr ""
+
+msgid "This timeout is the countdown you see on the pop-up."
+msgstr ""
+
+#, c-format
+msgid "This type of rule (%s) is not supported by version %s"
+msgstr ""
+
+msgid "Time"
+msgstr "時間"
+
+msgid "To"
+msgstr ""
+
+msgid "To clipboard"
+msgstr "複製到剪貼簿"
+
+msgid "To disk"
+msgstr "儲存到磁碟"
+
+msgid "To this IP / Network"
+msgstr "到此 IP / 網路"
+
+msgid "To this host"
+msgstr "到此主機"
+
+msgid "To this list of IPs"
+msgstr "到此 IP 清單"
+
+msgid "To this list of domains"
+msgstr "到此網域清單"
+
+msgid "To this list of domains (regular expressions)"
+msgstr ""
+
+msgid "To this list of network ranges"
+msgstr "到此網路範圍清單"
+
+msgid "To this port"
+msgstr "到此連接埠"
+
+msgid "UDP"
+msgstr ""
+
+msgid "UDP-Lite"
+msgstr ""
+
+msgid "UI"
+msgstr "使用者介面"
+
+msgid "UID"
+msgstr ""
+
+#, c-format
+msgid "Unable to load connection, unknown node? (%d)"
+msgstr ""
+
+#, c-format
+msgid "Unknown process %s"
+msgstr ""
+
+msgid "Until reboot"
+msgstr "持續到重新啟動"
+
+msgid "Update All"
+msgstr ""
+
+msgid "Update rule"
+msgstr ""
+
+msgid "Uptime"
+msgstr "運作時間"
+
+msgid "Use system notifications"
+msgstr "使用系統通知"
+
+msgid "Use the tray icon's alert"
+msgstr ""
+
+msgid "User ID"
+msgstr "使用者 ID"
+
+msgid "User ID can not be empty"
+msgstr "使用者 ID 不能為空"
+
+msgid "User ID regexp error"
+msgstr "使用者 ID 正規表達式錯誤"
+
+msgid "Users"
+msgstr "使用者"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "View"
+msgstr ""
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "Warning: Output policy configured to drop. If OpenSnitch dies, outbound network traffic will be blocked."
+msgstr ""
+
+msgid "What happens to incoming connections that no rule allows. Deny keeps loopback and replies to your own connections working."
+msgstr ""
+
+msgid "What happens to outgoing connections that no rule allows (before OpenSnitch asks)."
+msgstr ""
+
+msgid "When this option is on, all the existing sockets will be killed."
+msgstr ""
+
+msgid "When this option is selected, the rules of the selected duration are not saved, and the ones already saved are deleted."
+msgstr ""
+
+#, c-format
+msgid "You are running version <b>%s</b> of the daemon, while the UI is at version <b>%s</b>, they might not be fully compatible."
+msgstr ""
+
+msgid "You can specify a single IP, a network range (192.168.1.0/24), a regular expression, or a list separated by commas."
+msgstr ""
+
+msgid "You can specify multiple ports using regular expressions or a list separated by commas."
+msgstr ""
+
+msgid ""
+"You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n"
+"\n"
+"ports: 22 or 22,443 or 50000-60000\n"
+"IPs: 192.168.1.1 or 192.168.1.30-192.168.1.130\n"
+"Values: echo-reply,echo-request\n"
+"Values: new,established,related"
+msgstr ""
+
+msgid ""
+"You must select a file for the database\n"
+"or choose \"In memory\" type."
+msgstr ""
+
+msgid "_Action"
+msgstr "動作"
+
+msgid "_Add"
+msgstr "新增"
+
+msgid "_Allow"
+msgstr "允許"
+
+msgid "_Close"
+msgstr "關閉"
+
+msgid "_Delete"
+msgstr "刪除"
+
+msgid "_Deny"
+msgstr "阻擋"
+
+msgid "_Direction"
+msgstr "方向"
+
+msgid "_Edit"
+msgstr "編輯"
+
+msgid "_From"
+msgstr ""
+
+msgid "_Interface"
+msgstr ""
+
+msgid "_New rule"
+msgstr "新增規則"
+
+msgid "_Reject"
+msgstr "拒絕"
+
+msgid "_Rules (simple)"
+msgstr ""
+
+msgid "_To"
+msgstr ""
+
+msgid "_Up"
+msgstr ""
+
+msgid "any temporary rules"
+msgstr "任何臨時規則"
+
+msgid "bottom left"
+msgstr "左下"
+
+msgid "bottom right"
+msgstr "右下"
+
+msgid "by PID"
+msgstr "依 PID"
+
+msgid "by command line"
+msgstr "依命令列"
+
+msgid "by destination ip"
+msgstr "依目標 IP"
+
+msgid "by destination port"
+msgstr "依目標連接埠"
+
+msgid "by executable"
+msgstr "依執行檔"
+
+msgid "by user id"
+msgstr "依使用者 ID"
+
+msgid "center"
+msgstr "中央"
+
+msgid "checksum"
+msgstr ""
+
+msgid "command line can not be empty"
+msgstr "命令列不能為空"
+
+msgid "days"
+msgstr "天"
+
+msgid ""
+"depending on the Action (i.e.: target), the syntaxis of the parameters will vary.\n"
+"Some examples:\n"
+"\n"
+" to 1.2.3.4 (snat, dnat)\n"
+" to :8080 (redirect, tproxy)\n"
+" to 1.2.3.4:8080 (snat, dnat)\n"
+" num 1 (queue)\n"
+" to 1024-2048 (masquerade)"
+msgstr ""
+
+#, c-format
+msgid "error loading: %s"
+msgstr ""
+
+#, c-format
+msgid "error starting netstat table: %s"
+msgstr ""
+
+msgid "forever"
+msgstr "永久"
+
+msgid "from this PID"
+msgstr "來自此 PID"
+
+msgid "from this command line"
+msgstr "來自此命令列"
+
+msgid "from this executable"
+msgstr "來自此執行檔"
+
+msgid "from user "
+msgstr ""
+
+msgid "is regular expression"
+msgstr "是正規表達式"
+
+#, c-format
+msgid "loading in %s..."
+msgstr ""
+
+msgid "md5"
+msgstr ""
+
+msgid "md5 field regexp error"
+msgstr ""
+
+msgid "md5 line cannot be empty"
+msgstr ""
+
+msgid "minutes"
+msgstr "分鐘"
+
+msgid "no node"
+msgstr ""
+
+#, c-format
+msgid "node %s not connected"
+msgstr ""
+
+msgid "node exited"
+msgstr ""
+
+#, c-format
+msgid "node not found: %s"
+msgstr ""
+
+msgid "once"
+msgstr "一次"
+
+msgid "out of memory"
+msgstr ""
+
+msgid "process path can not be empty"
+msgstr "處理程序路徑不能為空"
+
+msgid "protocol can not be empty, or uncheck it"
+msgstr "通訊協定不能為空或取消勾選"
+
+msgid "refreshing..."
+msgstr ""
+
+msgid "to "
+msgstr ""
+
+msgid "to *."
+msgstr ""
+
+msgid "to port "
+msgstr ""
+
+msgid "top left"
+msgstr "左上"
+
+msgid "top right"
+msgstr "右上"
+
+msgid "ufw application profiles (/etc/ufw/applications.d)"
+msgstr ""
+
+msgid "until reboot"
+msgstr "持續到重新啟動"
+
+#, c-format
+msgid "{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": \"5s\"}}"
+msgstr ""
+
+#, c-format
+msgid "{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": %d, \"proto\": %d, \"family\": %d}}"
+msgstr ""

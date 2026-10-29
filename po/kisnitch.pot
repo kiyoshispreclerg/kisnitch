@@ -1,0 +1,1641 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the kisnitch package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: kisnitch\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-29 17:14-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+msgid "    Apply this rule to %s  "
+msgstr ""
+
+msgid "   Outgoing:"
+msgstr ""
+
+msgid "#"
+msgstr ""
+
+#, c-format
+msgid "%s node is not connected"
+msgstr ""
+
+msgid "-"
+msgstr ""
+
+msgid "12h"
+msgstr ""
+
+msgid "15m"
+msgstr ""
+
+msgid "15m or less"
+msgstr ""
+
+msgid "1h"
+msgstr ""
+
+msgid "1h or less"
+msgstr ""
+
+msgid "30m"
+msgstr ""
+
+msgid "30m or less"
+msgstr ""
+
+msgid "30s"
+msgstr ""
+
+msgid "30s or less"
+msgstr ""
+
+msgid "5m"
+msgstr ""
+
+msgid "5m or less"
+msgstr ""
+
+#, c-format
+msgid ""
+"<b>%s</b>\n"
+"\n"
+"<b>Time:</b> %s\n"
+"\n"
+"<b>Process:</b>\n"
+"%s\n"
+"<b>Cmdline:</b>\n"
+"%s\n"
+"<b>CWD:</b>\n"
+"%s\n"
+"\n"
+"<b>UID:</b> %s <b>PID:</b> %s\n"
+"\n"
+"<b>Node:</b> %s\n"
+"\n"
+"<b>%s</b> %s:%s -> %s (%s):%s\n"
+"\n"
+"<b>Rule:</b>\n"
+"%s"
+msgstr ""
+
+msgid "<b><big>Outgoing connection</big></b>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<b>daemon uptime:</b> %s\n"
+"<b>Version:</b> %s\n"
+"<b>Kernel:</b> %s"
+msgstr ""
+
+msgid "<span foreground=\"green\">✔Rule updated.</span>"
+msgstr ""
+
+msgid ""
+"<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-"
+"checksum\">More info</a>)</span>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<span foreground=\"red\">WARNING, checksums differ for at least one rule.</"
+"span>\n"
+"\n"
+"Current process (%u):\n"
+"%s\n"
+"\n"
+"Expected from the rule:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>"
+msgstr ""
+
+msgid "A port (22), a list (80,443) or a range (6000-6007). Empty: any port"
+msgstr ""
+
+msgid "A_pplication"
+msgstr ""
+
+msgid "Absolute path to the CA cert file"
+msgstr ""
+
+msgid "Absolute path to the cert file"
+msgstr ""
+
+msgid "Absolute path to the cert key file"
+msgstr ""
+
+msgid "Action"
+msgstr ""
+
+msgid "ActionParms"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Add at least one statement."
+msgstr ""
+
+msgid "Add new condition"
+msgstr ""
+
+msgid "Adding rule, wait"
+msgstr ""
+
+msgid "Address"
+msgstr ""
+
+msgid "Address of the node."
+msgstr ""
+
+msgid "Addresses"
+msgstr ""
+
+msgid "Advanced"
+msgstr ""
+
+msgid "Advanced _editor"
+msgstr ""
+
+msgid "Advanced options"
+msgstr ""
+
+msgid "Alert"
+msgstr ""
+
+msgid "Alerts"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All applications"
+msgstr ""
+
+msgid "Allow"
+msgstr ""
+
+msgid "Allow inbound connections to a port"
+msgstr ""
+
+msgid "Allow inbound connections to the selected port."
+msgstr ""
+
+msgid "Allow outbound connections to the selected port."
+msgstr ""
+
+msgid "Allow service (_IN)"
+msgstr ""
+
+msgid "Allow service (_OUT)"
+msgstr ""
+
+msgid "Allow will allow the connection"
+msgstr ""
+
+msgid ""
+"Allow, deny or reject by port, address and interface, in a table (like ufw)"
+msgstr ""
+
+msgid "Always"
+msgstr ""
+
+msgid "Any"
+msgstr ""
+
+msgid "Application pids"
+msgstr ""
+
+msgid "Applications"
+msgstr ""
+
+msgid "Apply configuration to all nodes"
+msgstr ""
+
+msgid "Apply rule to all nodes"
+msgstr ""
+
+msgid "Apply to"
+msgstr ""
+
+msgid "Applying changes..."
+msgstr ""
+
+#, c-format
+msgid "Applying configuration on %s ..."
+msgstr ""
+
+msgid "Are you sure?"
+msgstr ""
+
+msgid "Auth type changed"
+msgstr ""
+
+msgid "Authentication"
+msgstr ""
+
+msgid "Authentication type"
+msgstr ""
+
+msgid "Autostart"
+msgstr ""
+
+msgid "Autostart the GUI upon login"
+msgstr ""
+
+msgid "Block outbound network traffic if the daemon unexpectedly dies"
+msgstr ""
+
+msgid "By default the GUI is started when login"
+msgstr ""
+
+msgid "By default, the field of the rules are case-insensitive."
+msgstr ""
+
+msgid "CA cert file"
+msgstr ""
+
+msgid "Case-sensitive"
+msgstr ""
+
+msgid "Cert file"
+msgstr ""
+
+msgid "Cert key file"
+msgstr ""
+
+msgid "Certificates changed"
+msgstr ""
+
+#, c-format
+msgid "Change default firewall to 'nftables' on node %s?"
+msgstr ""
+
+msgid "Check every n seconds that the interception rules are present."
+msgstr ""
+
+msgid "Checksum"
+msgstr ""
+
+msgid "Client certificate verification"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Command line"
+msgstr ""
+
+msgid "Command line regexp error"
+msgstr ""
+
+msgid "Configuration applied."
+msgstr ""
+
+msgid "Connection details"
+msgstr ""
+
+msgid "Connections"
+msgstr ""
+
+msgid "Create a new rule"
+msgstr ""
+
+msgid "DB journal_mode changed"
+msgstr ""
+
+msgid "DB type changed"
+msgstr ""
+
+msgid "DCCP"
+msgstr ""
+
+msgid "D_escription"
+msgstr ""
+
+msgid "Daemon version"
+msgstr ""
+
+msgid "Database"
+msgstr ""
+
+msgid "Database type"
+msgstr ""
+
+msgid "Debug invalid connections"
+msgstr ""
+
+msgid "Default action when the GUI is disconnected"
+msgstr ""
+
+msgid "Default log level"
+msgstr ""
+
+msgid "Default position on screen"
+msgstr ""
+
+msgid "Default target"
+msgstr ""
+
+msgid "Default timeout"
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+msgid "Delete all intercepted events"
+msgstr ""
+
+msgid "Delete this node"
+msgstr ""
+
+msgid "Delete this rule?"
+msgstr ""
+
+msgid "Deleting rule, wait"
+msgstr ""
+
+msgid "Deny"
+msgstr ""
+
+msgid "Deny will just discard the connection"
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
+msgid "Desktop notifications"
+msgstr ""
+
+msgid "Dest IP"
+msgstr ""
+
+msgid "Dest IP/Network can not be empty"
+msgstr ""
+
+msgid "Dest host"
+msgstr ""
+
+msgid "Dest host can not be empty"
+msgstr ""
+
+msgid "Dest port"
+msgstr ""
+
+msgid "Dest port can not be empty"
+msgstr ""
+
+msgid "Destination IP"
+msgstr ""
+
+msgid "Destination Port"
+msgstr ""
+
+msgid "Destination address, network or range. Empty: any"
+msgstr ""
+
+msgid "Destination port"
+msgstr ""
+
+msgid "Details"
+msgstr ""
+
+msgid "Direction"
+msgstr ""
+
+msgid "Disable"
+msgstr ""
+
+msgid "Disable pop-ups, only display a notification"
+msgstr ""
+
+msgid "Disabling firewall..."
+msgstr ""
+
+msgid "Do_wn"
+msgstr ""
+
+msgid ""
+"Domains separated by commas, or a regular expression (www.domain.org, .*\\."
+"domain.org)."
+msgstr ""
+
+msgid "Don't log connections"
+msgstr ""
+
+msgid "Don't save/Delete rules of duration"
+msgstr ""
+
+msgid "Don't verify certs"
+msgstr ""
+
+msgid "Dropped"
+msgstr ""
+
+msgid "Dst IP regexp error"
+msgstr ""
+
+msgid "Dst host regexp error"
+msgstr ""
+
+msgid "Dst port regexp error"
+msgstr ""
+
+msgid "Duplicate"
+msgstr ""
+
+msgid "Duration"
+msgstr ""
+
+msgid "Edit"
+msgstr ""
+
+msgid "Edit rule"
+msgstr ""
+
+msgid "Enable"
+msgstr ""
+
+msgid "Enable DB Write-Ahead Logging (WAL)"
+msgstr ""
+
+msgid "Enable checksums verification"
+msgstr ""
+
+msgid "Enabled"
+msgstr ""
+
+msgid "Enabling firewall..."
+msgstr ""
+
+msgid "Environment variables"
+msgstr ""
+
+msgid "Equal"
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+#, c-format
+msgid "Error adding rule: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error adding rules:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error applying configuration: %s"
+msgstr ""
+
+#, c-format
+msgid "Error applying rule: %s"
+msgstr ""
+
+#, c-format
+msgid "Error creating new rule from event (%s)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error deleting node\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error deleting rule, %s"
+msgstr ""
+
+msgid "Error exporting rules"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error exporting rules of the following nodes:\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error exporting the following rules:\n"
+"%s"
+msgstr ""
+
+msgid "Error getting INPUT chain policy"
+msgstr ""
+
+msgid "Error getting OUTPUT chain policy"
+msgstr ""
+
+#, c-format
+msgid "Error importing rules from %s"
+msgstr ""
+
+#, c-format
+msgid "Error loading config %s: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error loading process information:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error loading rule"
+msgstr ""
+
+msgid "Error saving rule"
+msgstr ""
+
+#, c-format
+msgid "Error saving rule %s"
+msgstr ""
+
+msgid "Error saving the CSV file"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error stopping monitoring process:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error:"
+msgstr ""
+
+msgid "Events"
+msgstr ""
+
+msgid "Events tab columns"
+msgstr ""
+
+msgid "Exclude outbound connections to a port from being intercepted"
+msgstr ""
+
+msgid "Exclude service"
+msgstr ""
+
+msgid "Executed from"
+msgstr ""
+
+msgid "Export"
+msgstr ""
+
+msgid "Export events to CSV"
+msgstr ""
+
+msgid "Export rules"
+msgstr ""
+
+msgid "Family"
+msgstr ""
+
+msgid "File"
+msgstr ""
+
+msgid "Filter"
+msgstr ""
+
+msgid "Filter connections also by:"
+msgstr ""
+
+msgid "Filter files"
+msgstr ""
+
+msgid "Filter sockets"
+msgstr ""
+
+msgid "Firewall"
+msgstr ""
+
+msgid "Firewall rule"
+msgstr ""
+
+msgid "Firewall rules"
+msgstr ""
+
+msgid "Firewall rules monitoring interval (seconds)"
+msgstr ""
+
+msgid ""
+"Firewall status error (report on github please): no firewall configuration"
+msgstr ""
+
+msgid "Flush connections on start"
+msgstr ""
+
+msgid "From"
+msgstr ""
+
+msgid "From this IP / Network"
+msgstr ""
+
+msgid "From this PID"
+msgstr ""
+
+msgid "From this command line"
+msgstr ""
+
+msgid "From this executable"
+msgstr ""
+
+msgid "From this port"
+msgstr ""
+
+msgid "From this user ID"
+msgstr ""
+
+msgid "Garbage collector percentage"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Greater or equal than"
+msgstr ""
+
+msgid "Greater than"
+msgstr ""
+
+msgid "Help"
+msgstr ""
+
+msgid "Hook"
+msgstr ""
+
+msgid "HostName"
+msgstr ""
+
+msgid "Hosts"
+msgstr ""
+
+msgid "I/O Statistics"
+msgstr ""
+
+msgid "ICMP"
+msgstr ""
+
+msgid "If checked, this field will be selected when a pop-up is displayed."
+msgstr ""
+
+msgid ""
+"If checked, this rule will take precedence over the rest of the rules "
+"(except the ones with the same name or priority)."
+msgstr ""
+
+msgid "If empty, default rules path will be /etc/opensnitchd/rules"
+msgstr ""
+
+msgid "Import rules"
+msgstr ""
+
+msgid "In"
+msgstr ""
+
+msgid "In (incoming)"
+msgstr ""
+
+msgid "In development"
+msgstr ""
+
+msgid "In memory"
+msgstr ""
+
+msgid ""
+"In order to configure firewall rules from the GUI, we need to use 'nftables' "
+"instead of 'iptables'"
+msgstr ""
+
+msgid "Inbound"
+msgstr ""
+
+msgid "Incoming:"
+msgstr ""
+
+msgid "Info"
+msgstr ""
+
+msgid "Interface"
+msgstr ""
+
+msgid "Internal"
+msgstr ""
+
+msgid "Invalid UID, it must be a digit."
+msgstr ""
+
+#, c-format
+msgid "Invalid action."
+msgstr ""
+
+#, c-format
+msgid "Invalid rule name (not allowed characters: '%s' )"
+msgstr ""
+
+#, c-format
+msgid "Invalid rule: %s"
+msgstr ""
+
+msgid "Is regular expression"
+msgstr ""
+
+msgid "Kisnitch: interception disabled"
+msgstr ""
+
+msgid "Kisnitch: interception enabled"
+msgstr ""
+
+msgid "Kisnitch: no daemon connected"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Language changed"
+msgstr ""
+
+msgid "Less or equal than"
+msgstr ""
+
+msgid "Less than"
+msgstr ""
+
+msgid "Lists"
+msgstr ""
+
+msgid "Lists field cannot be empty"
+msgstr ""
+
+msgid "Lists field must be a directory"
+msgstr ""
+
+msgid "Log UTC timestamps"
+msgstr ""
+
+msgid "Log file"
+msgstr ""
+
+msgid "Log timestamp microseconds"
+msgstr ""
+
+msgid "Logging"
+msgstr ""
+
+msgid "Max events"
+msgstr ""
+
+msgid "Max gRPC channel size"
+msgstr ""
+
+msgid "Max server clients"
+msgstr ""
+
+msgid "Max server workers"
+msgstr ""
+
+msgid "Max stats"
+msgstr ""
+
+msgid "Maximum days of events to keep"
+msgstr ""
+
+msgid "Maximum size of each message from nodes. Default 4MB"
+msgstr ""
+
+msgid "Memory mapped files"
+msgstr ""
+
+msgid "Minutes between events purges"
+msgstr ""
+
+msgid "Mutual TLS"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Netstat"
+msgstr ""
+
+msgid "Network"
+msgstr ""
+
+msgid "Network interface"
+msgstr ""
+
+msgid ""
+"Network interface (in: where it arrives, out: where it leaves). Empty: any"
+msgstr ""
+
+msgid "Network interface can not be empty"
+msgstr ""
+
+msgid "Network interface regexp error"
+msgstr ""
+
+msgid "New"
+msgstr ""
+
+msgid "New node connected"
+msgstr ""
+
+msgid "New rule"
+msgstr ""
+
+msgid "New rule error"
+msgstr ""
+
+msgid "No nodes connected"
+msgstr ""
+
+msgid "No ufw application profiles installed"
+msgstr ""
+
+msgid "Node"
+msgstr ""
+
+msgid "Node address changed (update GUI address if needed)"
+msgstr ""
+
+msgid "Nodes"
+msgstr ""
+
+msgid "Not equal"
+msgstr ""
+
+msgid "On"
+msgstr ""
+
+msgid ""
+"Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression "
+"or a list separated by commas."
+msgstr ""
+
+msgid "Open files"
+msgstr ""
+
+msgid "Open main window"
+msgstr ""
+
+msgid "Open the rule in the full firewall rule editor"
+msgstr ""
+
+msgid "OpenSnitch version mismatch!"
+msgstr ""
+
+msgid "Out"
+msgstr ""
+
+msgid "Out (outgoing)"
+msgstr ""
+
+msgid "Outbound"
+msgstr ""
+
+msgid "PID"
+msgstr ""
+
+msgid "PID field can not be empty"
+msgstr ""
+
+msgid "PID field regexp error"
+msgstr ""
+
+msgid "P_ort"
+msgstr ""
+
+msgid "P_rotocol"
+msgstr ""
+
+msgid "Parameters"
+msgstr ""
+
+msgid "Path"
+msgstr ""
+
+msgid "Permanent"
+msgstr ""
+
+msgid "Policy"
+msgstr ""
+
+#, c-format
+msgid "Policy not applied: %s"
+msgstr ""
+
+msgid "Pop-up default action."
+msgstr ""
+
+msgid "Pop-up default duration"
+msgstr ""
+
+msgid "Pop-ups"
+msgstr ""
+
+msgid "Port"
+msgstr ""
+
+msgid "Ports"
+msgstr ""
+
+msgid "Preferences"
+msgstr ""
+
+msgid "Priority rule"
+msgstr ""
+
+msgid "Process"
+msgstr ""
+
+msgid "Process details"
+msgstr ""
+
+#, c-format
+msgid "Process launched from: %s"
+msgstr ""
+
+msgid "Process monitor method"
+msgstr ""
+
+msgid "Process path must be checked in order to verify checksums."
+msgstr ""
+
+msgid "Process path regexp error"
+msgstr ""
+
+#, c-format
+msgid "Process path: %s"
+msgstr ""
+
+msgid "Profile"
+msgstr ""
+
+msgid "Protocol"
+msgstr ""
+
+msgid "Protocol regexp error"
+msgstr ""
+
+msgid "Quit"
+msgstr ""
+
+msgid "Refresh interval"
+msgstr ""
+
+msgid "Refresh interval (seconds)"
+msgstr ""
+
+msgid "Reject"
+msgstr ""
+
+msgid "Reject will drop the connection, and kill the socket that initiated it"
+msgstr ""
+
+msgid "Remove selected condition"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+msgid "Restart the GUI in order changes to take effect"
+msgstr ""
+
+msgid "Rule"
+msgstr ""
+
+msgid "Rule added"
+msgstr ""
+
+msgid "Rule applied."
+msgstr ""
+
+msgid "Rule deleted"
+msgstr ""
+
+msgid "Rule hook (invalid) not supported yet"
+msgstr ""
+
+msgid "Rule not found by that name and node"
+msgstr ""
+
+msgid "Rule not supported"
+msgstr ""
+
+msgid "Rule saved"
+msgstr ""
+
+#, c-format
+msgid ""
+"Rule saved, but there're other rules with errors (REVIEW):\n"
+"%s"
+msgstr ""
+
+msgid "Rules"
+msgstr ""
+
+msgid "Rules are checked in order: the first one that matches decides"
+msgstr ""
+
+msgid "Rules export"
+msgstr ""
+
+msgid "Rules export error"
+msgstr ""
+
+#, c-format
+msgid "Rules exported to %s"
+msgstr ""
+
+msgid "Rules import"
+msgstr ""
+
+msgid "Rules import error"
+msgstr ""
+
+msgid "Rules imported fine"
+msgstr ""
+
+msgid "Rules path"
+msgstr ""
+
+msgid "SCTP"
+msgstr ""
+
+msgid "Save as CSV"
+msgstr ""
+
+msgid "Saving configuration..."
+msgstr ""
+
+msgid "Saving rule, wait"
+msgstr ""
+
+msgid "Select"
+msgstr ""
+
+msgid "Select a directory to export rules"
+msgstr ""
+
+msgid "Select a directory with files containing lists of IPs."
+msgstr ""
+
+msgid "Select a directory with files containing lists of network ranges."
+msgstr ""
+
+msgid "Select a directory with files containing regular expressions."
+msgstr ""
+
+msgid "Select a directory with lists of domains to block."
+msgstr ""
+
+msgid "Select a directory with rules to import (JSON files)"
+msgstr ""
+
+msgid "Select at least one field."
+msgstr ""
+
+#, c-format
+msgid "Select the protocol of the port."
+msgstr ""
+
+msgid "Server"
+msgstr ""
+
+msgid "Server address changed"
+msgstr ""
+
+msgid "Server cert file"
+msgstr ""
+
+msgid "Server max clients changed"
+msgstr ""
+
+msgid "Server max workers changed"
+msgstr ""
+
+msgid "Server options changed"
+msgstr ""
+
+msgid "Show advanced view by default"
+msgstr ""
+
+msgid "Show the preferences of this node"
+msgstr ""
+
+msgid "Simple"
+msgstr ""
+
+msgid "Simple TLS"
+msgstr ""
+
+msgid "Simple: no authentication. TLS comes with phase 10."
+msgstr ""
+
+msgid "Source IP"
+msgstr ""
+
+msgid "Source IP regexp error"
+msgstr ""
+
+msgid "Source IP/Network can not be empty"
+msgstr ""
+
+msgid ""
+"Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 "
+"address matches IPv4 only: add another rule for IPv6"
+msgstr ""
+
+msgid "Source port"
+msgstr ""
+
+msgid "Source port can not be empty"
+msgstr ""
+
+msgid "Source port regexp error"
+msgstr ""
+
+msgid "Stack"
+msgstr ""
+
+msgid "Start"
+msgstr ""
+
+msgid "Start or Stop interception"
+msgstr ""
+
+msgid "Start or stop interception of this node"
+msgstr ""
+
+msgid "Start or stop monitoring this process"
+msgstr ""
+
+msgid "Start/Stop"
+msgstr ""
+
+msgid "State"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "System default"
+msgstr ""
+
+msgid "System firewall"
+msgstr ""
+
+msgid "TCP"
+msgstr ""
+
+msgid "TCP and UDP"
+msgstr ""
+
+#, c-format
+msgid ""
+"TCP and UDP need a port; without a port, select one protocol or \"any\"."
+msgstr ""
+
+msgid "TLS is not supported by this build (TLS=1), the server stays on Simple"
+msgstr ""
+
+msgid "Table"
+msgstr ""
+
+msgid "Temporary"
+msgstr ""
+
+msgid "Test"
+msgstr ""
+
+msgid "The address where the GUI is listening for new nodes."
+msgstr ""
+
+msgid "The advanced view allows you to easily select multiple fields."
+msgstr ""
+
+#, c-format
+msgid ""
+"The firewall configuration is outdated,\n"
+"you need to update it to the new format: <a href=\"%s\">learn more</a>"
+msgstr ""
+
+msgid "The input or output chain is missing from this node's firewall."
+msgstr ""
+
+msgid ""
+"The rules are checked in alphabetical order, so you can name them "
+"accordingly to control which ones are checked first."
+msgstr ""
+
+#, c-format
+msgid "The source and destination addresses must be both IPv4 or both IPv6."
+msgstr ""
+
+msgid ""
+"The system firewall is disabled: these rules apply once it's enabled in the "
+"Firewall window."
+msgstr ""
+
+msgid "The value of this field is always the absolute path of the executable."
+msgstr ""
+
+#, c-format
+msgid "There was an error: %s"
+msgstr ""
+
+msgid "There're no nodes connected"
+msgstr ""
+
+msgid "There're no nodes connected."
+msgstr ""
+
+msgid "There's already a rule with this name."
+msgstr ""
+
+msgid "This field will contain and match the command line of the process."
+msgstr ""
+
+msgid "This node has no firewall configuration (it must use nftables)."
+msgstr ""
+
+#, c-format
+msgid "This node has no firewall configuration."
+msgstr ""
+
+msgid "This option limits the number of nodes (incoming connections)."
+msgstr ""
+
+msgid "This timeout is the countdown you see on the pop-up."
+msgstr ""
+
+#, c-format
+msgid "This type of rule (%s) is not supported by version %s"
+msgstr ""
+
+msgid "Time"
+msgstr ""
+
+msgid "To"
+msgstr ""
+
+msgid "To clipboard"
+msgstr ""
+
+msgid "To disk"
+msgstr ""
+
+msgid "To this IP / Network"
+msgstr ""
+
+msgid "To this host"
+msgstr ""
+
+msgid "To this list of IPs"
+msgstr ""
+
+msgid "To this list of domains"
+msgstr ""
+
+msgid "To this list of domains (regular expressions)"
+msgstr ""
+
+msgid "To this list of network ranges"
+msgstr ""
+
+msgid "To this port"
+msgstr ""
+
+msgid "UDP"
+msgstr ""
+
+msgid "UDP-Lite"
+msgstr ""
+
+msgid "UI"
+msgstr ""
+
+msgid "UID"
+msgstr ""
+
+#, c-format
+msgid "Unable to load connection, unknown node? (%d)"
+msgstr ""
+
+#, c-format
+msgid "Unknown process %s"
+msgstr ""
+
+msgid "Until reboot"
+msgstr ""
+
+msgid "Update All"
+msgstr ""
+
+msgid "Update rule"
+msgstr ""
+
+msgid "Uptime"
+msgstr ""
+
+msgid "Use system notifications"
+msgstr ""
+
+msgid "Use the tray icon's alert"
+msgstr ""
+
+msgid "User ID"
+msgstr ""
+
+msgid "User ID can not be empty"
+msgstr ""
+
+msgid "User ID regexp error"
+msgstr ""
+
+msgid "Users"
+msgstr ""
+
+msgid "Version"
+msgstr ""
+
+msgid "View"
+msgstr ""
+
+msgid "Warning"
+msgstr ""
+
+msgid ""
+"Warning: Output policy configured to drop. If OpenSnitch dies, outbound "
+"network traffic will be blocked."
+msgstr ""
+
+msgid ""
+"What happens to incoming connections that no rule allows. Deny keeps "
+"loopback and replies to your own connections working."
+msgstr ""
+
+msgid ""
+"What happens to outgoing connections that no rule allows (before OpenSnitch "
+"asks)."
+msgstr ""
+
+msgid "When this option is on, all the existing sockets will be killed."
+msgstr ""
+
+msgid ""
+"When this option is selected, the rules of the selected duration are not "
+"saved, and the ones already saved are deleted."
+msgstr ""
+
+#, c-format
+msgid ""
+"You are running version <b>%s</b> of the daemon, while the UI is at version "
+"<b>%s</b>, they might not be fully compatible."
+msgstr ""
+
+msgid ""
+"You can specify a single IP, a network range (192.168.1.0/24), a regular "
+"expression, or a list separated by commas."
+msgstr ""
+
+msgid ""
+"You can specify multiple ports using regular expressions or a list separated "
+"by commas."
+msgstr ""
+
+msgid ""
+"You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n"
+"\n"
+"ports: 22 or 22,443 or 50000-60000\n"
+"IPs: 192.168.1.1 or 192.168.1.30-192.168.1.130\n"
+"Values: echo-reply,echo-request\n"
+"Values: new,established,related"
+msgstr ""
+
+msgid ""
+"You must select a file for the database\n"
+"or choose \"In memory\" type."
+msgstr ""
+
+msgid "_Action"
+msgstr ""
+
+msgid "_Add"
+msgstr ""
+
+msgid "_Allow"
+msgstr ""
+
+msgid "_Close"
+msgstr ""
+
+msgid "_Delete"
+msgstr ""
+
+msgid "_Deny"
+msgstr ""
+
+msgid "_Direction"
+msgstr ""
+
+msgid "_Edit"
+msgstr ""
+
+msgid "_From"
+msgstr ""
+
+msgid "_Interface"
+msgstr ""
+
+msgid "_New rule"
+msgstr ""
+
+msgid "_Reject"
+msgstr ""
+
+msgid "_Rules (simple)"
+msgstr ""
+
+msgid "_To"
+msgstr ""
+
+msgid "_Up"
+msgstr ""
+
+msgid "any temporary rules"
+msgstr ""
+
+msgid "bottom left"
+msgstr ""
+
+msgid "bottom right"
+msgstr ""
+
+msgid "by PID"
+msgstr ""
+
+msgid "by command line"
+msgstr ""
+
+msgid "by destination ip"
+msgstr ""
+
+msgid "by destination port"
+msgstr ""
+
+msgid "by executable"
+msgstr ""
+
+msgid "by user id"
+msgstr ""
+
+msgid "center"
+msgstr ""
+
+msgid "checksum"
+msgstr ""
+
+msgid "command line can not be empty"
+msgstr ""
+
+msgid "days"
+msgstr ""
+
+msgid ""
+"depending on the Action (i.e.: target), the syntaxis of the parameters will "
+"vary.\n"
+"Some examples:\n"
+"\n"
+" to 1.2.3.4 (snat, dnat)\n"
+" to :8080 (redirect, tproxy)\n"
+" to 1.2.3.4:8080 (snat, dnat)\n"
+" num 1 (queue)\n"
+" to 1024-2048 (masquerade)"
+msgstr ""
+
+#, c-format
+msgid "error loading: %s"
+msgstr ""
+
+#, c-format
+msgid "error starting netstat table: %s"
+msgstr ""
+
+msgid "forever"
+msgstr ""
+
+msgid "from this PID"
+msgstr ""
+
+msgid "from this command line"
+msgstr ""
+
+msgid "from this executable"
+msgstr ""
+
+msgid "from user "
+msgstr ""
+
+msgid "is regular expression"
+msgstr ""
+
+#, c-format
+msgid "loading in %s..."
+msgstr ""
+
+msgid "md5"
+msgstr ""
+
+msgid "md5 field regexp error"
+msgstr ""
+
+msgid "md5 line cannot be empty"
+msgstr ""
+
+msgid "minutes"
+msgstr ""
+
+msgid "no node"
+msgstr ""
+
+#, c-format
+msgid "node %s not connected"
+msgstr ""
+
+msgid "node exited"
+msgstr ""
+
+#, c-format
+msgid "node not found: %s"
+msgstr ""
+
+msgid "once"
+msgstr ""
+
+msgid "out of memory"
+msgstr ""
+
+msgid "process path can not be empty"
+msgstr ""
+
+msgid "protocol can not be empty, or uncheck it"
+msgstr ""
+
+msgid "refreshing..."
+msgstr ""
+
+msgid "to "
+msgstr ""
+
+msgid "to *."
+msgstr ""
+
+msgid "to port "
+msgstr ""
+
+msgid "top left"
+msgstr ""
+
+msgid "top right"
+msgstr ""
+
+msgid "ufw application profiles (/etc/ufw/applications.d)"
+msgstr ""
+
+msgid "until reboot"
+msgstr ""
+
+#, c-format
+msgid ""
+"{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": "
+"\"5s\"}}"
+msgstr ""
+
+#, c-format
+msgid ""
+"{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": "
+"%d, \"proto\": %d, \"family\": %d}}"
+msgstr ""

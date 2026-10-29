@@ -14,6 +14,7 @@
 #include "common/log.h"
 #include "ui/procinfo.h"
 #include "ui/stats_win_priv.h"
+#include "ui/i18n.h"
 
 enum { TAB_STATUS, TAB_DESCRIPTORS, TAB_IOSTATS, TAB_MAPS, TAB_STACK, TAB_ENVS, NPTABS };
 
@@ -189,7 +190,7 @@ static void on_start_reply(const char *addr, const Protocol__NotificationReply *
     struct ks_procdlg *d = ud;
     (void)addr;
     if (r->code == PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR) {
-        char *m = g_strdup_printf("Error loading process information:\n\n%s", r->data);
+        char *m = g_strdup_printf(_("Error loading process information:\n\n%s"), r->data);
         ks_sw_message(d->w, GTK_MESSAGE_WARNING, m, "");
         g_free(m);
         d->pid[0] = '\0';
@@ -209,7 +210,7 @@ static void on_stop_reply(const char *addr, const Protocol__NotificationReply *r
     (void)addr;
     if (r->code == PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR && r->data != NULL &&
         r->data[0] != '\0') {
-        char *m = g_strdup_printf("Error stopping monitoring process:\n\n%s", r->data);
+        char *m = g_strdup_printf(_("Error stopping monitoring process:\n\n%s"), r->data);
         ks_sw_message(d->w, GTK_MESSAGE_WARNING, m, "");
         g_free(m);
         set_running(d, false);
@@ -335,7 +336,7 @@ struct ks_procdlg *ks_procdlg_new(struct ks_stats_win *w)
     d->pids = g_ptr_array_new_with_free_func(g_free);
     d->nodes = g_ptr_array_new_with_free_func(g_free);
     d->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(d->win), "Process details");
+    gtk_window_set_title(GTK_WINDOW(d->win), _("Process details"));
     gtk_window_set_default_size(GTK_WINDOW(d->win), 620, 560);
     g_signal_connect(d->win, "delete-event", G_CALLBACK(on_delete), d);
     GtkWidget *vbox = gtk_vbox_new(FALSE, 4);
@@ -362,16 +363,16 @@ struct ks_procdlg *ks_procdlg_new(struct ks_stats_win *w)
     gtk_box_pack_start(GTK_BOX(vbox), gtk_hseparator_new(), FALSE, FALSE, 2);
 
     d->nb = gtk_notebook_new();
-    static const char *const titles[NPTABS] = {"Status", "Open files", "I/O Statistics",
-                                               "Memory mapped files", "Stack",
-                                               "Environment variables"};
+    static const char *const titles[NPTABS] = {N_("Status"), N_("Open files"), N_("I/O Statistics"),
+                                               N_("Memory mapped files"), N_("Stack"),
+                                               N_("Environment variables")};
     for (int i = 0; i < NPTABS; i++) {
         GtkWidget *page;
         if (i == TAB_DESCRIPTORS) {
             page = gtk_vbox_new(FALSE, 2);
             GtkWidget *row = gtk_hbox_new(FALSE, 8);
-            d->check_sockets = gtk_check_button_new_with_label("Filter sockets");
-            d->check_files = gtk_check_button_new_with_label("Filter files");
+            d->check_sockets = gtk_check_button_new_with_label(_("Filter sockets"));
+            d->check_files = gtk_check_button_new_with_label(_("Filter files"));
             gtk_box_pack_start(GTK_BOX(row), d->check_sockets, FALSE, FALSE, 0);
             gtk_box_pack_start(GTK_BOX(row), d->check_files, FALSE, FALSE, 0);
             gtk_box_pack_start(GTK_BOX(page), row, FALSE, FALSE, 0);
@@ -381,16 +382,16 @@ struct ks_procdlg *ks_procdlg_new(struct ks_stats_win *w)
         } else {
             page = scrolled_text(&d->text[i], false);
         }
-        gtk_notebook_append_page(GTK_NOTEBOOK(d->nb), page, gtk_label_new(titles[i]));
+        gtk_notebook_append_page(GTK_NOTEBOOK(d->nb), page, gtk_label_new(_(titles[i])));
     }
     gtk_box_pack_start(GTK_BOX(vbox), d->nb, TRUE, TRUE, 0);
 
     GtkWidget *bottom = gtk_hbox_new(FALSE, 6);
-    gtk_box_pack_start(GTK_BOX(bottom), gtk_label_new("Application pids"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(bottom), gtk_label_new(_("Application pids")), FALSE, FALSE, 0);
     d->combo = gtk_combo_box_new_text();
     gtk_box_pack_start(GTK_BOX(bottom), d->combo, FALSE, FALSE, 0);
-    d->action = gtk_toggle_button_new_with_label("Start");
-    gtk_widget_set_tooltip_text(d->action, "Start or stop monitoring this process");
+    d->action = gtk_toggle_button_new_with_label(_("Start"));
+    gtk_widget_set_tooltip_text(d->action, _("Start or stop monitoring this process"));
     gtk_box_pack_start(GTK_BOX(bottom), d->action, FALSE, FALSE, 0);
     GtkWidget *close = gtk_button_new_from_stock(GTK_STOCK_CLOSE);
     gtk_box_pack_end(GTK_BOX(bottom), close, FALSE, FALSE, 0);

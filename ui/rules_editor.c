@@ -20,6 +20,7 @@
 #include "ui/rulegen.h"
 #include "ui/rulesops.h"
 #include "ui/statsdb.h"
+#include "ui/i18n.h"
 
 #define HELP_URL "https://github.com/evilsocket/opensnitch/wiki/"
 
@@ -246,7 +247,7 @@ static void on_name_insert(GtkEditable *e, gchar *text, gint len, gint *pos, gpo
     g_free(t);
     if (bad) {
         g_signal_stop_emission_by_name(e, "insert-text");
-        char *m = g_strdup_printf("Invalid rule name (not allowed characters: '%s' )",
+        char *m = g_strdup_printf(_("Invalid rule name (not allowed characters: '%s' )"),
                                   KS_RULE_INVALID_NAME_CHARS);
         set_status(d, m, true);
         g_free(m);
@@ -262,8 +263,8 @@ static bool load_nodes(struct ks_ruleed *d, const char *addr)
 {
     struct ks_nodes *nodes = ks_service_nodes(d->svc);
     if (addr != NULL && ks_nodes_get(nodes, addr) == NULL) {
-        char *m = g_strdup_printf("node %s not connected", addr);
-        message(d, GTK_MESSAGE_WARNING, "Error loading rule", m);
+        char *m = g_strdup_printf(_("node %s not connected"), addr);
+        message(d, GTK_MESSAGE_WARNING, _("Error loading rule"), m);
         g_free(m);
         return false;
     }
@@ -331,9 +332,9 @@ static void on_reply(const char *addr, const Protocol__NotificationReply *r, voi
     struct ks_ruleed *d = ud;
     (void)addr;
     if (r->code == PROTOCOL__NOTIFICATION_REPLY_CODE__OK) {
-        set_status(d, "Rule applied.", false);
+        set_status(d, _("Rule applied."), false);
     } else {
-        char *m = g_strdup_printf("Error applying rule: %s", r->data != NULL ? r->data : "");
+        char *m = g_strdup_printf(_("Error applying rule: %s"), r->data != NULL ? r->data : "");
         set_status(d, m, true);
         g_free(m);
     }
@@ -373,7 +374,7 @@ static void on_save(GtkButton *b, gpointer ud)
     struct ks_nodes *nodes = ks_service_nodes(d->svc);
     struct ks_rulesdb *db = ks_service_rules(d->svc);
     if (d->node_addrs->len == 0) {
-        set_status(d, "There're no nodes connected.", true);
+        set_status(d, _("There're no nodes connected."), true);
         return;
     }
     read_form(d);
@@ -386,11 +387,11 @@ static void on_save(GtkButton *b, gpointer ud)
     if ((d->mode == MODE_ADD && exists) ||
         (d->mode == MODE_EDIT && (d->old_name == NULL || strcmp(rule_name, d->old_name) != 0) &&
          exists)) {
-        set_status(d, "There's already a rule with this name.", true);
+        set_status(d, _("There's already a rule with this name."), true);
         return;
     }
     if (d->form.md5.on && !d->form.proc.on) {
-        set_status(d, "Process path must be checked in order to verify checksums.", true);
+        set_status(d, _("Process path must be checked in order to verify checksums."), true);
         return;
     }
     struct ks_arena a = {0};
@@ -504,7 +505,7 @@ struct ks_ruleed *ks_ruleed_new(struct ks_service *svc, GtkWindow *parent,
     ks_rform_init(&d->form);
 
     d->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(d->win), "Rule");
+    gtk_window_set_title(GTK_WINDOW(d->win), _("Rule"));
     gtk_window_set_default_size(GTK_WINDOW(d->win), 640, 560);
     if (parent != NULL)
         gtk_window_set_transient_for(GTK_WINDOW(d->win), parent);
@@ -515,18 +516,18 @@ struct ks_ruleed *ks_ruleed_new(struct ks_service *svc, GtkWindow *parent,
 
     /* name, enable, priority */
     GtkWidget *top = gtk_hbox_new(FALSE, 6);
-    gtk_box_pack_start(GTK_BOX(top), gtk_label_new("Name"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("Name")), FALSE, FALSE, 0);
     d->name = gtk_entry_new();
     gtk_widget_set_tooltip_text(
-        d->name, "The rules are checked in alphabetical order, so you can name them accordingly "
-                 "to control which ones are checked first.");
+        d->name, _("The rules are checked in alphabetical order, so you can name them accordingly "
+                 "to control which ones are checked first."));
     g_signal_connect(d->name, "insert-text", G_CALLBACK(on_name_insert), d);
     gtk_box_pack_start(GTK_BOX(top), d->name, TRUE, TRUE, 0);
-    d->enable = gtk_check_button_new_with_label("Enable");
-    d->precedence = gtk_check_button_new_with_label("Priority rule");
+    d->enable = gtk_check_button_new_with_label(_("Enable"));
+    d->precedence = gtk_check_button_new_with_label(_("Priority rule"));
     gtk_widget_set_tooltip_text(d->precedence,
-                                "If checked, this rule will take precedence over the rest of "
-                                "the rules (except the ones with the same name or priority).");
+                                _("If checked, this rule will take precedence over the rest of "
+                                "the rules (except the ones with the same name or priority)."));
     gtk_box_pack_start(GTK_BOX(top), d->enable, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(top), d->precedence, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), top, FALSE, FALSE, 0);
@@ -541,14 +542,14 @@ struct ks_ruleed *ks_ruleed_new(struct ks_service *svc, GtkWindow *parent,
     gtk_widget_set_size_request(dsw, -1, 52);
     gtk_container_add(GTK_CONTAINER(dsw), d->desc);
     GtkWidget *dbox = gtk_hbox_new(FALSE, 6);
-    gtk_box_pack_start(GTK_BOX(dbox), gtk_label_new("Description"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(dbox), gtk_label_new(_("Description")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(dbox), dsw, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), dbox, FALSE, FALSE, 0);
 
     /* nodes */
     GtkWidget *nbox = gtk_hbox_new(FALSE, 6);
     d->nodes_combo = gtk_combo_box_new_text();
-    d->apply_all = gtk_check_button_new_with_label("Apply rule to all nodes");
+    d->apply_all = gtk_check_button_new_with_label(_("Apply rule to all nodes"));
     gtk_widget_set_no_show_all(d->nodes_combo, TRUE);
     gtk_widget_set_no_show_all(d->apply_all, TRUE);
     gtk_box_pack_start(GTK_BOX(nbox), d->nodes_combo, FALSE, FALSE, 0);
@@ -559,20 +560,20 @@ struct ks_ruleed *ks_ruleed_new(struct ks_service *svc, GtkWindow *parent,
     GtkWidget *frame = gtk_frame_new(NULL);
     GtkWidget *abox = gtk_hbox_new(FALSE, 10);
     gtk_container_set_border_width(GTK_CONTAINER(abox), 6);
-    gtk_box_pack_start(GTK_BOX(abox), gtk_label_new("Action"), FALSE, FALSE, 0);
-    d->radio[KS_RACTION_DENY] = gtk_radio_button_new_with_label(NULL, "Deny");
+    gtk_box_pack_start(GTK_BOX(abox), gtk_label_new(_("Action")), FALSE, FALSE, 0);
+    d->radio[KS_RACTION_DENY] = gtk_radio_button_new_with_label(NULL, _("Deny"));
     GSList *grp = gtk_radio_button_get_group(GTK_RADIO_BUTTON(d->radio[KS_RACTION_DENY]));
-    d->radio[KS_RACTION_REJECT] = gtk_radio_button_new_with_label(grp, "Reject");
+    d->radio[KS_RACTION_REJECT] = gtk_radio_button_new_with_label(grp, _("Reject"));
     grp = gtk_radio_button_get_group(GTK_RADIO_BUTTON(d->radio[KS_RACTION_REJECT]));
-    d->radio[KS_RACTION_ALLOW] = gtk_radio_button_new_with_label(grp, "Allow");
-    gtk_widget_set_tooltip_text(d->radio[KS_RACTION_DENY], "Deny will just discard the connection");
+    d->radio[KS_RACTION_ALLOW] = gtk_radio_button_new_with_label(grp, _("Allow"));
+    gtk_widget_set_tooltip_text(d->radio[KS_RACTION_DENY], _("Deny will just discard the connection"));
     gtk_widget_set_tooltip_text(d->radio[KS_RACTION_REJECT],
-                                "Reject will drop the connection, and kill the socket that "
-                                "initiated it");
-    gtk_widget_set_tooltip_text(d->radio[KS_RACTION_ALLOW], "Allow will allow the connection");
+                                _("Reject will drop the connection, and kill the socket that "
+                                "initiated it"));
+    gtk_widget_set_tooltip_text(d->radio[KS_RACTION_ALLOW], _("Allow will allow the connection"));
     for (int i = 0; i < 3; i++)
         gtk_box_pack_start(GTK_BOX(abox), d->radio[i], FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(abox), gtk_label_new("Duration"), FALSE, FALSE, 8);
+    gtk_box_pack_start(GTK_BOX(abox), gtk_label_new(_("Duration")), FALSE, FALSE, 8);
     d->duration = gtk_combo_box_new_text();
     static const char *const dur[] = {"once", "30s", "5m", "15m", "30m", "1h", "12h",
                                       "until reboot", "always"};
@@ -587,46 +588,46 @@ struct ks_ruleed *ks_ruleed_new(struct ks_service *svc, GtkWindow *parent,
 
     /* 1. process */
     GtkWidget *t1 = new_table();
-    add_row(d, t1, 0, R_PROC, "From this executable", gtk_entry_new(), false,
-            "The value of this field is always the absolute path of the executable.");
-    d->rows[R_PROC].extra = gtk_check_button_new_with_label("is regular expression");
+    add_row(d, t1, 0, R_PROC, _("From this executable"), gtk_entry_new(), false,
+            _("The value of this field is always the absolute path of the executable."));
+    d->rows[R_PROC].extra = gtk_check_button_new_with_label(_("is regular expression"));
     gtk_table_attach(GTK_TABLE(t1), d->rows[R_PROC].extra, 2, 3, 0, 1, GTK_FILL, GTK_FILL, 4, 2);
-    add_row(d, t1, 1, R_CMDLINE, "From this command line", gtk_entry_new(), false,
-            "This field will contain and match the command line of the process.");
-    d->rows[R_CMDLINE].extra = gtk_check_button_new_with_label("Is regular expression");
+    add_row(d, t1, 1, R_CMDLINE, _("From this command line"), gtk_entry_new(), false,
+            _("This field will contain and match the command line of the process."));
+    d->rows[R_CMDLINE].extra = gtk_check_button_new_with_label(_("Is regular expression"));
     gtk_table_attach(GTK_TABLE(t1), d->rows[R_CMDLINE].extra, 2, 3, 1, 2, GTK_FILL, GTK_FILL, 4, 2);
-    add_row(d, t1, 2, R_UID, "From this user ID", gtk_combo_box_entry_new_text(), true, NULL);
-    add_row(d, t1, 3, R_PID, "From this PID", gtk_entry_new(), false, NULL);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t1, gtk_label_new("Process"));
+    add_row(d, t1, 2, R_UID, _("From this user ID"), gtk_combo_box_entry_new_text(), true, NULL);
+    add_row(d, t1, 3, R_PID, _("From this PID"), gtk_entry_new(), false, NULL);
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t1, gtk_label_new(_("Process")));
 
     /* 2. network */
     GtkWidget *t2 = new_table();
     static const char *const protos[] = {"TCP", "UDP", "UDPLITE", "TCP6", "UDP6", "UDPLITE6",
                                          "ICMP", "ICMP6", "SCTP", "SCTP6"};
-    add_row(d, t2, 0, R_PROTO, "Protocol", entry_combo(protos, sizeof(protos) / sizeof(protos[0])),
-            true, "Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression "
-                  "or a list separated by commas.");
-    add_row(d, t2, 1, R_IFACE, "Network interface", gtk_combo_box_entry_new_text(), true, NULL);
-    add_row(d, t2, 2, R_SRCPORT, "From this port", gtk_entry_new(), false,
-            "You can specify multiple ports using regular expressions or a list separated by "
-            "commas.");
-    add_row(d, t2, 3, R_DSTPORT, "To this port", gtk_entry_new(), false,
-            "You can specify multiple ports using regular expressions or a list separated by "
-            "commas.");
+    add_row(d, t2, 0, R_PROTO, _("Protocol"), entry_combo(protos, sizeof(protos) / sizeof(protos[0])),
+            true, _("Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression "
+                  "or a list separated by commas."));
+    add_row(d, t2, 1, R_IFACE, _("Network interface"), gtk_combo_box_entry_new_text(), true, NULL);
+    add_row(d, t2, 2, R_SRCPORT, _("From this port"), gtk_entry_new(), false,
+            _("You can specify multiple ports using regular expressions or a list separated by "
+            "commas."));
+    add_row(d, t2, 3, R_DSTPORT, _("To this port"), gtk_entry_new(), false,
+            _("You can specify multiple ports using regular expressions or a list separated by "
+            "commas."));
     static const char *const nets[] = {"LAN", "MULTICAST", "127.0.0.0/8", "192.168.0.0/24",
                                        "192.168.1.0/24", "192.168.2.0/24", "192.168.0.0/16",
                                        "169.254.0.0/16", "172.16.0.0/12", "10.0.0.0/8",
                                        "::1/128", "fc00::/7", "ff00::/8", "fe80::/10", "fd00::/8"};
-    const char *iptip = "You can specify a single IP, a network range (192.168.1.0/24), a "
-                        "regular expression, or a list separated by commas.";
-    add_row(d, t2, 4, R_SRCIP, "From this IP / Network",
+    const char *iptip = _("You can specify a single IP, a network range (192.168.1.0/24), a "
+                        "regular expression, or a list separated by commas.");
+    add_row(d, t2, 4, R_SRCIP, _("From this IP / Network"),
             entry_combo(nets, sizeof(nets) / sizeof(nets[0])), true, iptip);
-    add_row(d, t2, 5, R_DSTIP, "To this IP / Network",
+    add_row(d, t2, 5, R_DSTIP, _("To this IP / Network"),
             entry_combo(nets, sizeof(nets) / sizeof(nets[0])), true, iptip);
-    add_row(d, t2, 6, R_DSTHOST, "To this host", gtk_entry_new(), false,
-            "Domains separated by commas, or a regular expression (www.domain.org, "
-            ".*\\.domain.org).");
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t2, gtk_label_new("Network"));
+    add_row(d, t2, 6, R_DSTHOST, _("To this host"), gtk_entry_new(), false,
+            _("Domains separated by commas, or a regular expression (www.domain.org, "
+            ".*\\.domain.org)."));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t2, gtk_label_new(_("Network")));
     /* load_aliases_into_menu(): the network aliases at the top of the destination combo */
     const struct ks_py_aliases *al = ks_service_aliases(svc);
     for (size_t i = al != NULL ? al->len : 0; i > 0; i--) {
@@ -640,35 +641,35 @@ struct ks_ruleed *ks_ruleed_new(struct ks_service *svc, GtkWindow *parent,
         int row;
         const char *label, *tip;
     } lists[] = {
-        {R_LISTS, "To this list of domains", "Select a directory with lists of domains to block."},
-        {R_LISTS_RE, "To this list of domains (regular expressions)",
-         "Select a directory with files containing regular expressions."},
-        {R_LISTS_IPS, "To this list of IPs", "Select a directory with files containing lists of IPs."},
-        {R_LISTS_NETS, "To this list of network ranges",
-         "Select a directory with files containing lists of network ranges."},
+        {R_LISTS, N_("To this list of domains"), N_("Select a directory with lists of domains to block.")},
+        {R_LISTS_RE, N_("To this list of domains (regular expressions)"),
+         N_("Select a directory with files containing regular expressions.")},
+        {R_LISTS_IPS, N_("To this list of IPs"), N_("Select a directory with files containing lists of IPs.")},
+        {R_LISTS_NETS, N_("To this list of network ranges"),
+         N_("Select a directory with files containing lists of network ranges.")},
     };
     for (int i = 0; i < 4; i++) {
-        add_row(d, t3, i, lists[i].row, lists[i].label, gtk_entry_new(), false, lists[i].tip);
+        add_row(d, t3, i, lists[i].row, _(lists[i].label), gtk_entry_new(), false, _(lists[i].tip));
         GtkWidget *btn = gtk_button_new_from_stock(GTK_STOCK_OPEN);
         g_object_set_data(G_OBJECT(btn), "row", GINT_TO_POINTER(lists[i].row));
         g_signal_connect(btn, "clicked", G_CALLBACK(on_choose_dir), d);
         d->rows[lists[i].row].extra = btn;
         gtk_table_attach(GTK_TABLE(t3), btn, 2, 3, (guint)i, (guint)i + 1, GTK_FILL, GTK_FILL, 4, 2);
     }
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t3, gtk_label_new("Lists"));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t3, gtk_label_new(_("Lists")));
 
     /* 4. advanced */
     GtkWidget *t4 = new_table();
-    add_row(d, t4, 0, R_MD5, "md5", gtk_entry_new(), false, NULL);
-    d->sensitive = gtk_check_button_new_with_label("Case-sensitive");
+    add_row(d, t4, 0, R_MD5, _("md5"), gtk_entry_new(), false, NULL);
+    d->sensitive = gtk_check_button_new_with_label(_("Case-sensitive"));
     gtk_widget_set_tooltip_text(d->sensitive,
-                                "By default, the field of the rules are case-insensitive.");
-    d->nolog = gtk_check_button_new_with_label("Don't log connections");
+                                _("By default, the field of the rules are case-insensitive."));
+    d->nolog = gtk_check_button_new_with_label(_("Don't log connections"));
     gtk_table_attach(GTK_TABLE(t4), d->sensitive, 0, 2, 1, 2, GTK_FILL, GTK_FILL, 4, 2);
     gtk_table_attach(GTK_TABLE(t4), d->nolog, 0, 2, 2, 3, GTK_FILL, GTK_FILL, 4, 2);
-    gtk_table_attach(GTK_TABLE(t4), gtk_label_new("In development"), 0, 2, 3, 4, GTK_FILL,
+    gtk_table_attach(GTK_TABLE(t4), gtk_label_new(_("In development")), 0, 2, 3, 4, GTK_FILL,
                      GTK_FILL, 4, 8);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t4, gtk_label_new("Advanced"));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), t4, gtk_label_new(_("Advanced")));
     gtk_box_pack_start(GTK_BOX(vbox), nb, TRUE, TRUE, 0);
 
     /* status and buttons */
@@ -679,7 +680,7 @@ struct ks_ruleed *ks_ruleed_new(struct ks_service *svc, GtkWindow *parent,
     gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_END);
     gtk_box_set_spacing(GTK_BOX(bb), 6);
     GtkWidget *help = gtk_button_new_from_stock(GTK_STOCK_HELP);
-    GtkWidget *reset = gtk_button_new_with_label("Reset");
+    GtkWidget *reset = gtk_button_new_with_label(_("Reset"));
     GtkWidget *close = gtk_button_new_from_stock(GTK_STOCK_CLOSE);
     GtkWidget *save = gtk_button_new_from_stock(GTK_STOCK_SAVE);
     g_signal_connect(help, "clicked", G_CALLBACK(on_help), d);
@@ -755,7 +756,7 @@ bool ks_ruleed_new_rule_from_connection(struct ks_ruleed *d, const char *time)
             idx = (int)i;
     }
     if (idx == -1) {
-        char *m = g_strdup_printf("Unable to load connection, unknown node? (%d)", idx);
+        char *m = g_strdup_printf(_("Unable to load connection, unknown node? (%d)"), idx);
         set_status(d, m, true);
         g_free(m);
         g_free(node);
@@ -780,7 +781,7 @@ void ks_ruleed_edit_rule(struct ks_ruleed *d, const char *node, const char *name
     reset_state(d);
     const struct ks_ui_rule *row = ks_rulesdb_get(ks_service_rules(d->svc), name, node);
     if (row == NULL) {
-        message(d, GTK_MESSAGE_WARNING, "New rule error", "Rule not found by that name and node");
+        message(d, GTK_MESSAGE_WARNING, _("New rule error"), _("Rule not found by that name and node"));
         return;
     }
     struct ks_arena a = {0};
@@ -794,9 +795,9 @@ void ks_ruleed_edit_rule(struct ks_ruleed *d, const char *node, const char *name
     for (size_t i = 0; i < sizeof(types) / sizeof(types[0]); i++)
         known |= strcmp(r->operator_->type, types[i]) == 0;
     if (!known) {
-        char *m = g_strdup_printf("This type of rule (%s) is not supported by version %s",
+        char *m = g_strdup_printf(_("This type of rule (%s) is not supported by version %s"),
                                   r->operator_->type, KS_UPSTREAM_VERSION);
-        message(d, GTK_MESSAGE_WARNING, "Rule not supported", m);
+        message(d, GTK_MESSAGE_WARNING, _("Rule not supported"), m);
         g_free(m);
         ks_arena_free(&a);
         return;

@@ -1,0 +1,1593 @@
+# Translation of Kisnitch to id_ID, converted from the upstream
+# Qt .ts by tools/ts2po.py. Don't edit by hand: send fixes to the
+# OpenSnitch translations and run tools/update-po.sh.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kisnitch\n"
+"Language: id_ID\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+msgid "    Apply this rule to %s  "
+msgstr ""
+
+msgid "   Outgoing:"
+msgstr ""
+
+msgid "#"
+msgstr ""
+
+#, c-format
+msgid "%s node is not connected"
+msgstr ""
+
+msgid "-"
+msgstr "-"
+
+msgid "12h"
+msgstr "12j"
+
+msgid "15m"
+msgstr "15m"
+
+msgid "15m or less"
+msgstr "15m atau kurang"
+
+msgid "1h"
+msgstr "1j"
+
+msgid "1h or less"
+msgstr "1j atau kurang"
+
+msgid "30m"
+msgstr "30m"
+
+msgid "30m or less"
+msgstr "30m atau kurang"
+
+msgid "30s"
+msgstr "30d"
+
+msgid "30s or less"
+msgstr "30d atau kurang"
+
+msgid "5m"
+msgstr "5m"
+
+msgid "5m or less"
+msgstr "5m atau kurang"
+
+#, c-format
+msgid ""
+"<b>%s</b>\n"
+"\n"
+"<b>Time:</b> %s\n"
+"\n"
+"<b>Process:</b>\n"
+"%s\n"
+"<b>Cmdline:</b>\n"
+"%s\n"
+"<b>CWD:</b>\n"
+"%s\n"
+"\n"
+"<b>UID:</b> %s <b>PID:</b> %s\n"
+"\n"
+"<b>Node:</b> %s\n"
+"\n"
+"<b>%s</b> %s:%s -> %s (%s):%s\n"
+"\n"
+"<b>Rule:</b>\n"
+"%s"
+msgstr ""
+
+msgid "<b><big>Outgoing connection</big></b>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<b>daemon uptime:</b> %s\n"
+"<b>Version:</b> %s\n"
+"<b>Kernel:</b> %s"
+msgstr ""
+
+msgid "<span foreground=\"green\">✔Rule updated.</span>"
+msgstr ""
+
+msgid "<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-checksum\">More info</a>)</span>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<span foreground=\"red\">WARNING, checksums differ for at least one rule.</span>\n"
+"\n"
+"Current process (%u):\n"
+"%s\n"
+"\n"
+"Expected from the rule:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>"
+msgstr ""
+
+msgid "A port (22), a list (80,443) or a range (6000-6007). Empty: any port"
+msgstr ""
+
+msgid "A_pplication"
+msgstr ""
+
+msgid "Absolute path to the CA cert file"
+msgstr "Path absolut ke berkas cert CA"
+
+msgid "Absolute path to the cert file"
+msgstr "Path absolut ke berkas cert"
+
+msgid "Absolute path to the cert key file"
+msgstr "Path absolut ke berkas kunci cert"
+
+msgid "Action"
+msgstr "Aksi"
+
+msgid "ActionParms"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Add at least one statement."
+msgstr "Tambahkan setidaknya satu pernyataan."
+
+msgid "Add new condition"
+msgstr "Tambah syarat baru"
+
+msgid "Adding rule, wait"
+msgstr "Menambahkan aturan, tunggu"
+
+msgid "Address"
+msgstr "Alamat"
+
+msgid "Address of the node."
+msgstr ""
+
+msgid "Addresses"
+msgstr "Alamat"
+
+msgid "Advanced"
+msgstr "Tingkat Lanjut"
+
+msgid "Advanced _editor"
+msgstr ""
+
+msgid "Advanced options"
+msgstr ""
+
+msgid "Alert"
+msgstr ""
+
+msgid "Alerts"
+msgstr "Waspada"
+
+msgid "All"
+msgstr ""
+
+msgid "All applications"
+msgstr "Semua aplikasi"
+
+msgid "Allow"
+msgstr "Izinkan"
+
+msgid "Allow inbound connections to a port"
+msgstr "Izinkan koneksi masuk ke suatu port"
+
+msgid "Allow inbound connections to the selected port."
+msgstr "Izinkan koneksi masuk ke port yang dipilih."
+
+msgid "Allow outbound connections to the selected port."
+msgstr "Izinkan koneksi keluar ke port yang dipilih."
+
+msgid "Allow service (_IN)"
+msgstr "Izinkan layanan (MASUK)"
+
+msgid "Allow service (_OUT)"
+msgstr "Izinkan layanan (KELUAR)"
+
+msgid "Allow will allow the connection"
+msgstr "Allow akan mengizinkan koneksi"
+
+msgid "Allow, deny or reject by port, address and interface, in a table (like ufw)"
+msgstr ""
+
+msgid "Always"
+msgstr "Selalu"
+
+msgid "Any"
+msgstr ""
+
+msgid "Application pids"
+msgstr "PID aplikasi"
+
+msgid "Applications"
+msgstr "Aplikasi"
+
+msgid "Apply configuration to all nodes"
+msgstr "Terapkan konfigurasi ke semua simpul"
+
+msgid "Apply rule to all nodes"
+msgstr "Terapkan aturan ke semua simpul"
+
+msgid "Apply to"
+msgstr "Terapkan ke"
+
+msgid "Applying changes..."
+msgstr "Menerapkan perubahan..."
+
+#, c-format
+msgid "Applying configuration on %s ..."
+msgstr ""
+
+msgid "Are you sure?"
+msgstr ""
+
+msgid "Auth type changed"
+msgstr "Tipe otentikasi berubah"
+
+msgid "Authentication"
+msgstr "Otentikasi"
+
+msgid "Authentication type"
+msgstr "Tipe otentikasi"
+
+msgid "Autostart"
+msgstr ""
+
+msgid "Autostart the GUI upon login"
+msgstr "Mulai otomatis GUI saat log masuk"
+
+msgid "Block outbound network traffic if the daemon unexpectedly dies"
+msgstr "Blok lalu lintas jaringan arah keluar bila daemon mati tak diharapkan"
+
+msgid "By default the GUI is started when login"
+msgstr "Secara baku GUI dimulai saat log masuk"
+
+msgid "By default, the field of the rules are case-insensitive."
+msgstr ""
+
+msgid "CA cert file"
+msgstr ""
+
+msgid "Case-sensitive"
+msgstr "Peka huruf besar kecil"
+
+msgid "Cert file"
+msgstr ""
+
+msgid "Cert key file"
+msgstr ""
+
+msgid "Certificates changed"
+msgstr "Sertifikat berubah"
+
+#, c-format
+msgid "Change default firewall to 'nftables' on node %s?"
+msgstr ""
+
+msgid "Check every n seconds that the interception rules are present."
+msgstr ""
+
+msgid "Checksum"
+msgstr "Checksum"
+
+msgid "Client certificate verification"
+msgstr ""
+
+msgid "Close"
+msgstr "Tutup"
+
+msgid "Command line"
+msgstr "Baris perintah"
+
+msgid "Command line regexp error"
+msgstr "Kesalahan regexp baris perintah"
+
+msgid "Configuration applied."
+msgstr "Konfigurasi diterapkan."
+
+msgid "Connection details"
+msgstr ""
+
+msgid "Connections"
+msgstr "Koneksi"
+
+msgid "Create a new rule"
+msgstr "Buat suatu aturan baru"
+
+msgid "DB journal_mode changed"
+msgstr ""
+
+msgid "DB type changed"
+msgstr "Tipe DB berubah"
+
+msgid "DCCP"
+msgstr ""
+
+msgid "D_escription"
+msgstr "Deskripsi"
+
+msgid "Daemon version"
+msgstr "Versi daemon"
+
+msgid "Database"
+msgstr "Basis Data"
+
+msgid "Database type"
+msgstr "Tipe basis data"
+
+msgid "Debug invalid connections"
+msgstr "Debug koneksi yang tidak valid"
+
+msgid "Default action when the GUI is disconnected"
+msgstr "Aksi baku ketika GUI terputus"
+
+msgid "Default log level"
+msgstr "Tingkat log baku"
+
+msgid "Default position on screen"
+msgstr "Posisi baku pada layar"
+
+msgid "Default target"
+msgstr "Target baku"
+
+msgid "Default timeout"
+msgstr "Tenggat waktu baku"
+
+msgid "Delete"
+msgstr "Hapus"
+
+msgid "Delete all intercepted events"
+msgstr "Hapus semua kejadian yang diintersepsi"
+
+msgid "Delete this node"
+msgstr "Hapus simpul ini"
+
+msgid "Delete this rule?"
+msgstr ""
+
+msgid "Deleting rule, wait"
+msgstr "Menghapus aturan, tunggu"
+
+msgid "Deny"
+msgstr "Tolak"
+
+msgid "Deny will just discard the connection"
+msgstr "Deny hanya akan membuang koneksi"
+
+msgid "Description"
+msgstr "Deskripsi"
+
+msgid "Desktop notifications"
+msgstr "Notifikasi desktop"
+
+msgid "Dest IP"
+msgstr "IP tujuan"
+
+msgid "Dest IP/Network can not be empty"
+msgstr "IP/jaringan tujuan tidak boleh kosong"
+
+msgid "Dest host"
+msgstr "Host tujuan"
+
+msgid "Dest host can not be empty"
+msgstr "Host tujuan tidak boleh kosong"
+
+msgid "Dest port"
+msgstr "Port tujuan"
+
+msgid "Dest port can not be empty"
+msgstr "Port tujuan tidak boleh kosong"
+
+msgid "Destination IP"
+msgstr "IP Tujuan"
+
+msgid "Destination Port"
+msgstr "Port Tujuan"
+
+msgid "Destination address, network or range. Empty: any"
+msgstr ""
+
+msgid "Destination port"
+msgstr "Port tujuan"
+
+msgid "Details"
+msgstr "Rincian"
+
+msgid "Direction"
+msgstr "Arah"
+
+msgid "Disable"
+msgstr "Nonaktifkan"
+
+msgid "Disable pop-ups, only display a notification"
+msgstr "Matikan pop-up, hanya tampilkan pemberitahuan"
+
+msgid "Disabling firewall..."
+msgstr "Menonaktifkan firewall..."
+
+msgid "Do_wn"
+msgstr ""
+
+msgid "Domains separated by commas, or a regular expression (www.domain.org, .*\\.domain.org)."
+msgstr ""
+
+msgid "Don't log connections"
+msgstr "Jangan catat log koneksi"
+
+msgid "Don't save/Delete rules of duration"
+msgstr "Jangan simpan/hapus aturan durasi"
+
+msgid "Don't verify certs"
+msgstr "Jangan verifikasi cert"
+
+msgid "Dropped"
+msgstr "Dibuang"
+
+msgid "Dst IP regexp error"
+msgstr "Kesalahan regexp IP tujuan"
+
+msgid "Dst host regexp error"
+msgstr "Kesalahan regexp host tujuan"
+
+msgid "Dst port regexp error"
+msgstr "Kesalahan regexp port tujuan"
+
+msgid "Duplicate"
+msgstr "Duplikatkan"
+
+msgid "Duration"
+msgstr "Durasi"
+
+msgid "Edit"
+msgstr "Sunting"
+
+msgid "Edit rule"
+msgstr "Sunting aturan"
+
+msgid "Enable"
+msgstr "Fungsikan"
+
+msgid "Enable DB Write-Ahead Logging (WAL)"
+msgstr "Fungsikan Write-Ahead Logging (WAL) DB"
+
+msgid "Enable checksums verification"
+msgstr "Fungsikan verifikasi checksum"
+
+msgid "Enabled"
+msgstr "Difungsikan"
+
+msgid "Enabling firewall..."
+msgstr "Memfungsikan firewall..."
+
+msgid "Environment variables"
+msgstr "Variabel lingkungan"
+
+msgid "Equal"
+msgstr "Sama dengan"
+
+msgid "Error"
+msgstr "Galat"
+
+#, c-format
+msgid "Error adding rule: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error adding rules:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error applying configuration: %s"
+msgstr ""
+
+#, c-format
+msgid "Error applying rule: %s"
+msgstr ""
+
+#, c-format
+msgid "Error creating new rule from event (%s)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error deleting node\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error deleting rule, %s"
+msgstr ""
+
+msgid "Error exporting rules"
+msgstr "Kesalahan saat mengekspor aturan"
+
+#, c-format
+msgid ""
+"Error exporting rules of the following nodes:\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error exporting the following rules:\n"
+"%s"
+msgstr ""
+
+msgid "Error getting INPUT chain policy"
+msgstr "Kesalahan saat mengambil kebijakan rantai INPUT"
+
+msgid "Error getting OUTPUT chain policy"
+msgstr "Kesalahan saat mengambil kebijakan rantai OUTPUT"
+
+#, c-format
+msgid "Error importing rules from %s"
+msgstr ""
+
+#, c-format
+msgid "Error loading config %s: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error loading process information:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error loading rule"
+msgstr ""
+
+msgid "Error saving rule"
+msgstr "Kesalahan saat menyimpan aturan"
+
+#, c-format
+msgid "Error saving rule %s"
+msgstr ""
+
+msgid "Error saving the CSV file"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error stopping monitoring process:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error:"
+msgstr "Galat:"
+
+msgid "Events"
+msgstr "Kejadian"
+
+msgid "Events tab columns"
+msgstr "Kolom tab kejadian"
+
+msgid "Exclude outbound connections to a port from being intercepted"
+msgstr "Kecualikan koneksi keluar ke suatu port dari intersepsi"
+
+msgid "Exclude service"
+msgstr "Kecualikan layanan"
+
+msgid "Executed from"
+msgstr ""
+
+msgid "Export"
+msgstr "Ekspor"
+
+msgid "Export events to CSV"
+msgstr "Ekspor kejadian ke CSV"
+
+msgid "Export rules"
+msgstr "Ekspor aturan"
+
+msgid "Family"
+msgstr "Keluarga"
+
+msgid "File"
+msgstr "Berkas"
+
+msgid "Filter"
+msgstr "Penyaring"
+
+msgid "Filter connections also by:"
+msgstr "Juga saring koneksi berdasarkan:"
+
+msgid "Filter files"
+msgstr "Saring berkas"
+
+msgid "Filter sockets"
+msgstr "Saring soket"
+
+msgid "Firewall"
+msgstr "Firewall"
+
+msgid "Firewall rule"
+msgstr "Aturan firewall"
+
+msgid "Firewall rules"
+msgstr ""
+
+msgid "Firewall rules monitoring interval (seconds)"
+msgstr "Interval pemantauan aturan firewall (detik)"
+
+msgid "Firewall status error (report on github please): no firewall configuration"
+msgstr ""
+
+msgid "Flush connections on start"
+msgstr "Flush koneksi saat mulai"
+
+msgid "From"
+msgstr ""
+
+msgid "From this IP / Network"
+msgstr "Dari IP / Jaringan ini"
+
+msgid "From this PID"
+msgstr "Dari PID ini"
+
+msgid "From this command line"
+msgstr "Dari baris perintah ini"
+
+msgid "From this executable"
+msgstr "Dari executable ini"
+
+msgid "From this port"
+msgstr "Dari port ini"
+
+msgid "From this user ID"
+msgstr "Dari ID pengguna ini"
+
+msgid "Garbage collector percentage"
+msgstr "Persentase garbage collector"
+
+msgid "General"
+msgstr "Umum"
+
+msgid "Greater or equal than"
+msgstr "Lebih dari atau sama dengan"
+
+msgid "Greater than"
+msgstr "Lebih dari"
+
+msgid "Help"
+msgstr "Bantuan"
+
+msgid "Hook"
+msgstr ""
+
+msgid "HostName"
+msgstr "Nama Host"
+
+msgid "Hosts"
+msgstr "Host"
+
+msgid "I/O Statistics"
+msgstr "Statistik I/O"
+
+msgid "ICMP"
+msgstr "ICMP"
+
+msgid "If checked, this field will be selected when a pop-up is displayed."
+msgstr ""
+
+msgid "If checked, this rule will take precedence over the rest of the rules (except the ones with the same name or priority)."
+msgstr ""
+
+msgid "If empty, default rules path will be /etc/opensnitchd/rules"
+msgstr "Bila kosong, path aturan baku adalah /etc/opensnitchd/rules"
+
+msgid "Import rules"
+msgstr "Impor aturan"
+
+msgid "In"
+msgstr ""
+
+msgid "In (incoming)"
+msgstr ""
+
+msgid "In development"
+msgstr "Dalam pengembangan"
+
+msgid "In memory"
+msgstr "Dalam memori"
+
+msgid "In order to configure firewall rules from the GUI, we need to use 'nftables' instead of 'iptables'"
+msgstr "Untuk mengonfigurasi aturan firewall dari GUI, kami perlu memakai 'nftables' sebagai pengganti 'iptables'"
+
+msgid "Inbound"
+msgstr "Masuk"
+
+msgid "Incoming:"
+msgstr ""
+
+msgid "Info"
+msgstr "Info"
+
+msgid "Interface"
+msgstr ""
+
+msgid "Internal"
+msgstr "Internal"
+
+msgid "Invalid UID, it must be a digit."
+msgstr "UID tidak valid, itu mesti berupa suatu digit."
+
+#, c-format
+msgid "Invalid action."
+msgstr ""
+
+#, c-format
+msgid "Invalid rule name (not allowed characters: '%s' )"
+msgstr ""
+
+#, c-format
+msgid "Invalid rule: %s"
+msgstr ""
+
+msgid "Is regular expression"
+msgstr "Adalah ekspresi reguler"
+
+msgid "Kisnitch: interception disabled"
+msgstr ""
+
+msgid "Kisnitch: interception enabled"
+msgstr ""
+
+msgid "Kisnitch: no daemon connected"
+msgstr ""
+
+msgid "Language"
+msgstr "Bahasa"
+
+msgid "Language changed"
+msgstr "Bahasa diubah"
+
+msgid "Less or equal than"
+msgstr "Kurang dari atau sama dengan"
+
+msgid "Less than"
+msgstr "Kurang dari"
+
+msgid "Lists"
+msgstr ""
+
+msgid "Lists field cannot be empty"
+msgstr "Ruas daftar tidak boleh kosong"
+
+msgid "Lists field must be a directory"
+msgstr "Ruas daftar mesti berupa suatu direktori"
+
+msgid "Log UTC timestamps"
+msgstr "Catat log stempel waktu UTC"
+
+msgid "Log file"
+msgstr "Berkas log"
+
+msgid "Log timestamp microseconds"
+msgstr "Catat log mikro detik stempel waktu"
+
+msgid "Logging"
+msgstr "Pencatatan log"
+
+msgid "Max events"
+msgstr "Kejadian maks"
+
+msgid "Max gRPC channel size"
+msgstr "Ukuran kanal gRPC maks"
+
+msgid "Max server clients"
+msgstr ""
+
+msgid "Max server workers"
+msgstr ""
+
+msgid "Max stats"
+msgstr "Stat maks"
+
+msgid "Maximum days of events to keep"
+msgstr "Berapa hari maksimum kejadian dipertahankan"
+
+msgid "Maximum size of each message from nodes. Default 4MB"
+msgstr "Ukuran maksimum dari setiap pesan dari simpul. Baku 4MB"
+
+msgid "Memory mapped files"
+msgstr "Berkas memory mapped"
+
+msgid "Minutes between events purges"
+msgstr "Menit antara pembersihan kejadian"
+
+msgid "Mutual TLS"
+msgstr "TLS Mutual"
+
+msgid "Name"
+msgstr "Nama"
+
+msgid "Netstat"
+msgstr "Netstat"
+
+msgid "Network"
+msgstr "Jaringan"
+
+msgid "Network interface"
+msgstr "Antar muka jaringan"
+
+msgid "Network interface (in: where it arrives, out: where it leaves). Empty: any"
+msgstr ""
+
+msgid "Network interface can not be empty"
+msgstr "Antar muka jaringan tidak boleh kosong"
+
+msgid "Network interface regexp error"
+msgstr "Kesalahan regexp antar muka jaringan"
+
+msgid "New"
+msgstr "Baru"
+
+msgid "New node connected"
+msgstr "Simpul baru terhubung"
+
+msgid "New rule"
+msgstr "Aturan baru"
+
+msgid "New rule error"
+msgstr "Kesalahan aturan baru"
+
+msgid "No nodes connected"
+msgstr ""
+
+msgid "No ufw application profiles installed"
+msgstr ""
+
+msgid "Node"
+msgstr "Simpul"
+
+msgid "Node address changed (update GUI address if needed)"
+msgstr "Alamat simpul berubah (perbarui alamat GUI bila diperlukan)"
+
+msgid "Nodes"
+msgstr "Simpul"
+
+msgid "Not equal"
+msgstr "Tidak sama dengan"
+
+msgid "On"
+msgstr ""
+
+msgid "Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression or a list separated by commas."
+msgstr ""
+
+msgid "Open files"
+msgstr "Berkas terbuka"
+
+msgid "Open main window"
+msgstr "Buka jendela utama"
+
+msgid "Open the rule in the full firewall rule editor"
+msgstr ""
+
+msgid "OpenSnitch version mismatch!"
+msgstr ""
+
+msgid "Out"
+msgstr ""
+
+msgid "Out (outgoing)"
+msgstr ""
+
+msgid "Outbound"
+msgstr "Keluar"
+
+msgid "PID"
+msgstr "PID"
+
+msgid "PID field can not be empty"
+msgstr "Ruas PID tidak boleh kosong"
+
+msgid "PID field regexp error"
+msgstr "Kesalahan regexp ruas PID"
+
+msgid "P_ort"
+msgstr ""
+
+msgid "P_rotocol"
+msgstr "Protokol"
+
+msgid "Parameters"
+msgstr ""
+
+msgid "Path"
+msgstr "Path"
+
+msgid "Permanent"
+msgstr "Permanen"
+
+msgid "Policy"
+msgstr ""
+
+#, c-format
+msgid "Policy not applied: %s"
+msgstr ""
+
+msgid "Pop-up default action."
+msgstr ""
+
+msgid "Pop-up default duration"
+msgstr "Pop up durasi baku"
+
+msgid "Pop-ups"
+msgstr "Pop-up"
+
+msgid "Port"
+msgstr ""
+
+msgid "Ports"
+msgstr "Port"
+
+msgid "Preferences"
+msgstr "Preferensi"
+
+msgid "Priority rule"
+msgstr "Aturan prioritas"
+
+msgid "Process"
+msgstr "Proses"
+
+msgid "Process details"
+msgstr "Rincian proses"
+
+#, c-format
+msgid "Process launched from: %s"
+msgstr ""
+
+msgid "Process monitor method"
+msgstr "Metode pemantauan proses"
+
+msgid "Process path must be checked in order to verify checksums."
+msgstr "Path proses mesti diperiksa untuk memverifikasi checksum."
+
+msgid "Process path regexp error"
+msgstr "Kesalahan regexp path proses"
+
+#, c-format
+msgid "Process path: %s"
+msgstr ""
+
+msgid "Profile"
+msgstr "Profil"
+
+msgid "Protocol"
+msgstr "Protokol"
+
+msgid "Protocol regexp error"
+msgstr "Kesalahan regexp protokol"
+
+msgid "Quit"
+msgstr "Keluar"
+
+msgid "Refresh interval"
+msgstr ""
+
+msgid "Refresh interval (seconds)"
+msgstr "Interval penyegaran (detik)"
+
+msgid "Reject"
+msgstr "Tolak"
+
+msgid "Reject will drop the connection, and kill the socket that initiated it"
+msgstr "Reject akan memutus koneksi, dan mematikan soket yang mengawalinya"
+
+msgid "Remove selected condition"
+msgstr "Hapus syarat yang dipilih"
+
+msgid "Reset"
+msgstr ""
+
+msgid "Restart the GUI in order changes to take effect"
+msgstr "Jalankan ulang GUI agar perubahan berdampak"
+
+msgid "Rule"
+msgstr "Aturan"
+
+msgid "Rule added"
+msgstr "Aturan ditambahkan"
+
+msgid "Rule applied."
+msgstr "Aturan diterapkan."
+
+msgid "Rule deleted"
+msgstr "Aturan dihapus"
+
+msgid "Rule hook (invalid) not supported yet"
+msgstr ""
+
+msgid "Rule not found by that name and node"
+msgstr "Aturan tidak ditemukan berdasarkan nama dan simpul itu"
+
+msgid "Rule not supported"
+msgstr ""
+
+msgid "Rule saved"
+msgstr "Aturan disimpan"
+
+#, c-format
+msgid ""
+"Rule saved, but there're other rules with errors (REVIEW):\n"
+"%s"
+msgstr ""
+
+msgid "Rules"
+msgstr "Aturan"
+
+msgid "Rules are checked in order: the first one that matches decides"
+msgstr ""
+
+msgid "Rules export"
+msgstr ""
+
+msgid "Rules export error"
+msgstr ""
+
+#, c-format
+msgid "Rules exported to %s"
+msgstr ""
+
+msgid "Rules import"
+msgstr ""
+
+msgid "Rules import error"
+msgstr ""
+
+msgid "Rules imported fine"
+msgstr "Aturan diimpor dengan baik"
+
+msgid "Rules path"
+msgstr ""
+
+msgid "SCTP"
+msgstr "SCTP"
+
+msgid "Save as CSV"
+msgstr "Simpan sebagai CSV"
+
+msgid "Saving configuration..."
+msgstr "Menyimpan konfigurasi..."
+
+msgid "Saving rule, wait"
+msgstr ""
+
+msgid "Select"
+msgstr "Pilih"
+
+msgid "Select a directory to export rules"
+msgstr "Pilih suatu direktori untuk mengekspor aturan"
+
+msgid "Select a directory with files containing lists of IPs."
+msgstr ""
+
+msgid "Select a directory with files containing lists of network ranges."
+msgstr ""
+
+msgid "Select a directory with files containing regular expressions."
+msgstr ""
+
+msgid "Select a directory with lists of domains to block."
+msgstr ""
+
+msgid "Select a directory with rules to import (JSON files)"
+msgstr "Pilih suatu direktori berisi aturan yang akan diimpor (berkas JSON)"
+
+msgid "Select at least one field."
+msgstr "Pilih paling tidak satu ruas."
+
+#, c-format
+msgid "Select the protocol of the port."
+msgstr ""
+
+msgid "Server"
+msgstr "Server"
+
+msgid "Server address changed"
+msgstr "Alamat server berubah"
+
+msgid "Server cert file"
+msgstr ""
+
+msgid "Server max clients changed"
+msgstr ""
+
+msgid "Server max workers changed"
+msgstr ""
+
+msgid "Server options changed"
+msgstr "Opsi server berubah"
+
+msgid "Show advanced view by default"
+msgstr "Tampilkan tilikan tingkat lanjut secara baku"
+
+msgid "Show the preferences of this node"
+msgstr "Tampilkan preferensi dari simpul ini"
+
+msgid "Simple"
+msgstr "Sederhana"
+
+msgid "Simple TLS"
+msgstr "TLS Sederhana"
+
+msgid "Simple: no authentication. TLS comes with phase 10."
+msgstr ""
+
+msgid "Source IP"
+msgstr "IP Sumber"
+
+msgid "Source IP regexp error"
+msgstr "Kesalahan regexp IP sumber"
+
+msgid "Source IP/Network can not be empty"
+msgstr "IP/jaringan sumber tidak boleh kosong"
+
+msgid "Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 address matches IPv4 only: add another rule for IPv6"
+msgstr ""
+
+msgid "Source port"
+msgstr "Port sumber"
+
+msgid "Source port can not be empty"
+msgstr "Port sumber tidak boleh kosong"
+
+msgid "Source port regexp error"
+msgstr "Kesalahan regexp port sumber"
+
+msgid "Stack"
+msgstr "Stack"
+
+msgid "Start"
+msgstr ""
+
+msgid "Start or Stop interception"
+msgstr "Mulai atau hentikan intersepsi"
+
+msgid "Start or stop interception of this node"
+msgstr "Mulai atau hentikan intersepsi atas simpul ini"
+
+msgid "Start or stop monitoring this process"
+msgstr "Mulai atau hentikan pemantauan proses ini"
+
+msgid "Start/Stop"
+msgstr ""
+
+msgid "State"
+msgstr "Keadaan"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "System default"
+msgstr "Baku sistem"
+
+msgid "System firewall"
+msgstr ""
+
+msgid "TCP"
+msgstr "TCP"
+
+msgid "TCP and UDP"
+msgstr ""
+
+#, c-format
+msgid "TCP and UDP need a port; without a port, select one protocol or \"any\"."
+msgstr ""
+
+msgid "TLS is not supported by this build (TLS=1), the server stays on Simple"
+msgstr ""
+
+msgid "Table"
+msgstr ""
+
+msgid "Temporary"
+msgstr "Temporer"
+
+msgid "Test"
+msgstr "Tes"
+
+msgid "The address where the GUI is listening for new nodes."
+msgstr ""
+
+msgid "The advanced view allows you to easily select multiple fields."
+msgstr ""
+
+#, c-format
+msgid ""
+"The firewall configuration is outdated,\n"
+"you need to update it to the new format: <a href=\"%s\">learn more</a>"
+msgstr ""
+
+msgid "The input or output chain is missing from this node's firewall."
+msgstr ""
+
+msgid "The rules are checked in alphabetical order, so you can name them accordingly to control which ones are checked first."
+msgstr ""
+
+#, c-format
+msgid "The source and destination addresses must be both IPv4 or both IPv6."
+msgstr ""
+
+msgid "The system firewall is disabled: these rules apply once it's enabled in the Firewall window."
+msgstr ""
+
+msgid "The value of this field is always the absolute path of the executable."
+msgstr ""
+
+#, c-format
+msgid "There was an error: %s"
+msgstr ""
+
+msgid "There're no nodes connected"
+msgstr "Tidak ada simpul yang tersambung"
+
+msgid "There're no nodes connected."
+msgstr "Tidak ada simpul yang tersambung."
+
+msgid "There's already a rule with this name."
+msgstr "Sudah ada aturan dengan nama ini."
+
+msgid "This field will contain and match the command line of the process."
+msgstr ""
+
+msgid "This node has no firewall configuration (it must use nftables)."
+msgstr ""
+
+#, c-format
+msgid "This node has no firewall configuration."
+msgstr ""
+
+msgid "This option limits the number of nodes (incoming connections)."
+msgstr ""
+
+msgid "This timeout is the countdown you see on the pop-up."
+msgstr ""
+
+#, c-format
+msgid "This type of rule (%s) is not supported by version %s"
+msgstr ""
+
+msgid "Time"
+msgstr "Waktu"
+
+msgid "To"
+msgstr ""
+
+msgid "To clipboard"
+msgstr "Ke papan klip"
+
+msgid "To disk"
+msgstr "Ke disk"
+
+msgid "To this IP / Network"
+msgstr "Ke IP / Jaringan ini"
+
+msgid "To this host"
+msgstr "Ke host ini"
+
+msgid "To this list of IPs"
+msgstr "Ke daftar IP ini"
+
+msgid "To this list of domains"
+msgstr "Ke daftar domain ini"
+
+msgid "To this list of domains (regular expressions)"
+msgstr ""
+
+msgid "To this list of network ranges"
+msgstr "Ke daftar rentang jaringan ini"
+
+msgid "To this port"
+msgstr "Ke port ini"
+
+msgid "UDP"
+msgstr ""
+
+msgid "UDP-Lite"
+msgstr ""
+
+msgid "UI"
+msgstr "UI"
+
+msgid "UID"
+msgstr "UID"
+
+#, c-format
+msgid "Unable to load connection, unknown node? (%d)"
+msgstr ""
+
+#, c-format
+msgid "Unknown process %s"
+msgstr ""
+
+msgid "Until reboot"
+msgstr "Sampai boot ulang"
+
+msgid "Update All"
+msgstr "Perbarui Semua"
+
+msgid "Update rule"
+msgstr "Perbarui aturan"
+
+msgid "Uptime"
+msgstr "Uptime"
+
+msgid "Use system notifications"
+msgstr "Gunakan notifikasi sistem"
+
+msgid "Use the tray icon's alert"
+msgstr ""
+
+msgid "User ID"
+msgstr "ID Pengguna"
+
+msgid "User ID can not be empty"
+msgstr "ID pengguna tidak boleh kosong"
+
+msgid "User ID regexp error"
+msgstr "Kesalahan regexp ID pengguna"
+
+msgid "Users"
+msgstr "Pengguna"
+
+msgid "Version"
+msgstr "Versi"
+
+msgid "View"
+msgstr "Lihat"
+
+msgid "Warning"
+msgstr "Peringatan"
+
+msgid "Warning: Output policy configured to drop. If OpenSnitch dies, outbound network traffic will be blocked."
+msgstr "Peringatan: Kebijakan keluar dikonfigurasi untuk menjatuhkan. Bila OpenSnitch mati, lalu lintas jaringan arah keluar akan diblokir."
+
+msgid "What happens to incoming connections that no rule allows. Deny keeps loopback and replies to your own connections working."
+msgstr ""
+
+msgid "What happens to outgoing connections that no rule allows (before OpenSnitch asks)."
+msgstr ""
+
+msgid "When this option is on, all the existing sockets will be killed."
+msgstr ""
+
+msgid "When this option is selected, the rules of the selected duration are not saved, and the ones already saved are deleted."
+msgstr ""
+
+#, c-format
+msgid "You are running version <b>%s</b> of the daemon, while the UI is at version <b>%s</b>, they might not be fully compatible."
+msgstr ""
+
+msgid "You can specify a single IP, a network range (192.168.1.0/24), a regular expression, or a list separated by commas."
+msgstr ""
+
+msgid "You can specify multiple ports using regular expressions or a list separated by commas."
+msgstr ""
+
+msgid ""
+"You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n"
+"\n"
+"ports: 22 or 22,443 or 50000-60000\n"
+"IPs: 192.168.1.1 or 192.168.1.30-192.168.1.130\n"
+"Values: echo-reply,echo-request\n"
+"Values: new,established,related"
+msgstr ""
+
+msgid ""
+"You must select a file for the database\n"
+"or choose \"In memory\" type."
+msgstr ""
+
+msgid "_Action"
+msgstr "Aksi"
+
+msgid "_Add"
+msgstr "Tambah"
+
+msgid "_Allow"
+msgstr "Izinkan"
+
+msgid "_Close"
+msgstr "Tutup"
+
+msgid "_Delete"
+msgstr "Hapus"
+
+msgid "_Deny"
+msgstr "Tolak"
+
+msgid "_Direction"
+msgstr "Arah"
+
+msgid "_Edit"
+msgstr "Sunting"
+
+msgid "_From"
+msgstr ""
+
+msgid "_Interface"
+msgstr ""
+
+msgid "_New rule"
+msgstr "Aturan baru"
+
+msgid "_Reject"
+msgstr "Tolak"
+
+msgid "_Rules (simple)"
+msgstr ""
+
+msgid "_To"
+msgstr ""
+
+msgid "_Up"
+msgstr ""
+
+msgid "any temporary rules"
+msgstr "sebarang aturan temporer"
+
+msgid "bottom left"
+msgstr "kiri bawah"
+
+msgid "bottom right"
+msgstr "kanan bawah"
+
+msgid "by PID"
+msgstr "berdasarkan PID"
+
+msgid "by command line"
+msgstr "berdasarkan baris perintah"
+
+msgid "by destination ip"
+msgstr "berdasarkan ip tujuan"
+
+msgid "by destination port"
+msgstr "berdasarkan port tujuan"
+
+msgid "by executable"
+msgstr "berdasarkan executable"
+
+msgid "by user id"
+msgstr "berdasarkan id pengguna"
+
+msgid "center"
+msgstr "tengah"
+
+msgid "checksum"
+msgstr "checksum"
+
+msgid "command line can not be empty"
+msgstr "baris perintah tidak boleh kosong"
+
+msgid "days"
+msgstr "hari"
+
+msgid ""
+"depending on the Action (i.e.: target), the syntaxis of the parameters will vary.\n"
+"Some examples:\n"
+"\n"
+" to 1.2.3.4 (snat, dnat)\n"
+" to :8080 (redirect, tproxy)\n"
+" to 1.2.3.4:8080 (snat, dnat)\n"
+" num 1 (queue)\n"
+" to 1024-2048 (masquerade)"
+msgstr ""
+
+#, c-format
+msgid "error loading: %s"
+msgstr ""
+
+#, c-format
+msgid "error starting netstat table: %s"
+msgstr ""
+
+msgid "forever"
+msgstr "selamanya"
+
+msgid "from this PID"
+msgstr "dari PID ini"
+
+msgid "from this command line"
+msgstr "dari baris perintah ini"
+
+msgid "from this executable"
+msgstr "dari executable ini"
+
+msgid "from user "
+msgstr ""
+
+msgid "is regular expression"
+msgstr "adalah ekspresi reguler"
+
+#, c-format
+msgid "loading in %s..."
+msgstr ""
+
+msgid "md5"
+msgstr "md5"
+
+msgid "md5 field regexp error"
+msgstr "kesalahan regexp ruas md5"
+
+msgid "md5 line cannot be empty"
+msgstr "baris md5 tidak boleh kosong"
+
+msgid "minutes"
+msgstr "menit"
+
+msgid "no node"
+msgstr ""
+
+#, c-format
+msgid "node %s not connected"
+msgstr ""
+
+msgid "node exited"
+msgstr ""
+
+#, c-format
+msgid "node not found: %s"
+msgstr ""
+
+msgid "once"
+msgstr "sekali"
+
+msgid "out of memory"
+msgstr ""
+
+msgid "process path can not be empty"
+msgstr "path proses tidak boleh kosong"
+
+msgid "protocol can not be empty, or uncheck it"
+msgstr "protokol tidak boleh kosong, atau hapus centangnya"
+
+msgid "refreshing..."
+msgstr "menyegarkan..."
+
+msgid "to "
+msgstr ""
+
+msgid "to *."
+msgstr ""
+
+msgid "to port "
+msgstr ""
+
+msgid "top left"
+msgstr "kiri atas"
+
+msgid "top right"
+msgstr "kanan atas"
+
+msgid "ufw application profiles (/etc/ufw/applications.d)"
+msgstr ""
+
+msgid "until reboot"
+msgstr "sampai reboot"
+
+#, c-format
+msgid "{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": \"5s\"}}"
+msgstr ""
+
+#, c-format
+msgid "{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": %d, \"proto\": %d, \"family\": %d}}"
+msgstr ""

@@ -19,14 +19,15 @@
 #include "ui/nodes.h"
 #include "ui/pyjson.h"
 #include "ui/stats_fw.h"
+#include "ui/i18n.h"
 
 /* FirewallTableModel columns, after our 11 of ks_fwr_to_array() */
 enum { FC_UUID, FC_ADDR, FC_NAME, FC_TABLE, FC_FAMILY, FC_HOOK, FC_ENABLED, FC_DESC, FC_PARMS,
        FC_ACTION, FC_ACTION_PARMS, FC_N };
 
-static const char *const headers[FC_N] = {"",           "Node",    "Name",   "Table",
-                                          "Family",     "Hook",    "Enabled", "Description",
-                                          "Parameters", "Action",  "ActionParms"};
+static const char *const headers[FC_N] = {"",           N_("Node"),    N_("Name"),   N_("Table"),
+                                          N_("Family"),     N_("Hook"),    N_("Enabled"), N_("Description"),
+                                          N_("Parameters"), N_("Action"),  N_("ActionParms")};
 
 struct ks_sw_fw {
     struct ks_stats_win *w;
@@ -277,7 +278,7 @@ static void popup_menu(struct ks_sw_fw *f, GdkEventButton *ev)
     GtkWidget *menu = gtk_menu_new();
     if (strcmp(action, "accept") == 0 || strcmp(action, "drop") == 0 ||
         strcmp(action, "return") == 0 || strcmp(action, "reject") == 0) {
-        GtkWidget *sub = gtk_menu_new(), *it = gtk_menu_item_new_with_label("Action");
+        GtkWidget *sub = gtk_menu_new(), *it = gtk_menu_item_new_with_label(_("Action"));
         menu_item(sub, "accept", &ctxs[M_ACCEPT]);
         menu_item(sub, "drop", &ctxs[M_DROP]);
         menu_item(sub, "reject", &ctxs[M_REJECT]);
@@ -288,11 +289,11 @@ static void popup_menu(struct ks_sw_fw *f, GdkEventButton *ev)
     }
     menu_item(menu, strcmp(first[FC_ENABLED], "False") == 0 ? "Enable" : "Disable",
               &ctxs[M_ENABLE]);
-    menu_item(menu, "Delete", &ctxs[M_DELETE]);
-    menu_item(menu, "Edit", &ctxs[M_EDIT]);
+    menu_item(menu, _("Delete"), &ctxs[M_DELETE]);
+    menu_item(menu, _("Edit"), &ctxs[M_EDIT]);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-    GtkWidget *exp = gtk_menu_new(), *expi = gtk_menu_item_new_with_label("Export");
-    menu_item(exp, "To clipboard", &ctxs[M_CLIPBOARD]);
+    GtkWidget *exp = gtk_menu_new(), *expi = gtk_menu_item_new_with_label(_("Export"));
+    menu_item(exp, _("To clipboard"), &ctxs[M_CLIPBOARD]);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(expi), exp);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), expi);
     gtk_widget_show_all(menu);
@@ -394,7 +395,7 @@ struct ks_sw_fw *ks_sw_fw_new(struct ks_stats_win *w)
     for (int i = FC_ADDR; i < FC_N; i++) {
         GtkCellRenderer *r = gtk_cell_renderer_text_new();
         GtkTreeViewColumn *c =
-            gtk_tree_view_column_new_with_attributes(headers[i], r, "text", i, NULL);
+            gtk_tree_view_column_new_with_attributes(headers[i][0] != '\0' ? _(headers[i]) : headers[i], r, "text", i, NULL);
         gtk_tree_view_column_set_resizable(c, TRUE);
         gtk_tree_view_column_set_sort_column_id(c, i);
         gtk_tree_view_append_column(GTK_TREE_VIEW(f->tree), c);

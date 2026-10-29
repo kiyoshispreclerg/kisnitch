@@ -21,12 +21,13 @@
 #include "common/unicode.h"
 #include "ui/pyjson.h"
 #include "ui/slug.h"
+#include "ui/i18n.h"
 
 const char *const ks_durations[KS_DURATION_COUNT] = {
     "once", "30s", "5m", "15m", "30m", "1h", "12h", "until restart", "always",
 };
 const char *const ks_duration_labels[KS_DURATION_COUNT] = {
-    "once", "30s", "5m", "15m", "30m", "1h", "12h", "until reboot", "forever",
+    N_("once"), "30s", "5m", "15m", "30m", "1h", "12h", N_("until reboot"), N_("forever"),
 };
 
 #define MD5_KEY "process.hash.md5"
@@ -84,6 +85,7 @@ static int combo_add(struct ks_combo *c, enum ks_field field, const char *pre, c
         c->items = n;
         c->cap = ncap;
     }
+    pre = pre[0] != '\0' ? _(pre) : pre;
     size_t lp = strlen(pre), la = strlen(nz(arg)), lq = strlen(nz(post));
     char *text = malloc(lp + la + lq + 1);
     if (text == NULL)
@@ -441,7 +443,7 @@ static int add_dst_networks(struct ks_combo *c, const char *dst_ip,
                             const struct ks_py_aliases *aliases)
 {
     const char *alias = aliases ? ks_py_aliases_get(aliases, dst_ip) : NULL;
-    if (alias != NULL && combo_add(c, KS_FIELD_DST_NETWORK, "to ", alias, "") < 0)
+    if (alias != NULL && combo_add(c, KS_FIELD_DST_NETWORK, N_("to "), alias, "") < 0)
         return -1;
     struct ks_ip ip;
     bool v4;
@@ -453,7 +455,7 @@ static int add_dst_networks(struct ks_combo *c, const char *dst_ip,
     for (size_t i = 0; i < n; i++) {
         char net[80];
         if (network_text(dst_ip, bits[i], net, sizeof(net)) == 0 &&
-            combo_add(c, KS_FIELD_DST_NETWORK, "to ", net, "") < 0)
+            combo_add(c, KS_FIELD_DST_NETWORK, N_("to "), net, "") < 0)
             return -1;
     }
     return 0;
@@ -470,8 +472,8 @@ static int add_dsthost(struct ks_combo *what, struct ks_combo *ipc, const char *
     for (const char *p = strchr(host, '.'); p != NULL && nparts < 256; p = strchr(p + 1, '.'))
         parts[nparts++] = p + 1;
     for (size_t i = 0; i + 1 < nparts; i++) {
-        if (combo_add(what, KS_FIELD_REGEX_HOST, "to *.", parts[i], "") < 0 ||
-            combo_add(ipc, KS_FIELD_REGEX_HOST, "to *.", parts[i], "") < 0)
+        if (combo_add(what, KS_FIELD_REGEX_HOST, N_("to *."), parts[i], "") < 0 ||
+            combo_add(ipc, KS_FIELD_REGEX_HOST, N_("to *."), parts[i], "") < 0)
             return -1;
     }
     return 0;
@@ -479,16 +481,16 @@ static int add_dsthost(struct ks_combo *what, struct ks_combo *ipc, const char *
 
 static int add_ip_regexp(struct ks_combo *what, struct ks_combo *ipc, const char *dst_ip)
 {
-    if (combo_add(ipc, KS_FIELD_DST_IP, "to ", dst_ip, "") < 0)
+    if (combo_add(ipc, KS_FIELD_DST_IP, N_("to "), dst_ip, "") < 0)
         return -1;
     /* parts = dst_ip.split('.'); for i in range(1, nparts): parts[:i] */
     for (const char *p = strchr(dst_ip, '.'); p != NULL; p = strchr(p + 1, '.')) {
         char *prefix = strndup(dst_ip, (size_t)(p - dst_ip));
         if (prefix == NULL)
             return -1;
-        int rc = combo_add(what, KS_FIELD_REGEX_IP, "to ", prefix, ".*");
+        int rc = combo_add(what, KS_FIELD_REGEX_IP, N_("to "), prefix, ".*");
         if (rc == 0)
-            rc = combo_add(ipc, KS_FIELD_REGEX_IP, "to ", prefix, ".*");
+            rc = combo_add(ipc, KS_FIELD_REGEX_IP, N_("to "), prefix, ".*");
         free(prefix);
         if (rc < 0)
             return -1;
@@ -538,12 +540,12 @@ int ks_prompt_fill_combos(const Protocol__Connection *con, const char *uid_text,
                *dst_host = nz(con->dst_host);
 
     /* the order must match the default target of the preferences */
-    if (combo_add(what, KS_FIELD_PROC_PATH, "from this executable", NULL, NULL) < 0 ||
-        combo_add(what, KS_FIELD_PROC_ARGS, "from this command line", NULL, NULL) < 0 ||
-        combo_add(what, KS_FIELD_DST_PORT, "to port ", port, "") < 0 ||
-        combo_add(what, KS_FIELD_DST_IP, "to ", dst_ip, "") < 0 ||
-        combo_add(what, KS_FIELD_USER_ID, "from user ", uid_text, "") < 0 ||
-        combo_add(what, KS_FIELD_PROC_ID, "from this PID", NULL, NULL) < 0)
+    if (combo_add(what, KS_FIELD_PROC_PATH, N_("from this executable"), NULL, NULL) < 0 ||
+        combo_add(what, KS_FIELD_PROC_ARGS, N_("from this command line"), NULL, NULL) < 0 ||
+        combo_add(what, KS_FIELD_DST_PORT, N_("to port "), port, "") < 0 ||
+        combo_add(what, KS_FIELD_DST_IP, N_("to "), dst_ip, "") < 0 ||
+        combo_add(what, KS_FIELD_USER_ID, N_("from user "), uid_text, "") < 0 ||
+        combo_add(what, KS_FIELD_PROC_ID, N_("from this PID"), NULL, NULL) < 0)
         return -1;
     /* process_id and user_id are unsigned: the "< 0" checks that disable
      * entries 0 and 4 never hold */

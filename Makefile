@@ -67,6 +67,7 @@ UI_LIB_SRC = ui/db.c \
              ui/fwrules.c \
              ui/fwsimple.c \
              ui/highlight.c \
+             ui/i18n.c \
              ui/desktop.c \
              ui/nodeinfo.c \
              ui/netstat.c \
@@ -122,9 +123,35 @@ LIBCOMMON = $(BUILD)/libcommon.a
 LIBDAEMON = $(BUILD)/libdaemon.a
 LIBUI     = $(BUILD)/libui.a
 
-.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui ui-checklist clean test-integration install install-data uninstall
+# ---- translations (po/*.po, from the upstream .ts: tools/update-po.sh) ------
+# One kisnitch.mo per language under $(BUILD)/locale/<lang>/LC_MESSAGES/, the
+# layout `make install` copies to $(DATADIR)/locale and KS_LOCALEDIR points
+# at to try them from the build tree. Without msgfmt (gettext) the UI is
+# built untranslated.
+PO_LANGS = $(patsubst po/%.po,%,$(wildcard po/*.po))
+HAVE_MSGFMT := $(shell command -v msgfmt 2>/dev/null)
+ifneq ($(HAVE_MSGFMT),)
+MOFILES = $(patsubst %,$(BUILD)/locale/%/LC_MESSAGES/kisnitch.mo,$(PO_LANGS))
+endif
 
-all: $(BUILD)/kisnitchd $(BUILD)/kisnitch-gtk
+$(BUILD)/locale/%/LC_MESSAGES/kisnitch.mo: po/%.po
+	@mkdir -p $(@D)
+	msgfmt --check-format --check-header -o $@ $<
+
+# i18n.o has the install path of the catalogs inside; rebuild it when DATADIR changes
+$(BUILD)/ui/.datadir: FORCE
+	@mkdir -p $(@D)
+	@echo '$(DATADIR)' | cmp -s - $@ || echo '$(DATADIR)' > $@
+
+$(BUILD)/ui/i18n.o: $(BUILD)/ui/.datadir
+$(BUILD)/ui/i18n.o: CPPFLAGS += -DKS_LOCALEDIR='"$(DATADIR)/locale"'
+
+FORCE:
+.PHONY: FORCE
+
+.PHONY: all test asan valgrind lint fuzz fuzz-run diff diff-ui ui-checklist clean test-integration install install-data install-mo uninstall
+
+all: $(BUILD)/kisnitchd $(BUILD)/kisnitch-gtk $(MOFILES)
 
 $(BUILD)/kisnitchd: $(BUILD)/$(DAEMON_MAIN:.c=.o) $(LIBDAEMON) $(LIBCOMMON)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
@@ -178,7 +205,8 @@ $(BUILD)/%.o: %.c
 
 # ---- tests ----------------------------------------------------------------
 
-TEST_CPPFLAGS = -DKS_FIXTURES_DIR='"$(CURDIR)/tests/fixtures"'
+TEST_CPPFLAGS = -DKS_FIXTURES_DIR='"$(CURDIR)/tests/fixtures"' \
+                -DKS_TEST_LOCALEDIR='"$(abspath $(BUILD))/locale"'
 
 $(BUILD)/tests/%: tests/unit/%.c tests/harness.h $(LIBDAEMON) $(LIBCOMMON)
 	@mkdir -p $(@D)
@@ -223,7 +251,14 @@ install-data:
 		update-desktop-database -q $(DATADIR)/applications 2>/dev/null || true; \
 	fi
 
-install: all install-data
+install-mo:
+	@for l in $(PO_LANGS); do \
+		[ -f $(BUILD)/locale/$$l/LC_MESSAGES/kisnitch.mo ] || continue; \
+		install -Dm644 $(BUILD)/locale/$$l/LC_MESSAGES/kisnitch.mo \
+			$(DESTDIR)$(DATADIR)/locale/$$l/LC_MESSAGES/kisnitch.mo || exit 1; \
+	done
+
+install: all install-data install-mo
 	install -Dm755 $(BUILD)/kisnitchd $(DESTDIR)$(SBINDIR)/kisnitchd
 	install -Dm755 $(BUILD)/kisnitch-gtk $(DESTDIR)$(BINDIR)/kisnitch-gtk
 
@@ -233,6 +268,7 @@ uninstall:
 	rm -f $(DESTDIR)$(DATADIR)/metainfo/io.github.kisnitch.metainfo.xml
 	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kisnitch.svg
 	@for s in $(ICON_SIZES); do rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/kisnitch.png; done
+	@for l in $(PO_LANGS); do rm -f $(DESTDIR)$(DATADIR)/locale/$$l/LC_MESSAGES/kisnitch.mo; done
 
 # ---- tests of the windows (they need a display: tests/integration/stats_gui.sh) ---
 

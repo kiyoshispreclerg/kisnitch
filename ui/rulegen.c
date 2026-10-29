@@ -22,6 +22,7 @@
 #include <time.h>
 
 #include "ui/slug.h"
+#include "ui/i18n.h"
 
 /* ---- constants ------------------------------------------------------------ */
 
@@ -370,7 +371,7 @@ struct gen {
 
 static bool fail(struct gen *g, const char *msg)
 {
-    snprintf(g->err, g->errlen, "%s", msg);
+    snprintf(g->err, g->errlen, "%s", _(msg));
     return false;
 }
 
@@ -432,7 +433,7 @@ static bool ip_block(struct gen *g, const char *text, bool dst)
 {
     const char *op_ip = dst ? OP_DST_IP : OP_SRC_IP;
     const char *op_net = dst ? OP_DST_NET : OP_SRC_NET;
-    const char *re_err = dst ? "Dst IP regexp error" : "Source IP regexp error";
+    const char *re_err = dst ? N_("Dst IP regexp error") : N_("Source IP regexp error");
     char *t = dup(g, text);
     if (dst && is_alias(g->aliases, text)) {
         g->op_type = T_NETWORK;
@@ -479,14 +480,14 @@ static bool is_local_dir(struct gen *g, const char *text, const char *empty_msg)
     if (g->f->node_is_local && !g->f->apply_all) {
         struct stat st;
         if (stat(text, &st) != 0 || !S_ISDIR(st.st_mode))
-            return fail(g, "Lists field must be a directory");
+            return fail(g, N_("Lists field must be a directory"));
     }
     return true;
 }
 
 static bool list_block(struct gen *g, const struct ks_rcheck *c, const char *operand)
 {
-    if (!is_local_dir(g, c->text, "Lists field cannot be empty"))
+    if (!is_local_dir(g, c->text, N_("Lists field cannot be empty")))
         return false;
     g->op_type = T_LISTS;
     g->op_operand = operand;
@@ -507,82 +508,82 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
     if (f->proto.on) {
         text = f->proto.text;
         if (text[0] == '\0')
-            return fail(&g, "protocol can not be empty, or uncheck it");
+            return fail(&g, N_("protocol can not be empty, or uncheck it"));
         g.op_operand = OP_PROTOCOL;
         g.op_data = dup(&g, text);
         struct rd *r = add(&g, T_SIMPLE, OP_PROTOCOL, lower(&g, text));
-        if (!listish(&g, r, text, false, "Protocol regexp error", true))
+        if (!listish(&g, r, text, false, N_("Protocol regexp error"), true))
             return false;
     }
     if (f->proc.on) {
         if (f->proc.text[0] == '\0')
-            return fail(&g, "process path can not be empty");
+            return fail(&g, N_("process path can not be empty"));
         g.op_operand = OP_PROC_PATH;
         g.op_data = dup(&g, f->proc.text);
         struct rd *r = add(&g, T_SIMPLE, OP_PROC_PATH, f->proc.text);
         if (f->proc_regexp) {
             r->type = T_REGEXP;
             if (!ks_rule_valid_regex(f->proc.text, NULL, 0))
-                return fail(&g, "Process path regexp error");
+                return fail(&g, N_("Process path regexp error"));
         }
     }
     if (f->cmdline.on) {
         if (f->cmdline.text[0] == '\0')
-            return fail(&g, "command line can not be empty");
+            return fail(&g, N_("command line can not be empty"));
         g.op_operand = OP_PROC_COMMAND;
         g.op_data = dup(&g, f->cmdline.text);
         struct rd *r = add(&g, T_SIMPLE, OP_PROC_COMMAND, f->cmdline.text);
         if (f->cmdline_regexp) {
             r->type = T_REGEXP;
             if (!ks_rule_valid_regex(f->cmdline.text, NULL, 0))
-                return fail(&g, "Command line regexp error");
+                return fail(&g, N_("Command line regexp error"));
         }
     }
     if (f->iface.on) {
         if (f->iface.text[0] == '\0')
-            return fail(&g, "Network interface can not be empty");
+            return fail(&g, N_("Network interface can not be empty"));
         g.op_operand = OP_IFACE_OUT;
         g.op_data = dup(&g, f->iface.text);
         struct rd *r = add(&g, T_SIMPLE, OP_IFACE_OUT, f->iface.text);
-        if (!listish(&g, r, f->iface.text, false, "Network interface regexp error", false))
+        if (!listish(&g, r, f->iface.text, false, N_("Network interface regexp error"), false))
             return false;
     }
     if (f->srcport.on) {
         if (f->srcport.text[0] == '\0')
-            return fail(&g, "Source port can not be empty");
+            return fail(&g, N_("Source port can not be empty"));
         g.op_operand = OP_SRC_PORT;
         g.op_data = dup(&g, f->srcport.text);
         struct rd *r = add(&g, T_SIMPLE, OP_SRC_PORT, f->srcport.text);
-        if (!listish(&g, r, f->srcport.text, true, "Source port regexp error", false))
+        if (!listish(&g, r, f->srcport.text, true, N_("Source port regexp error"), false))
             return false;
     }
     if (f->dstport.on) {
         if (f->dstport.text[0] == '\0')
-            return fail(&g, "Dest port can not be empty");
+            return fail(&g, N_("Dest port can not be empty"));
         g.op_operand = OP_DST_PORT;
         g.op_data = dup(&g, f->dstport.text);
         struct rd *r = add(&g, T_SIMPLE, OP_DST_PORT, f->dstport.text);
-        if (!listish(&g, r, f->dstport.text, true, "Dst port regexp error", false))
+        if (!listish(&g, r, f->dstport.text, true, N_("Dst port regexp error"), false))
             return false;
     }
     if (f->dsthost.on) {
         if (f->dsthost.text[0] == '\0')
-            return fail(&g, "Dest host can not be empty");
+            return fail(&g, N_("Dest host can not be empty"));
         g.op_operand = OP_DST_HOST;
         g.op_data = dup(&g, f->dsthost.text);
         struct rd *r = add(&g, T_SIMPLE, OP_DST_HOST, f->dsthost.text);
-        if (!listish(&g, r, f->dsthost.text, false, "Dst host regexp error", false))
+        if (!listish(&g, r, f->dsthost.text, false, N_("Dst host regexp error"), false))
             return false;
     }
     if (f->srcip.on) {
         if (f->srcip.text[0] == '\0')
-            return fail(&g, "Source IP/Network can not be empty");
+            return fail(&g, N_("Source IP/Network can not be empty"));
         if (!ip_block(&g, f->srcip.text, false))
             return false;
     }
     if (f->dstip.on) {
         if (f->dstip.text[0] == '\0')
-            return fail(&g, "Dest IP/Network can not be empty");
+            return fail(&g, N_("Dest IP/Network can not be empty"));
         if (!ip_block(&g, f->dstip.text, true))
             return false;
     }
@@ -590,7 +591,7 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
         const char *uid_type = T_SIMPLE;
         char *uid = dup(&g, f->uid.text);
         if (uid[0] == '\0')
-            return fail(&g, "User ID can not be empty");
+            return fail(&g, N_("User ID can not be empty"));
         /* "user (uid)" is looked up by the name; a lone token must be a number */
         char **tok = g_strsplit(f->uid.text, " ", -1);
         bool parsed;
@@ -608,9 +609,9 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
             if (ks_rule_is_regex(f->uid.text)) {
                 uid_type = T_REGEXP;
                 if (!ks_rule_valid_regex(f->uid.text, NULL, 0))
-                    return fail(&g, "User ID regexp error");
+                    return fail(&g, N_("User ID regexp error"));
             } else {
-                return fail(&g, "Invalid UID, it must be a digit.");
+                return fail(&g, N_("Invalid UID, it must be a digit."));
             }
         }
         g.op_operand = OP_USER_ID;
@@ -619,14 +620,14 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
     }
     if (f->pid.on) {
         if (f->pid.text[0] == '\0')
-            return fail(&g, "PID field can not be empty");
+            return fail(&g, N_("PID field can not be empty"));
         g.op_operand = OP_PROC_ID;
         g.op_data = dup(&g, f->pid.text);
         struct rd *r = add(&g, T_SIMPLE, OP_PROC_ID, f->pid.text);
         if (ks_rule_is_regex(f->pid.text)) {
             r->type = T_REGEXP;
             if (!ks_rule_valid_regex(f->pid.text, NULL, 0))
-                return fail(&g, "PID field regexp error");
+                return fail(&g, N_("PID field regexp error"));
         }
     }
     if (f->lists.on && !list_block(&g, &f->lists, OP_LIST_DOMAINS))
@@ -639,7 +640,7 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
         return false;
     if (f->md5.on) {
         if (f->md5.text[0] == '\0')
-            return fail(&g, "md5 line cannot be empty");
+            return fail(&g, N_("md5 line cannot be empty"));
         const char *low = lower(&g, f->md5.text);
         g.op_operand = OP_MD5;
         g.op_data = dup(&g, low);
@@ -649,14 +650,14 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
             r->type = T_REGEXP;
             /* upstream validates the PID line here, not this one */
             if (!ks_rule_valid_regex(f->pid.text, NULL, 0))
-                return fail(&g, "md5 field regexp error");
+                return fail(&g, N_("md5 field regexp error"));
         }
     }
 
     Protocol__Rule *r = ks_arena_alloc(a, sizeof(*r));
     Protocol__Operator *op = ks_arena_alloc(a, sizeof(*op));
     if (r == NULL || op == NULL)
-        return fail(&g, "out of memory");
+        return fail(&g, N_("out of memory"));
     protocol__rule__init(r);
     protocol__operator__init(op);
     r->operator_ = op;
@@ -678,11 +679,11 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
         op->data = dup(&g, "");
         Protocol__Operator **items = ks_arena_calloc(a, g.n, sizeof(*items));
         if (items == NULL)
-            return fail(&g, "out of memory");
+            return fail(&g, N_("out of memory"));
         for (size_t i = 0; i < g.n; i++) {
             Protocol__Operator *o = ks_arena_alloc(a, sizeof(*o));
             if (o == NULL)
-                return fail(&g, "out of memory");
+                return fail(&g, N_("out of memory"));
             protocol__operator__init(o);
             o->type = dup(&g, g.rd[i].type);
             o->operand = dup(&g, g.rd[i].operand);
@@ -703,7 +704,7 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
         op->operand = dup(&g, g.rd[0].operand);
         op->data = dup(&g, data);
     } else {
-        return fail(&g, "Select at least one field.");
+        return fail(&g, N_("Select at least one field."));
     }
 
     if (f->name[0] == '\0') {
@@ -714,7 +715,7 @@ bool ks_rform_to_rule(const struct ks_rform *f, const struct ks_py_aliases *alia
         g_free(raw);
     }
     if (a->failed)
-        return fail(&g, "out of memory");
+        return fail(&g, N_("out of memory"));
     *out = r;
     return true;
 }

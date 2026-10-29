@@ -24,6 +24,7 @@
 #include "ui/prefs.h"
 #include "ui/rulesops.h"
 #include "ui/statsdb.h"
+#include "ui/i18n.h"
 
 /* Config.STATS_* keys */
 #define KEY_LAST_TAB "statsDialog/last_tab"
@@ -36,9 +37,9 @@ static const enum ks_tab tab_order[KS_NTABS] = {KS_TAB_MAIN,  KS_TAB_NODES, KS_T
                                                 KS_TAB_HOSTS, KS_TAB_PROCS, KS_TAB_ADDRS,
                                                 KS_TAB_PORTS, KS_TAB_USERS, KS_TAB_NETSTAT};
 #define NTABS KS_NTABS
-static const char *const tab_titles[] = {"Events", "Nodes", "Rules", "Hosts",
-                                         "Applications", "Addresses", "Ports", "Users",
-                                         "Netstat"};
+static const char *const tab_titles[] = {N_("Events"), N_("Nodes"), N_("Rules"), N_("Hosts"),
+                                         N_("Applications"), N_("Addresses"), N_("Ports"), N_("Users"),
+                                         N_("Netstat")};
 
 static const char *nz(const char *s)
 {
@@ -728,10 +729,10 @@ static void build_tab(struct ks_stats_win *w, int i)
     gtk_box_pack_start(GTK_BOX(top), tv->label, FALSE, FALSE, 4);
     if (tv->tab == KS_TAB_RULES) {
         w->combo_rules = gtk_combo_box_new_text();
-        static const char *const items[] = {"All applications", "Permanent", "Temporary",
-                                            "Alerts", "Firewall"};
+        static const char *const items[] = {N_("All applications"), N_("Permanent"), N_("Temporary"),
+                                            N_("Alerts"), N_("Firewall")};
         for (size_t k = 0; k < sizeof(items) / sizeof(items[0]); k++)
-            gtk_combo_box_append_text(GTK_COMBO_BOX(w->combo_rules), items[k]);
+            gtk_combo_box_append_text(GTK_COMBO_BOX(w->combo_rules), _(items[k]));
         gtk_combo_box_set_active(GTK_COMBO_BOX(w->combo_rules), 0);
         g_signal_connect(w->combo_rules, "changed", G_CALLBACK(on_rules_combo), w);
         gtk_box_pack_start(GTK_BOX(top), w->combo_rules, FALSE, FALSE, 4);
@@ -756,7 +757,7 @@ static void build_tab(struct ks_stats_win *w, int i)
     }
     if (tv->tab == KS_TAB_PROCS) {
         /* cmdProcDetails: the process details of every pid of the detail */
-        w->proc_button = gtk_button_new_with_label("Process details");
+        w->proc_button = gtk_button_new_with_label(_("Process details"));
         gtk_widget_set_no_show_all(w->proc_button, TRUE);
         g_signal_connect(w->proc_button, "clicked", G_CALLBACK(on_proc_details), tv);
         gtk_box_pack_end(GTK_BOX(top), w->proc_button, FALSE, FALSE, 2);
@@ -819,47 +820,47 @@ struct ks_stats_win *ks_stats_win_new(struct ks_service *svc, struct ks_settings
 
     /* the header: status and counters */
     GtkWidget *hdr = gtk_hbox_new(FALSE, 4);
-    w->start_button = gtk_toggle_button_new_with_label("Start/Stop");
-    gtk_widget_set_tooltip_text(w->start_button, "Start or Stop interception");
+    w->start_button = gtk_toggle_button_new_with_label(_("Start/Stop"));
+    gtk_widget_set_tooltip_text(w->start_button, _("Start or Stop interception"));
     g_signal_connect(w->start_button, "clicked", G_CALLBACK(on_start), w);
     gtk_box_pack_start(GTK_BOX(hdr), w->start_button, FALSE, FALSE, 4);
     GtkWidget *newrule = gtk_button_new_from_stock(GTK_STOCK_NEW);
-    gtk_widget_set_tooltip_text(newrule, "Create a new rule");
+    gtk_widget_set_tooltip_text(newrule, _("Create a new rule"));
     g_signal_connect(newrule, "clicked", G_CALLBACK(on_new_rule), w);
     gtk_box_pack_start(GTK_BOX(hdr), newrule, FALSE, FALSE, 4);
-    GtkWidget *actions_btn = gtk_button_new_with_label("Actions");
+    GtkWidget *actions_btn = gtk_button_new_with_label(_("Actions"));
     g_signal_connect(actions_btn, "clicked", G_CALLBACK(ks_sw_actions_clicked), w);
     gtk_box_pack_start(GTK_BOX(hdr), actions_btn, FALSE, FALSE, 4);
-    GtkWidget *fw_btn = gtk_button_new_with_label("Firewall");
+    GtkWidget *fw_btn = gtk_button_new_with_label(_("Firewall"));
     gtk_button_set_image(GTK_BUTTON(fw_btn),
                          gtk_image_new_from_icon_name("security-high", GTK_ICON_SIZE_BUTTON));
-    gtk_widget_set_tooltip_text(fw_btn, "System firewall");
+    gtk_widget_set_tooltip_text(fw_btn, _("System firewall"));
     g_signal_connect(fw_btn, "clicked", G_CALLBACK(on_fw_button), w);
     gtk_box_pack_start(GTK_BOX(hdr), fw_btn, FALSE, FALSE, 4);
     GtkWidget *prefs_btn = gtk_button_new_from_stock(GTK_STOCK_PREFERENCES);
-    gtk_widget_set_tooltip_text(prefs_btn, "Preferences");
+    gtk_widget_set_tooltip_text(prefs_btn, _("Preferences"));
     g_signal_connect(prefs_btn, "clicked", G_CALLBACK(on_prefs_button), w);
     gtk_box_pack_start(GTK_BOX(hdr), prefs_btn, FALSE, FALSE, 4);
     GtkWidget *help_btn = gtk_button_new_from_stock(GTK_STOCK_HELP);
     g_signal_connect(help_btn, "clicked", G_CALLBACK(ks_sw_help_clicked), w);
     gtk_box_pack_start(GTK_BOX(hdr), help_btn, FALSE, FALSE, 4);
     GtkWidget *l;
-    l = label_pair(hdr, "Status", &w->status_label);
+    l = label_pair(hdr, _("Status"), &w->status_label);
     (void)l;
-    label_pair(hdr, "Connections", &w->l_cons);
-    label_pair(hdr, "Dropped", &w->l_dropped);
-    label_pair(hdr, "Uptime", &w->l_uptime);
-    label_pair(hdr, "Rules", &w->l_rules);
-    label_pair(hdr, "Daemon version", &w->l_ver);
+    label_pair(hdr, _("Connections"), &w->l_cons);
+    label_pair(hdr, _("Dropped"), &w->l_dropped);
+    label_pair(hdr, _("Uptime"), &w->l_uptime);
+    label_pair(hdr, _("Rules"), &w->l_rules);
+    label_pair(hdr, _("Daemon version"), &w->l_ver);
     gtk_box_pack_start(GTK_BOX(vbox), hdr, FALSE, FALSE, 0);
 
     /* the navigation bar */
     GtkWidget *nav = gtk_hbox_new(FALSE, 4);
-    gtk_box_pack_start(GTK_BOX(nav), gtk_label_new("Filter"), FALSE, FALSE, 4);
+    gtk_box_pack_start(GTK_BOX(nav), gtk_label_new(_("Filter")), FALSE, FALSE, 4);
     w->combo_action = gtk_combo_box_new_text();
-    static const char *const acts[] = {"-", "Allow", "Deny", "Reject"};
+    static const char *const acts[] = {N_("-"), N_("Allow"), N_("Deny"), N_("Reject")};
     for (size_t k = 0; k < 4; k++)
-        gtk_combo_box_append_text(GTK_COMBO_BOX(w->combo_action), acts[k]);
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w->combo_action), _(acts[k]));
     gtk_combo_box_set_active(GTK_COMBO_BOX(w->combo_action), 0);
     gtk_box_pack_start(GTK_BOX(nav), w->combo_action, FALSE, FALSE, 0);
     w->filter = gtk_entry_new();
@@ -873,7 +874,7 @@ struct ks_stats_win *ks_stats_win_new(struct ks_service *svc, struct ks_settings
     gtk_combo_box_set_active(GTK_COMBO_BOX(w->combo_limit), 0);
     gtk_box_pack_start(GTK_BOX(nav), w->combo_limit, FALSE, FALSE, 0);
     w->clean_button = gtk_button_new_from_stock(GTK_STOCK_CLEAR);
-    gtk_widget_set_tooltip_text(w->clean_button, "Delete all intercepted events");
+    gtk_widget_set_tooltip_text(w->clean_button, _("Delete all intercepted events"));
     g_signal_connect(w->clean_button, "clicked", G_CALLBACK(on_clean), w);
     gtk_box_pack_start(GTK_BOX(nav), w->clean_button, FALSE, FALSE, 0);
 
@@ -881,7 +882,7 @@ struct ks_stats_win *ks_stats_win_new(struct ks_service *svc, struct ks_settings
     for (int i = 0; i < NTABS; i++) {
         build_tab(w, i);
         gtk_notebook_append_page(GTK_NOTEBOOK(w->nb), w->tv[i].page,
-                                 gtk_label_new(tab_titles[i]));
+                                 gtk_label_new(_(tab_titles[i])));
     }
     gtk_box_pack_start(GTK_BOX(vbox), w->nb, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), nav, FALSE, FALSE, 0);

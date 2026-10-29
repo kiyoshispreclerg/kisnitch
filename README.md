@@ -45,7 +45,8 @@ On Debian/Devuan/Ubuntu:
 ```sh
 sudo apt install build-essential pkg-config libpcre2-dev \
     libnetfilter-queue-dev libnftnl-dev libmnl-dev \
-    libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev
+    libnghttp2-dev libprotobuf-c-dev libgtk2.0-dev \
+    gettext         # optional: builds the UI translations (msgfmt)
 make            # build/kisnitchd and build/kisnitch-gtk
 make test       # unit tests (no root, no network)
 make asan       # the same tests with AddressSanitizer + UBSan

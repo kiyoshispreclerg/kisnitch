@@ -16,6 +16,7 @@
 #include "common/log.h"
 #include "ui/netstat.h"
 #include "ui/stats_win_priv.h"
+#include "ui/i18n.h"
 
 #define KEY_PROTO "statsDialog/netstat_proto_filter"
 #define KEY_FAMILY "statsDialog/netstat_family_filter"
@@ -63,7 +64,7 @@ static void on_reply(const char *addr, const Protocol__NotificationReply *r, voi
     if (strcmp(addr, w->ns_node) != 0)
         return;
     if (r->code == PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR) {
-        char *m = g_strdup_printf("error starting netstat table: %s", r->data);
+        char *m = g_strdup_printf(_("error starting netstat table: %s"), r->data);
         gtk_label_set_text(GTK_LABEL(w->ns_label), m);
         g_free(m);
         return;
@@ -71,12 +72,12 @@ static void on_reply(const char *addr, const Protocol__NotificationReply *r, voi
     char err[200] = "";
     if (ks_netstat_update(ks_service_db(w->svc), addr, r->data != NULL ? r->data : "", err,
                           sizeof(err)) < 0) {
-        char *m = g_strdup_printf("error loading: %s", err);
+        char *m = g_strdup_printf(_("error loading: %s"), err);
         gtk_label_set_text(GTK_LABEL(w->ns_label), m);
         g_free(m);
         return;
     }
-    gtk_label_set_text(GTK_LABEL(w->ns_label), "refreshing...");
+    gtk_label_set_text(GTK_LABEL(w->ns_label), _("refreshing..."));
     if (ks_sw_cur_tab(w)->tab == KS_TAB_NETSTAT)
         ks_sw_refresh(w);
 }
@@ -155,7 +156,7 @@ static void monitor(struct ks_stats_win *w)
     }
     const struct ks_node *n = ks_nodes_get(ks_service_nodes(w->svc), addr);
     if (n == NULL || !n->online) {
-        char *m = g_strdup_printf("%s node is not connected", addr);
+        char *m = g_strdup_printf(_("%s node is not connected"), addr);
         gtk_label_set_text(GTK_LABEL(w->ns_label), m);
         g_free(m);
         return;
@@ -166,11 +167,11 @@ static void monitor(struct ks_stats_win *w)
         return;
     }
     char *cfg = g_strdup_printf(
-        "{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": %d, "
-        "\"proto\": %d, \"family\": %d}}",
+        _("{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": %d, "
+        "\"proto\": %d, \"family\": %d}}"),
         intervals[ri], value_of(w->ns_state, states, N(states)),
         value_of(w->ns_proto, protos, N(protos)), value_of(w->ns_family, families, N(families)));
-    char *m = g_strdup_printf("loading in %s...", intervals[ri]);
+    char *m = g_strdup_printf(_("loading in %s..."), intervals[ri]);
     gtk_label_set_text(GTK_LABEL(w->ns_label), m);
     g_free(m);
     g_strlcpy(w->ns_node, addr, sizeof(w->ns_node));
@@ -222,7 +223,7 @@ void ks_sw_netstat_build(struct ks_stats_win *w, struct tabview *tv, GtkWidget *
     for (int i = 0; i < N(intervals); i++)
         gtk_combo_box_append_text(GTK_COMBO_BOX(w->ns_interval), intervals[i]);
     gtk_combo_box_set_active(GTK_COMBO_BOX(w->ns_interval), 0);
-    gtk_widget_set_tooltip_text(w->ns_interval, "Refresh interval");
+    gtk_widget_set_tooltip_text(w->ns_interval, _("Refresh interval"));
     w->ns_nodes = gtk_combo_box_new_text();
     gtk_widget_set_no_show_all(w->ns_nodes, TRUE);
     w->ns_proto = combo_of(protos, N(protos), ks_settings_get_int(w->settings, KEY_PROTO, 0));
@@ -232,11 +233,11 @@ void ks_sw_netstat_build(struct ks_stats_win *w, struct tabview *tv, GtkWidget *
     gtk_widget_set_no_show_all(w->ns_label, TRUE);
     gtk_box_pack_start(GTK_BOX(top), w->ns_interval, FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(top), w->ns_nodes, FALSE, FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(top), gtk_label_new("Protocol"), FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("Protocol")), FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(top), w->ns_proto, FALSE, FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(top), gtk_label_new("Family"), FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("Family")), FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(top), w->ns_family, FALSE, FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(top), gtk_label_new("State"), FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("State")), FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(top), w->ns_state, FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(top), w->ns_label, FALSE, FALSE, 8);
     GtkWidget *cs[] = {w->ns_interval, w->ns_nodes, w->ns_proto, w->ns_family, w->ns_state};

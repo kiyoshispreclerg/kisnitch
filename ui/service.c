@@ -22,6 +22,7 @@
 #include "ui/pyjson.h"
 #include "ui/statsdb.h"
 #include "ui/res.h"
+#include "ui/i18n.h"
 
 enum method { M_PING, M_ASK, M_SUBSCRIBE, M_NOTIFICATIONS, M_ALERT };
 
@@ -507,7 +508,7 @@ static void on_subscribe(struct callctx *cc, struct ks_grpc_call *call, const ui
     if (!ks_nodes_peer_is_unix(cc->peer)) {
         char body[KS_NODE_ADDR_MAX + 4];
         snprintf(body, sizeof(body), "(%s)", cc->peer);
-        message(svc, "New node connected", body);
+        message(svc, _("New node connected"), body);
     }
 }
 
@@ -572,11 +573,11 @@ static void on_alert(struct callctx *cc, struct ks_grpc_call *call, const uint8_
         snprintf(body, sizeof(body), "node: %s\n\n%s\n%s", node, text, path);
     }
     if (a->action == PROTOCOL__ALERT__ACTION__SHOW_ALERT) {
-        const char *title = "Info";
+        const char *title = _("Info");
         if (a->type == PROTOCOL__ALERT__TYPE__ERROR)
-            title = "Error";
+            title = _("Error");
         if (a->type == PROTOCOL__ALERT__TYPE__WARNING)
-            title = "Warning";
+            title = _("Warning");
         /* the alert's priority is the notification's urgency */
         int urgency = KS_URGENCY_NORMAL;
         if (a->priority == PROTOCOL__ALERT__PRIORITY__LOW)
@@ -722,7 +723,7 @@ static void on_ntf_close(struct ks_grpc_call *call, int status, const char *msg,
         if (!ks_nodes_peer_is_unix(cc->peer)) {
             char body[KS_NODE_ADDR_MAX + 4];
             snprintf(body, sizeof(body), "(%s)", cc->peer);
-            message(svc, "node exited", body);
+            message(svc, _("node exited"), body);
         }
     }
     free(cc);
@@ -789,7 +790,7 @@ void ks_service_toggle_interception(struct ks_service *svc)
         return;
     size_t n = ks_nodes_count(&svc->nodes);
     if (n == 0) {
-        message(svc, "No nodes connected", "");
+        message(svc, _("No nodes connected"), "");
         return;
     }
     if (n > 1) {

@@ -1,6 +1,6 @@
 # Projeto: Kisnitch, port do OpenSnitch para C + GTK2
 
-Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 10 (em andamento). A fase 9
+Leia docs/PORTING.md antes de qualquer tarefa. Fase atual: 11. A fase 10 foi concluída em 2026-10-29. A fase 9
 (eBPF, opcional) foi adiada por decisão do usuário em 2026-10-29 e fica para depois.
 (O teste diferencial opcional da fase 1 roda no job `diff` do CI ou com `make diff`
 numa máquina com Go.)
@@ -34,6 +34,8 @@ numa máquina com Go.)
 - UI: GTK 2 só em ui/prompt.c, ui/tray.c e ui/main.c; o resto de ui/ (libui.a) usa só GLib e é testado sem display (tests/unit/test_ui_*.c). Comportamento do Python/Qt (slugify, json.dumps, QSettings, configparser, LIKE do SQLite) é reproduzido em ui/: use esses módulos.
 - A lógica do popup é comparada com o código Python do upstream por `make diff-ui`: mudou ui/prompt_rule.c ou ui/rulegen.c, rode-o.
 - Recursos do upstream usados pela UI ficam em ui/res/ (tools/sync-ui-res.sh) e são embutidos no binário; as tabelas do slugify vêm de tools/gen-slug-tables.py.
+
+- i18n: gettext. Texto em inglês é o msgid: `_()` onde o texto é usado, `N_()` onde fica guardado (tabelas estáticas; passar por `_()` ao mostrar). Nunca traduza o que é chave, valor de JSON/config ou identificador (protocolos, ações, chaves de settings). Os `po/*.po` e `po/kisnitch.pot` são gerados (`tools/update-po.sh`, dos `.ts` do upstream): não edite à mão. Para ver a UI traduzida a partir da árvore de build: `KS_LOCALEDIR=$PWD/build/locale` e `global/language` no settings.conf.
 
 ## Comandos
 - make / make test / make asan / make valgrind / make lint (opcionais: `CURL=1` para a tarefa `downloader`, com libcurl; `NOTIFY=1` para as notificações do desktop, com libnotify; `TLS=1` para TLS entre daemon e UI, com OpenSSL)

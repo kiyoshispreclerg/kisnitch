@@ -41,6 +41,8 @@
 #define KS_CFG_DEFAULT_POPUP_ADVANCED_DSTPORT "global/default_popup_advanced_dstport"
 #define KS_CFG_DEFAULT_POPUP_ADVANCED_UID "global/default_popup_advanced_uid"
 #define KS_CFG_DEFAULT_POPUP_ADVANCED_CHECKSUM "global/default_popup_advanced_checksum"
+#define KS_CFG_DEFAULT_LANGUAGE     "global/language"
+#define KS_CFG_DEFAULT_LANGNAME     "global/langname"
 #define KS_CFG_DEFAULT_SERVER_ADDR  "global/server_address"
 #define KS_CFG_DEFAULT_SERVER_MAX_CLIENTS "global/max_clients"
 #define KS_CFG_DEFAULT_HIDE_SYSTRAY_WARN "global/hide_systray_warning"

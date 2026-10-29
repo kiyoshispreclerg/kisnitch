@@ -5,6 +5,7 @@
  * Copyright (C) 2026 the Kisnitch contributors.
  */
 #include "ui/fwsimple.h"
+#include "ui/i18n.h"
 
 #include <arpa/inet.h>
 #include <dirent.h>
@@ -75,13 +76,13 @@ static int to_form(const struct ks_fws_rule *r, struct ks_fwf_form *f, char *err
     copy(f->description, sizeof(f->description), r->description);
     copy(f->uuid, sizeof(f->uuid), r->uuid);
     if (r->src[0] && r->dst[0] && is_ipv6(r->src) != is_ipv6(r->dst)) {
-        snprintf(err, errlen, "The source and destination addresses must be both IPv4 or both "
-                              "IPv6.");
+        snprintf(err, errlen, _("The source and destination addresses must be both IPv4 or both "
+                              "IPv6."));
         return -1;
     }
     if (r->port[0] != '\0') {
         if (r->proto < 0 || r->proto >= KS_FW_NPORT_PROTOCOLS) {
-            snprintf(err, errlen, "Select the protocol of the port.");
+            snprintf(err, errlen, _("Select the protocol of the port."));
             return -1;
         }
         struct ks_fwf_statement *st = add_st(f, KS_FWF_DPORT);
@@ -89,8 +90,8 @@ static int to_form(const struct ks_fws_rule *r, struct ks_fwf_form *f, char *err
         copy(st->value, sizeof(st->value), r->port);
     } else if (r->proto >= 0) {
         if (r->proto == 0) { /* "tcp,udp" without a port: any protocol */
-            snprintf(err, errlen, "TCP and UDP need a port; without a port, select one "
-                                  "protocol or \"any\".");
+            snprintf(err, errlen, _("TCP and UDP need a port; without a port, select one "
+                                  "protocol or \"any\"."));
             return -1;
         }
         /* a protocol alone: meta l4proto */
@@ -177,7 +178,7 @@ int ks_fws_to_flat(const struct ks_fws_rule *r, struct ks_fw_chain *out, char *e
 {
     memset(out, 0, sizeof(*out));
     if (r->action < KS_FWS_ALLOW || r->action > KS_FWS_REJECT) {
-        snprintf(err, errlen, "Invalid action.");
+        snprintf(err, errlen, _("Invalid action."));
         return -1;
     }
     struct ks_fwf_form f;
@@ -306,18 +307,18 @@ void ks_fws_rows_free(struct ks_fws_rows *rows)
 
 const char *ks_fws_action_text(int action)
 {
-    return action == KS_FWS_DENY ? "Deny" : action == KS_FWS_REJECT ? "Reject" : "Allow";
+    return action == KS_FWS_DENY ? _("Deny") : action == KS_FWS_REJECT ? _("Reject") : _("Allow");
 }
 
 const char *ks_fws_direction_text(int direction)
 {
-    return direction == KS_FWS_OUT ? "Out" : "In";
+    return direction == KS_FWS_OUT ? _("Out") : _("In");
 }
 
 void ks_fws_port_text(const struct ks_fws_rule *r, char *buf, size_t len)
 {
     if (r->proto < 0) {
-        snprintf(buf, len, "Any");
+        snprintf(buf, len, "%s", _("Any"));
         return;
     }
     const char *p = r->proto == 0 ? "tcp+udp" : ks_fw_port_protocols[r->proto];

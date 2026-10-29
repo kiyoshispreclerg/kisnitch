@@ -21,6 +21,7 @@
 #include "ui/rulesops.h"
 #include "ui/prefs.h"
 #include "ui/stats_win_priv.h"
+#include "ui/i18n.h"
 
 static const char *nz(const char *s)
 {
@@ -95,7 +96,7 @@ static void on_task_reply(const char *addr, const Protocol__NotificationReply *r
 static void task(struct ks_stats_win *w, const char *addr, Protocol__Action type)
 {
     char *data = g_strdup_printf(
-        "{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": \"5s\"}}", addr);
+        _("{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": \"5s\"}}"), addr);
     Protocol__Notification n = PROTOCOL__NOTIFICATION__INIT;
     n.clientname = (char *)(uintptr_t) "";
     n.servername = (char *)(uintptr_t) "";
@@ -124,7 +125,7 @@ static void monitor(struct ks_stats_win *w, const char *addr, const char *uptime
     char *h = g_markup_escape_text(host, -1), *u = g_markup_escape_text(uptime, -1);
     char *v = g_markup_escape_text(version, -1), *k = g_markup_escape_text(kernel, -1);
     char *name = g_strdup_printf("<big><b>%s</b></big>", h);
-    char *det = g_strdup_printf("<b>daemon uptime:</b> %s\n<b>Version:</b> %s\n<b>Kernel:</b> %s",
+    char *det = g_strdup_printf(_("<b>daemon uptime:</b> %s\n<b>Version:</b> %s\n<b>Kernel:</b> %s"),
                                 u, v, k);
     set_markup(w->np_name, name);
     set_markup(w->np_details, det);
@@ -244,7 +245,7 @@ static void on_node_delete(GtkButton *b, gpointer ud)
         return;
     const char *a[1] = {addr};
     if (!ks_db_run(ks_service_db(w->svc), "DELETE FROM nodes WHERE addr = ?", a, 1, NULL)) {
-        char *m = g_strdup_printf("Error deleting node\n\n%s", addr);
+        char *m = g_strdup_printf(_("Error deleting node\n\n%s"), addr);
         ks_sw_message(w, GTK_MESSAGE_WARNING, m, "");
         g_free(m);
         return;
@@ -260,14 +261,14 @@ static void on_node_export(GtkMenuItem *item, gpointer ud)
 {
     (void)item;
     struct ks_stats_win *w = ud;
-    char *dir = ks_sw_choose_dir(w, "Select a directory to export rules");
+    char *dir = ks_sw_choose_dir(w, _("Select a directory to export rules"));
     if (dir == NULL)
         return;
     if (!ks_rops_export_all(ks_service_rules(w->svc), detail_addr(w), dir)) {
-        ks_sw_message(w, GTK_MESSAGE_WARNING, "Rules export error", "Error exporting rules");
+        ks_sw_message(w, GTK_MESSAGE_WARNING, _("Rules export error"), _("Error exporting rules"));
     } else {
-        char *m = g_strdup_printf("Rules exported to %s", dir);
-        ks_sw_message(w, GTK_MESSAGE_INFO, "Rules export", m);
+        char *m = g_strdup_printf(_("Rules exported to %s"), dir);
+        ks_sw_message(w, GTK_MESSAGE_INFO, _("Rules export"), m);
         g_free(m);
     }
     g_free(dir);
@@ -278,18 +279,18 @@ static void on_node_import(GtkMenuItem *item, gpointer ud)
 {
     (void)item;
     struct ks_stats_win *w = ud;
-    char *dir = ks_sw_choose_dir(w, "Select a directory with rules to import (JSON files)");
+    char *dir = ks_sw_choose_dir(w, _("Select a directory with rules to import (JSON files)"));
     if (dir == NULL)
         return;
     int n = ks_rops_import(ks_service_rules(w->svc), ks_service_nodes(w->svc), detail_addr(w),
                            dir, ks_sw_ntf_reply, w);
     if (n >= 0) {
-        ks_sw_message(w, GTK_MESSAGE_INFO, "Rules import", "Rules imported fine");
+        ks_sw_message(w, GTK_MESSAGE_INFO, _("Rules import"), _("Rules imported fine"));
         if (ks_sw_cur_tab(w)->tab == KS_TAB_RULES)
             ks_sw_refresh(w);
     } else {
-        char *m = g_strdup_printf("Error importing rules from %s", dir);
-        ks_sw_message(w, GTK_MESSAGE_WARNING, "Rules import error", m);
+        char *m = g_strdup_printf(_("Error importing rules from %s"), dir);
+        ks_sw_message(w, GTK_MESSAGE_WARNING, _("Rules import error"), m);
         g_free(m);
     }
     g_free(dir);
@@ -299,8 +300,8 @@ static void on_actions_clicked(GtkButton *b, gpointer ud)
 {
     struct ks_stats_win *w = ud;
     GtkWidget *menu = gtk_menu_new();
-    GtkWidget *ex = gtk_menu_item_new_with_label("Export rules");
-    GtkWidget *im = gtk_menu_item_new_with_label("Import rules");
+    GtkWidget *ex = gtk_menu_item_new_with_label(_("Export rules"));
+    GtkWidget *im = gtk_menu_item_new_with_label(_("Import rules"));
     g_signal_connect(ex, "activate", G_CALLBACK(on_node_export), w);
     g_signal_connect(im, "activate", G_CALLBACK(on_node_import), w);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), ex);
@@ -316,14 +317,14 @@ static void on_actions_clicked(GtkButton *b, gpointer ud)
 GtkWidget *ks_sw_node_build(struct ks_stats_win *w, struct tabview *tv, GtkWidget *top)
 {
     (void)tv;
-    w->node_start = gtk_toggle_button_new_with_label("Start/Stop");
-    gtk_widget_set_tooltip_text(w->node_start, "Start or stop interception of this node");
+    w->node_start = gtk_toggle_button_new_with_label(_("Start/Stop"));
+    gtk_widget_set_tooltip_text(w->node_start, _("Start or stop interception of this node"));
     w->node_prefs = gtk_button_new_from_stock(GTK_STOCK_PREFERENCES);
-    gtk_widget_set_tooltip_text(w->node_prefs, "Show the preferences of this node");
+    gtk_widget_set_tooltip_text(w->node_prefs, _("Show the preferences of this node"));
     g_signal_connect(w->node_prefs, "clicked", G_CALLBACK(on_node_prefs), w);
     w->node_delete = gtk_button_new_from_stock(GTK_STOCK_DELETE);
-    gtk_widget_set_tooltip_text(w->node_delete, "Delete this node");
-    w->node_actions = gtk_button_new_with_label("Actions");
+    gtk_widget_set_tooltip_text(w->node_delete, _("Delete this node"));
+    w->node_actions = gtk_button_new_with_label(_("Actions"));
     g_signal_connect(w->node_start, "toggled", G_CALLBACK(on_node_start), w);
     g_signal_connect(w->node_delete, "clicked", G_CALLBACK(on_node_delete), w);
     g_signal_connect(w->node_actions, "clicked", G_CALLBACK(on_actions_clicked), w);

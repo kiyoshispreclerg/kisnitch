@@ -21,6 +21,7 @@
 #include "ui/rulesops.h"
 #include "ui/stats_win_priv.h"
 #include "ui/statsdb.h"
+#include "ui/i18n.h"
 
 static const char *nz(const char *s)
 {
@@ -44,7 +45,7 @@ bool ks_sw_confirm(struct ks_stats_win *w, const char *primary)
 {
     GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(w->win), GTK_DIALOG_MODAL,
                                           GTK_MESSAGE_WARNING, GTK_BUTTONS_YES_NO, "%s", primary);
-    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(d), "%s", "Are you sure?");
+    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(d), "%s", _("Are you sure?"));
     int r = gtk_dialog_run(GTK_DIALOG(d));
     gtk_widget_destroy(d);
     return r == GTK_RESPONSE_YES;
@@ -69,7 +70,7 @@ void ks_sw_ntf_reply(const char *addr, const Protocol__NotificationReply *r, voi
     struct ks_stats_win *w = ud;
     (void)addr;
     if (r->code == PROTOCOL__NOTIFICATION_REPLY_CODE__ERROR)
-        ks_sw_message(w, GTK_MESSAGE_WARNING, "Error:", nz(r->data));
+        ks_sw_message(w, GTK_MESSAGE_WARNING, _("Error:"), nz(r->data));
     else
         ks_debug("notification %llu: reply %s", (unsigned long long)r->id, nz(r->data));
 }
@@ -143,12 +144,12 @@ void ks_sw_show_conn_details(struct ks_stats_win *w, const char *time)
         ks_statsdb_user_id(nz(uid_raw), uidbuf, sizeof(uidbuf));
     char *uid = g_markup_escape_text(uidbuf, -1);
     char *text = g_strdup_printf(
-        "<b>%s</b>\n\n<b>Time:</b> %s\n\n<b>Process:</b>\n%s\n<b>Cmdline:</b>\n%s\n"
+        _("<b>%s</b>\n\n<b>Time:</b> %s\n\n<b>Process:</b>\n%s\n<b>Cmdline:</b>\n%s\n"
         "<b>CWD:</b>\n%s\n\n<b>UID:</b> %s <b>PID:</b> %s\n\n<b>Node:</b> %s\n\n"
-        "<b>%s</b> %s:%s -> %s (%s):%s\n\n<b>Rule:</b>\n%s",
+        "<b>%s</b> %s:%s -> %s (%s):%s\n\n<b>Rule:</b>\n%s"),
         up, tm, proc, cmd, cwd, uid, pid, node, proto_up, sport, sip, dip, dhost, dport, rule);
     sqlite3_finalize(st);
-    show_info(w, "Connection details", text);
+    show_info(w, _("Connection details"), text);
     g_free(text);
     g_free(uid);
     g_free(proto_up);
@@ -185,7 +186,7 @@ void ks_sw_show_alert(struct ks_stats_win *w, const char *time, const char *node
                                  "<b>Severity:</b> %s\n\n<b>%s</b>\n\n%s\n\n---",
                                  t, n, type, prio, what, body);
     sqlite3_finalize(st);
-    show_info(w, "Alert", text);
+    show_info(w, _("Alert"), text);
     g_free(text);
     g_free(body);
     g_free(what);
@@ -233,7 +234,7 @@ static void on_all_export(GtkMenuItem *item, gpointer ud)
 {
     (void)item;
     struct ks_stats_win *w = ud;
-    char *dir = ks_sw_choose_dir(w, "Select a directory to export rules");
+    char *dir = ks_sw_choose_dir(w, _("Select a directory to export rules"));
     if (dir == NULL)
         return;
     struct ks_nodes *nodes = ks_service_nodes(w->svc);
@@ -243,12 +244,12 @@ static void on_all_export(GtkMenuItem *item, gpointer ud)
             g_string_append_printf(errors, "%s\n", nodes->items[i]->addr);
     }
     if (errors->len > 0) {
-        char *m = g_strdup_printf("Error exporting rules of the following nodes:\n\n%s", errors->str);
-        ks_sw_message(w, GTK_MESSAGE_WARNING, "Rules export error", m);
+        char *m = g_strdup_printf(_("Error exporting rules of the following nodes:\n\n%s"), errors->str);
+        ks_sw_message(w, GTK_MESSAGE_WARNING, _("Rules export error"), m);
         g_free(m);
     } else {
-        char *m = g_strdup_printf("Rules exported to %s", dir);
-        ks_sw_message(w, GTK_MESSAGE_INFO, "Rules export", m);
+        char *m = g_strdup_printf(_("Rules exported to %s"), dir);
+        ks_sw_message(w, GTK_MESSAGE_INFO, _("Rules export"), m);
         g_free(m);
     }
     g_string_free(errors, TRUE);
@@ -260,18 +261,18 @@ static void on_all_import(GtkMenuItem *item, gpointer ud)
 {
     (void)item;
     struct ks_stats_win *w = ud;
-    char *dir = ks_sw_choose_dir(w, "Select a directory with rules to import (JSON files)");
+    char *dir = ks_sw_choose_dir(w, _("Select a directory with rules to import (JSON files)"));
     if (dir == NULL)
         return;
     int n = ks_rops_import(ks_service_rules(w->svc), ks_service_nodes(w->svc), NULL, dir,
                            ks_sw_ntf_reply, w);
     if (n >= 0) {
-        ks_sw_message(w, GTK_MESSAGE_INFO, "Rules import", "Rules imported fine");
+        ks_sw_message(w, GTK_MESSAGE_INFO, _("Rules import"), _("Rules imported fine"));
         if (ks_sw_cur_tab(w)->tab == KS_TAB_RULES)
             ks_sw_refresh(w);
     } else {
-        char *m = g_strdup_printf("Error importing rules from %s", dir);
-        ks_sw_message(w, GTK_MESSAGE_WARNING, "Rules import error", m);
+        char *m = g_strdup_printf(_("Error importing rules from %s"), dir);
+        ks_sw_message(w, GTK_MESSAGE_WARNING, _("Rules import error"), m);
         g_free(m);
     }
     g_free(dir);
@@ -314,7 +315,7 @@ static void on_export_csv(GtkMenuItem *item, gpointer ud)
                                         "procs.csv", "addrs.csv", "ports.csv", "users.csv",
                                         "netstat.csv"};
     int idx = gtk_notebook_get_current_page(GTK_NOTEBOOK(w->nb));
-    GtkWidget *d = gtk_file_chooser_dialog_new("Save as CSV", GTK_WINDOW(w->win),
+    GtkWidget *d = gtk_file_chooser_dialog_new(_("Save as CSV"), GTK_WINDOW(w->win),
                                                GTK_FILE_CHOOSER_ACTION_SAVE, GTK_STOCK_CANCEL,
                                                GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE,
                                                GTK_RESPONSE_ACCEPT, NULL);
@@ -325,7 +326,7 @@ static void on_export_csv(GtkMenuItem *item, gpointer ud)
         file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
     gtk_widget_destroy(d);
     if (file != NULL && file[0] != '\0' && !ks_sw_write_csv(w, ks_sw_cur_tab(w), file))
-        ks_sw_message(w, GTK_MESSAGE_WARNING, "Error saving the CSV file", file);
+        ks_sw_message(w, GTK_MESSAGE_WARNING, _("Error saving the CSV file"), file);
     g_free(file);
 }
 
@@ -344,12 +345,12 @@ void ks_sw_actions_clicked(GtkButton *b, gpointer ud)
     static const struct {
         const char *label;
         GCallback cb;
-    } items[] = {{"Export rules", G_CALLBACK(on_all_export)},
-                 {"Import rules", G_CALLBACK(on_all_import)},
-                 {"Export events to CSV", G_CALLBACK(on_export_csv)},
-                 {"Quit", G_CALLBACK(on_quit)}};
+    } items[] = {{N_("Export rules"), G_CALLBACK(on_all_export)},
+                 {N_("Import rules"), G_CALLBACK(on_all_import)},
+                 {N_("Export events to CSV"), G_CALLBACK(on_export_csv)},
+                 {N_("Quit"), G_CALLBACK(on_quit)}};
     for (size_t i = 0; i < sizeof(items) / sizeof(items[0]); i++) {
-        GtkWidget *mi = gtk_menu_item_new_with_label(items[i].label);
+        GtkWidget *mi = gtk_menu_item_new_with_label(_(items[i].label));
         g_signal_connect(mi, "activate", items[i].cb, w);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
     }
@@ -477,7 +478,7 @@ static void m_apply(GtkMenuItem *item, gpointer ud)
 {
     (void)ud;
     struct mctx *c = item_ctx(item);
-    char *q = g_strdup_printf("    Apply this rule to %s  ", item_arg(item));
+    char *q = g_strdup_printf(_("    Apply this rule to %s  "), item_arg(item));
     if (ks_sw_confirm(c->w, q))
         for_rows(c, op_apply, item_arg(item));
     g_free(q);
@@ -567,7 +568,7 @@ static void m_export_disk(GtkMenuItem *item, gpointer ud)
         after(c);
         return;
     }
-    char *dir = ks_sw_choose_dir(c->w, "Select a directory to export rules");
+    char *dir = ks_sw_choose_dir(c->w, _("Select a directory to export rules"));
     if (dir != NULL) {
         GString *errs = g_string_new(NULL);
         for (guint i = 0; i < c->rows->len; i++) {
@@ -575,12 +576,12 @@ static void m_export_disk(GtkMenuItem *item, gpointer ud)
                 g_string_append_printf(errs, "\n%s", row_at(c, i)[COL_R_NAME]);
         }
         if (errs->len == 0) {
-            char *m = g_strdup_printf("Rules exported to %s", dir);
-            ks_sw_message(c->w, GTK_MESSAGE_INFO, "Rules export", m);
+            char *m = g_strdup_printf(_("Rules exported to %s"), dir);
+            ks_sw_message(c->w, GTK_MESSAGE_INFO, _("Rules export"), m);
             g_free(m);
         } else {
-            ks_sw_message(c->w, GTK_MESSAGE_WARNING, "Rules export error",
-                          g_strdup_printf("Error exporting the following rules:\n%s", errs->str));
+            ks_sw_message(c->w, GTK_MESSAGE_WARNING, _("Rules export error"),
+                          g_strdup_printf(_("Error exporting the following rules:\n%s"), errs->str));
         }
         g_string_free(errs, TRUE);
         g_free(dir);
@@ -662,8 +663,8 @@ static void m_new_rule(GtkMenuItem *item, gpointer ud)
     if (c->rows->len > 0) {
         const char *time = row_at(c, 0)[COL_TIME];
         if (!ks_ruleed_new_rule_from_connection(ks_sw_ruleed(c->w), time)) {
-            char *m = g_strdup_printf("Error creating new rule from event (%s)", time);
-            ks_sw_message(c->w, GTK_MESSAGE_WARNING, "New rule error", m);
+            char *m = g_strdup_printf(_("Error creating new rule from event (%s)"), time);
+            ks_sw_message(c->w, GTK_MESSAGE_WARNING, _("New rule error"), m);
             g_free(m);
         }
     }
@@ -686,9 +687,9 @@ static void m_edit(GtkMenuItem *item, gpointer ud)
 static void events_menu(struct mctx *c, GdkEventButton *ev)
 {
     GtkWidget *menu = gtk_menu_new();
-    add_item(menu, c, "Details", G_CALLBACK(m_details), NULL, true);
-    GtkWidget *rules = add_submenu(menu, "Rules");
-    add_item(rules, c, "New", G_CALLBACK(m_new_rule), NULL, true);
+    add_item(menu, c, _("Details"), G_CALLBACK(m_details), NULL, true);
+    GtkWidget *rules = add_submenu(menu, _("Rules"));
+    add_item(rules, c, _("New"), G_CALLBACK(m_new_rule), NULL, true);
     popup(menu, c, ev);
 }
 
@@ -696,12 +697,12 @@ static void events_menu(struct mctx *c, GdkEventButton *ev)
 static void alerts_menu(struct mctx *c, GdkEventButton *ev)
 {
     GtkWidget *menu = gtk_menu_new();
-    add_item(menu, c, "View", G_CALLBACK(m_view_alert), NULL, true);
-    add_item(menu, c, "Delete", G_CALLBACK(m_delete), NULL, true);
+    add_item(menu, c, _("View"), G_CALLBACK(m_view_alert), NULL, true);
+    add_item(menu, c, _("Delete"), G_CALLBACK(m_delete), NULL, true);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-    GtkWidget *exp = add_submenu(menu, "Export");
-    add_item(exp, c, "To clipboard", G_CALLBACK(m_export_clipboard), NULL, true);
-    add_item(exp, c, "To disk", G_CALLBACK(m_export_disk), NULL, true);
+    GtkWidget *exp = add_submenu(menu, _("Export"));
+    add_item(exp, c, _("To clipboard"), G_CALLBACK(m_export_clipboard), NULL, true);
+    add_item(exp, c, _("To disk"), G_CALLBACK(m_export_disk), NULL, true);
     popup(menu, c, ev);
 }
 
@@ -711,25 +712,25 @@ static void rules_menu(struct mctx *c, GdkEventButton *ev)
     struct ks_nodes *nodes = ks_service_nodes(c->w->svc);
     GtkWidget *menu = gtk_menu_new();
     if (nodes->len > 0) {
-        GtkWidget *apply = add_submenu(menu, "Apply to");
+        GtkWidget *apply = add_submenu(menu, _("Apply to"));
         for (size_t i = 0; i < nodes->len; i++)
             add_item(apply, c, nodes->items[i]->addr, G_CALLBACK(m_apply), nodes->items[i]->addr,
                      true);
     }
-    GtkWidget *act = add_submenu(menu, "Action");
-    add_item(act, c, "Allow", G_CALLBACK(m_change), "action=allow", true);
-    add_item(act, c, "Deny", G_CALLBACK(m_change), "action=deny", true);
-    add_item(act, c, "Reject", G_CALLBACK(m_change), "action=reject", true);
-    GtkWidget *dur = add_submenu(menu, "Duration");
+    GtkWidget *act = add_submenu(menu, _("Action"));
+    add_item(act, c, _("Allow"), G_CALLBACK(m_change), "action=allow", true);
+    add_item(act, c, _("Deny"), G_CALLBACK(m_change), "action=deny", true);
+    add_item(act, c, _("Reject"), G_CALLBACK(m_change), "action=reject", true);
+    GtkWidget *dur = add_submenu(menu, _("Duration"));
     static const struct {
         const char *label, *value;
-    } durs[] = {{"Always", KS_DUR_ALWAYS}, {"Until reboot", KS_DUR_UNTIL_RESTART},
+    } durs[] = {{N_("Always"), KS_DUR_ALWAYS}, {N_("Until reboot"), KS_DUR_UNTIL_RESTART},
                 {"12h", "12h"},            {"1h", "1h"},
                 {"30m", "30m"},            {"15m", "15m"},
                 {"5m", "5m"}};
     for (size_t i = 0; i < sizeof(durs) / sizeof(durs[0]); i++) {
         char *arg = g_strdup_printf("duration=%s", durs[i].value);
-        add_item(dur, c, durs[i].label, G_CALLBACK(m_change), arg, true);
+        add_item(dur, c, _(durs[i].label), G_CALLBACK(m_change), arg, true);
         g_free(arg);
     }
     if (c->rows->len > 0) {
@@ -737,13 +738,13 @@ static void rules_menu(struct mctx *c, GdkEventButton *ev)
         bool on = strcmp(row_at(c, 0)[COL_R_ENABLED], "False") != 0;
         add_item(menu, c, on ? "Disable" : "Enable", G_CALLBACK(m_enable), NULL, true);
     }
-    add_item(menu, c, "Duplicate", G_CALLBACK(m_duplicate), NULL, true);
-    add_item(menu, c, "Edit", G_CALLBACK(m_edit), NULL, c->rows->len > 0);
-    add_item(menu, c, "Delete", G_CALLBACK(m_delete), NULL, true);
+    add_item(menu, c, _("Duplicate"), G_CALLBACK(m_duplicate), NULL, true);
+    add_item(menu, c, _("Edit"), G_CALLBACK(m_edit), NULL, c->rows->len > 0);
+    add_item(menu, c, _("Delete"), G_CALLBACK(m_delete), NULL, true);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-    GtkWidget *exp = add_submenu(menu, "Export");
-    add_item(exp, c, "To clipboard", G_CALLBACK(m_export_clipboard), NULL, true);
-    add_item(exp, c, "To disk", G_CALLBACK(m_export_disk), NULL, true);
+    GtkWidget *exp = add_submenu(menu, _("Export"));
+    add_item(exp, c, _("To clipboard"), G_CALLBACK(m_export_clipboard), NULL, true);
+    add_item(exp, c, _("To disk"), G_CALLBACK(m_export_disk), NULL, true);
     popup(menu, c, ev);
 }
 

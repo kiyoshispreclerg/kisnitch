@@ -1,0 +1,1593 @@
+# Translation of Kisnitch to nl_NL, converted from the upstream
+# Qt .ts by tools/ts2po.py. Don't edit by hand: send fixes to the
+# OpenSnitch translations and run tools/update-po.sh.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kisnitch\n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+msgid "    Apply this rule to %s  "
+msgstr ""
+
+msgid "   Outgoing:"
+msgstr ""
+
+msgid "#"
+msgstr ""
+
+#, c-format
+msgid "%s node is not connected"
+msgstr ""
+
+msgid "-"
+msgstr "-"
+
+msgid "12h"
+msgstr "12u"
+
+msgid "15m"
+msgstr "15 min."
+
+msgid "15m or less"
+msgstr "15 min. of korter"
+
+msgid "1h"
+msgstr "1 uur"
+
+msgid "1h or less"
+msgstr "1 uur of korter"
+
+msgid "30m"
+msgstr "30 min."
+
+msgid "30m or less"
+msgstr "30 min. of korter"
+
+msgid "30s"
+msgstr "30 sec."
+
+msgid "30s or less"
+msgstr "30 sec. of korter"
+
+msgid "5m"
+msgstr "5 min."
+
+msgid "5m or less"
+msgstr "5 min. of korter"
+
+#, c-format
+msgid ""
+"<b>%s</b>\n"
+"\n"
+"<b>Time:</b> %s\n"
+"\n"
+"<b>Process:</b>\n"
+"%s\n"
+"<b>Cmdline:</b>\n"
+"%s\n"
+"<b>CWD:</b>\n"
+"%s\n"
+"\n"
+"<b>UID:</b> %s <b>PID:</b> %s\n"
+"\n"
+"<b>Node:</b> %s\n"
+"\n"
+"<b>%s</b> %s:%s -> %s (%s):%s\n"
+"\n"
+"<b>Rule:</b>\n"
+"%s"
+msgstr ""
+
+msgid "<b><big>Outgoing connection</big></b>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<b>daemon uptime:</b> %s\n"
+"<b>Version:</b> %s\n"
+"<b>Kernel:</b> %s"
+msgstr ""
+
+msgid "<span foreground=\"green\">✔Rule updated.</span>"
+msgstr ""
+
+msgid "<span foreground=\"red\">WARNING, bad checksum (<a href=\"#warning-checksum\">More info</a>)</span>"
+msgstr ""
+
+#, c-format
+msgid ""
+"<span foreground=\"red\">WARNING, checksums differ for at least one rule.</span>\n"
+"\n"
+"Current process (%u):\n"
+"%s\n"
+"\n"
+"Expected from the rule:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "<span foreground=\"red\">✘ Rule not updated, not found by name (%s)</span>"
+msgstr ""
+
+msgid "A port (22), a list (80,443) or a range (6000-6007). Empty: any port"
+msgstr ""
+
+msgid "A_pplication"
+msgstr ""
+
+msgid "Absolute path to the CA cert file"
+msgstr ""
+
+msgid "Absolute path to the cert file"
+msgstr ""
+
+msgid "Absolute path to the cert key file"
+msgstr ""
+
+msgid "Action"
+msgstr "Actie"
+
+msgid "ActionParms"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Add at least one statement."
+msgstr ""
+
+msgid "Add new condition"
+msgstr "Voorwaarde toevoegen"
+
+msgid "Adding rule, wait"
+msgstr "Bezig met toevoegen van regel…"
+
+msgid "Address"
+msgstr "Adres"
+
+msgid "Address of the node."
+msgstr ""
+
+msgid "Addresses"
+msgstr "Adressen"
+
+msgid "Advanced"
+msgstr "Uitgebreid"
+
+msgid "Advanced _editor"
+msgstr ""
+
+msgid "Advanced options"
+msgstr ""
+
+msgid "Alert"
+msgstr ""
+
+msgid "Alerts"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All applications"
+msgstr "Alle programma's"
+
+msgid "Allow"
+msgstr "Toestaan"
+
+msgid "Allow inbound connections to a port"
+msgstr "Sta inkomende verbindingen op een bepaalde poort toe"
+
+msgid "Allow inbound connections to the selected port."
+msgstr "Sta inkomende verbindingen toe op de gekozen poort."
+
+msgid "Allow outbound connections to the selected port."
+msgstr "Sta uitgaande verbindingen toe op de gekozen poort."
+
+msgid "Allow service (_IN)"
+msgstr "Dienst toestaan (IN)"
+
+msgid "Allow service (_OUT)"
+msgstr "Dienst toestaan (UIT)"
+
+msgid "Allow will allow the connection"
+msgstr "Toestaan staat de verbinding toe"
+
+msgid "Allow, deny or reject by port, address and interface, in a table (like ufw)"
+msgstr ""
+
+msgid "Always"
+msgstr "Altijd"
+
+msgid "Any"
+msgstr ""
+
+msgid "Application pids"
+msgstr "Programma-pid's"
+
+msgid "Applications"
+msgstr "Programma's"
+
+msgid "Apply configuration to all nodes"
+msgstr "Instellingen toepassen op alle knooppunten"
+
+msgid "Apply rule to all nodes"
+msgstr "Regel toepassen op alle knooppunten"
+
+msgid "Apply to"
+msgstr "Toepassen op"
+
+msgid "Applying changes..."
+msgstr "Bezig met toepassen van wijzigingen…"
+
+#, c-format
+msgid "Applying configuration on %s ..."
+msgstr ""
+
+msgid "Are you sure?"
+msgstr ""
+
+msgid "Auth type changed"
+msgstr ""
+
+msgid "Authentication"
+msgstr ""
+
+msgid "Authentication type"
+msgstr ""
+
+msgid "Autostart"
+msgstr ""
+
+msgid "Autostart the GUI upon login"
+msgstr ""
+
+msgid "Block outbound network traffic if the daemon unexpectedly dies"
+msgstr ""
+
+msgid "By default the GUI is started when login"
+msgstr ""
+
+msgid "By default, the field of the rules are case-insensitive."
+msgstr ""
+
+msgid "CA cert file"
+msgstr ""
+
+msgid "Case-sensitive"
+msgstr "Hoofdlettergevoelig"
+
+msgid "Cert file"
+msgstr ""
+
+msgid "Cert key file"
+msgstr ""
+
+msgid "Certificates changed"
+msgstr ""
+
+#, c-format
+msgid "Change default firewall to 'nftables' on node %s?"
+msgstr ""
+
+msgid "Check every n seconds that the interception rules are present."
+msgstr ""
+
+msgid "Checksum"
+msgstr "Checksum"
+
+msgid "Client certificate verification"
+msgstr ""
+
+msgid "Close"
+msgstr "Sluiten"
+
+msgid "Command line"
+msgstr "Opdrachtregel"
+
+msgid "Command line regexp error"
+msgstr "Reguliere-uitdrukkingsfout in opdrachtregel"
+
+msgid "Configuration applied."
+msgstr "De instellingen zijn toegepast."
+
+msgid "Connection details"
+msgstr ""
+
+msgid "Connections"
+msgstr "Verbindingen"
+
+msgid "Create a new rule"
+msgstr "Nieuwe regel opstellen"
+
+msgid "DB journal_mode changed"
+msgstr ""
+
+msgid "DB type changed"
+msgstr "Het soort DB is gewijzigd"
+
+msgid "DCCP"
+msgstr ""
+
+msgid "D_escription"
+msgstr "Beschrijving"
+
+msgid "Daemon version"
+msgstr ""
+
+msgid "Database"
+msgstr "Databank"
+
+msgid "Database type"
+msgstr "Soort databank"
+
+msgid "Debug invalid connections"
+msgstr "Fouten van slechte verbindingen opsporen"
+
+msgid "Default action when the GUI is disconnected"
+msgstr "Standaardactie bij geen grafisch programma"
+
+msgid "Default log level"
+msgstr "Standaard logniveau"
+
+msgid "Default position on screen"
+msgstr "Standaard meldingspositie"
+
+msgid "Default target"
+msgstr "Standaarddoel"
+
+msgid "Default timeout"
+msgstr "Standaard time-out"
+
+msgid "Delete"
+msgstr "Verwijderen"
+
+msgid "Delete all intercepted events"
+msgstr "Alle onderschepte gebeurtenissen wissen"
+
+msgid "Delete this node"
+msgstr "Knooppunt verwijderen"
+
+msgid "Delete this rule?"
+msgstr ""
+
+msgid "Deleting rule, wait"
+msgstr "Bezig met verwijderen van regel…"
+
+msgid "Deny"
+msgstr "Weigeren"
+
+msgid "Deny will just discard the connection"
+msgstr "Weigeren negeert de verbinding"
+
+msgid "Description"
+msgstr "Beschrijving"
+
+msgid "Desktop notifications"
+msgstr "Meldingen"
+
+msgid "Dest IP"
+msgstr "Bestemmings-ip"
+
+msgid "Dest IP/Network can not be empty"
+msgstr "De bestemmings-ip/-netwerk mag niet blanco zijn"
+
+msgid "Dest host"
+msgstr ""
+
+msgid "Dest host can not be empty"
+msgstr "De bestemmingspoort mag niet blanco zijn"
+
+msgid "Dest port"
+msgstr ""
+
+msgid "Dest port can not be empty"
+msgstr "De bestemmingspoort mag niet blanco zijn"
+
+msgid "Destination IP"
+msgstr "Bestemmings-ip"
+
+msgid "Destination Port"
+msgstr "Bestemmingspoort"
+
+msgid "Destination address, network or range. Empty: any"
+msgstr ""
+
+msgid "Destination port"
+msgstr "Bestemmingspoort"
+
+msgid "Details"
+msgstr ""
+
+msgid "Direction"
+msgstr "Richting"
+
+msgid "Disable"
+msgstr "Uitschakelen"
+
+msgid "Disable pop-ups, only display a notification"
+msgstr "Interactieve meldingen uitschakelen"
+
+msgid "Disabling firewall..."
+msgstr "Bezig met uitschakelen van firewall…"
+
+msgid "Do_wn"
+msgstr ""
+
+msgid "Domains separated by commas, or a regular expression (www.domain.org, .*\\.domain.org)."
+msgstr ""
+
+msgid "Don't log connections"
+msgstr "Verbindingen niet vastleggen in logboek"
+
+msgid "Don't save/Delete rules of duration"
+msgstr "Regelduur niet onthouden/verwijderen"
+
+msgid "Don't verify certs"
+msgstr ""
+
+msgid "Dropped"
+msgstr "Afgewezen"
+
+msgid "Dst IP regexp error"
+msgstr "Reguliere-uitdrukkingsfout in bestemmings-ip/-netwerk"
+
+msgid "Dst host regexp error"
+msgstr "Reguliere-uitdrukkingsfout in bestemmingspoort"
+
+msgid "Dst port regexp error"
+msgstr "Reguliere-uitdrukkingsfout in bestemmingspoort"
+
+msgid "Duplicate"
+msgstr "Klonen"
+
+msgid "Duration"
+msgstr "Duur"
+
+msgid "Edit"
+msgstr "Bewerken"
+
+msgid "Edit rule"
+msgstr "Regel bewerken"
+
+msgid "Enable"
+msgstr "Inschakelen"
+
+msgid "Enable DB Write-Ahead Logging (WAL)"
+msgstr ""
+
+msgid "Enable checksums verification"
+msgstr ""
+
+msgid "Enabled"
+msgstr "Ingeschakeld"
+
+msgid "Enabling firewall..."
+msgstr "Bezig met inschakelen van firewall…"
+
+msgid "Environment variables"
+msgstr "Omgevingsvariabelen"
+
+msgid "Equal"
+msgstr "Gelijk"
+
+msgid "Error"
+msgstr "Foutmelding"
+
+#, c-format
+msgid "Error adding rule: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error adding rules:\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error applying configuration: %s"
+msgstr ""
+
+#, c-format
+msgid "Error applying rule: %s"
+msgstr ""
+
+#, c-format
+msgid "Error creating new rule from event (%s)"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error deleting node\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid "Error deleting rule, %s"
+msgstr ""
+
+msgid "Error exporting rules"
+msgstr "De regels kunnen niet worden geëxporteerd"
+
+#, c-format
+msgid ""
+"Error exporting rules of the following nodes:\n"
+"\n"
+"%s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error exporting the following rules:\n"
+"%s"
+msgstr ""
+
+msgid "Error getting INPUT chain policy"
+msgstr "Foutmelding tijdens opvragen van INVOERbeleid"
+
+msgid "Error getting OUTPUT chain policy"
+msgstr "Foutmelding tijdens opvragen van UITVOERbeleid"
+
+#, c-format
+msgid "Error importing rules from %s"
+msgstr ""
+
+#, c-format
+msgid "Error loading config %s: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error loading process information:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error loading rule"
+msgstr ""
+
+msgid "Error saving rule"
+msgstr ""
+
+#, c-format
+msgid "Error saving rule %s"
+msgstr ""
+
+msgid "Error saving the CSV file"
+msgstr ""
+
+#, c-format
+msgid ""
+"Error stopping monitoring process:\n"
+"\n"
+"%s"
+msgstr ""
+
+msgid "Error:"
+msgstr ""
+
+msgid "Events"
+msgstr "Gebeurtenissen"
+
+msgid "Events tab columns"
+msgstr "Gebeurteniskolommen"
+
+msgid "Exclude outbound connections to a port from being intercepted"
+msgstr "Weiger uitgaande verbindingen op een bepaalde poort"
+
+msgid "Exclude service"
+msgstr "Dienst uitsluiten"
+
+msgid "Executed from"
+msgstr ""
+
+msgid "Export"
+msgstr "Exporteren"
+
+msgid "Export events to CSV"
+msgstr "Gebeurtenissen exporteren naar csv-bestand"
+
+msgid "Export rules"
+msgstr "Regels exporteren"
+
+msgid "Family"
+msgstr ""
+
+msgid "File"
+msgstr "Bestand"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "Filter connections also by:"
+msgstr "Verbindingen tevens filteren op:"
+
+msgid "Filter files"
+msgstr ""
+
+msgid "Filter sockets"
+msgstr ""
+
+msgid "Firewall"
+msgstr "Firewall"
+
+msgid "Firewall rule"
+msgstr "Firewallregel"
+
+msgid "Firewall rules"
+msgstr ""
+
+msgid "Firewall rules monitoring interval (seconds)"
+msgstr ""
+
+msgid "Firewall status error (report on github please): no firewall configuration"
+msgstr ""
+
+msgid "Flush connections on start"
+msgstr ""
+
+msgid "From"
+msgstr ""
+
+msgid "From this IP / Network"
+msgstr ""
+
+msgid "From this PID"
+msgstr "Van deze PID"
+
+msgid "From this command line"
+msgstr "Van deze opdrachtregel"
+
+msgid "From this executable"
+msgstr "Van dit uitvoerbare bestand"
+
+msgid "From this port"
+msgstr ""
+
+msgid "From this user ID"
+msgstr "Van deze gebruikers-id"
+
+msgid "Garbage collector percentage"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Greater or equal than"
+msgstr "Groter dan of gelijk aan"
+
+msgid "Greater than"
+msgstr "Groter dan"
+
+msgid "Help"
+msgstr "Hulp"
+
+msgid "Hook"
+msgstr ""
+
+msgid "HostName"
+msgstr "Hostnaam"
+
+msgid "Hosts"
+msgstr "Hosts"
+
+msgid "I/O Statistics"
+msgstr "I/O-statistieken"
+
+msgid "ICMP"
+msgstr "Icmp"
+
+msgid "If checked, this field will be selected when a pop-up is displayed."
+msgstr ""
+
+msgid "If checked, this rule will take precedence over the rest of the rules (except the ones with the same name or priority)."
+msgstr ""
+
+msgid "If empty, default rules path will be /etc/opensnitchd/rules"
+msgstr ""
+
+msgid "Import rules"
+msgstr "Regels importeren"
+
+msgid "In"
+msgstr ""
+
+msgid "In (incoming)"
+msgstr ""
+
+msgid "In development"
+msgstr ""
+
+msgid "In memory"
+msgstr "In geheugen"
+
+msgid "In order to configure firewall rules from the GUI, we need to use 'nftables' instead of 'iptables'"
+msgstr "De firewallregels kunnen in het grafische programma alléén worden ingesteld met ‘nftables’ en niet met ‘iptables’"
+
+msgid "Inbound"
+msgstr "Inkomend"
+
+msgid "Incoming:"
+msgstr ""
+
+msgid "Info"
+msgstr "Informatie"
+
+msgid "Interface"
+msgstr ""
+
+msgid "Internal"
+msgstr ""
+
+msgid "Invalid UID, it must be a digit."
+msgstr ""
+
+#, c-format
+msgid "Invalid action."
+msgstr ""
+
+#, c-format
+msgid "Invalid rule name (not allowed characters: '%s' )"
+msgstr ""
+
+#, c-format
+msgid "Invalid rule: %s"
+msgstr ""
+
+msgid "Is regular expression"
+msgstr "Is een reguliere uitdrukking"
+
+msgid "Kisnitch: interception disabled"
+msgstr ""
+
+msgid "Kisnitch: interception enabled"
+msgstr ""
+
+msgid "Kisnitch: no daemon connected"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Language changed"
+msgstr ""
+
+msgid "Less or equal than"
+msgstr "Kleiner dan of gelijk aan"
+
+msgid "Less than"
+msgstr "Kleiner dan"
+
+msgid "Lists"
+msgstr ""
+
+msgid "Lists field cannot be empty"
+msgstr "Het lijstveld mag niet blanco zijn"
+
+msgid "Lists field must be a directory"
+msgstr "Het lijstveld dient een map te zijn"
+
+msgid "Log UTC timestamps"
+msgstr ""
+
+msgid "Log file"
+msgstr "Logbestand"
+
+msgid "Log timestamp microseconds"
+msgstr ""
+
+msgid "Logging"
+msgstr ""
+
+msgid "Max events"
+msgstr ""
+
+msgid "Max gRPC channel size"
+msgstr ""
+
+msgid "Max server clients"
+msgstr ""
+
+msgid "Max server workers"
+msgstr ""
+
+msgid "Max stats"
+msgstr ""
+
+msgid "Maximum days of events to keep"
+msgstr "Aantal te behouden gebeurtenisdagen"
+
+msgid "Maximum size of each message from nodes. Default 4MB"
+msgstr ""
+
+msgid "Memory mapped files"
+msgstr "Bestanden in geheugen"
+
+msgid "Minutes between events purges"
+msgstr "Aantal minuten tussen gebeurtenisverwijderingen"
+
+msgid "Mutual TLS"
+msgstr ""
+
+msgid "Name"
+msgstr "Naam"
+
+msgid "Netstat"
+msgstr ""
+
+msgid "Network"
+msgstr "Netwerk"
+
+msgid "Network interface"
+msgstr "Netwerkinterface"
+
+msgid "Network interface (in: where it arrives, out: where it leaves). Empty: any"
+msgstr ""
+
+msgid "Network interface can not be empty"
+msgstr "De netwerkinterface mag niet blanco zijn"
+
+msgid "Network interface regexp error"
+msgstr "Reguliere-uitdrukkingsfout in netwerkinterface"
+
+msgid "New"
+msgstr ""
+
+msgid "New node connected"
+msgstr "Nieuw knooppunt verbonden"
+
+msgid "New rule"
+msgstr "Nieuwe regel"
+
+msgid "New rule error"
+msgstr ""
+
+msgid "No nodes connected"
+msgstr ""
+
+msgid "No ufw application profiles installed"
+msgstr ""
+
+msgid "Node"
+msgstr "Knooppunt"
+
+msgid "Node address changed (update GUI address if needed)"
+msgstr ""
+
+msgid "Nodes"
+msgstr "Knooppunten"
+
+msgid "Not equal"
+msgstr "Niet gelijk"
+
+msgid "On"
+msgstr ""
+
+msgid "Only TCP, UDP or UDPLITE are allowed. You can also use a regular expression or a list separated by commas."
+msgstr ""
+
+msgid "Open files"
+msgstr "Geopende bestanden"
+
+msgid "Open main window"
+msgstr ""
+
+msgid "Open the rule in the full firewall rule editor"
+msgstr ""
+
+msgid "OpenSnitch version mismatch!"
+msgstr ""
+
+msgid "Out"
+msgstr ""
+
+msgid "Out (outgoing)"
+msgstr ""
+
+msgid "Outbound"
+msgstr "Uitgaand"
+
+msgid "PID"
+msgstr ""
+
+msgid "PID field can not be empty"
+msgstr "Het PID-veld mag niet blanco zijn"
+
+msgid "PID field regexp error"
+msgstr "Reguliere-uitdrukkingsfout in PID-veld"
+
+msgid "P_ort"
+msgstr ""
+
+msgid "P_rotocol"
+msgstr "Protocol"
+
+msgid "Parameters"
+msgstr ""
+
+msgid "Path"
+msgstr ""
+
+msgid "Permanent"
+msgstr "Permanent"
+
+msgid "Policy"
+msgstr ""
+
+#, c-format
+msgid "Policy not applied: %s"
+msgstr ""
+
+msgid "Pop-up default action."
+msgstr ""
+
+msgid "Pop-up default duration"
+msgstr "Standaardduur pop-up"
+
+msgid "Pop-ups"
+msgstr "Meldingen"
+
+msgid "Port"
+msgstr ""
+
+msgid "Ports"
+msgstr "Poorten"
+
+msgid "Preferences"
+msgstr "Voorkeuren"
+
+msgid "Priority rule"
+msgstr "Prioriteitsregel"
+
+msgid "Process"
+msgstr "Proces"
+
+msgid "Process details"
+msgstr "Procesinformatie"
+
+#, c-format
+msgid "Process launched from: %s"
+msgstr ""
+
+msgid "Process monitor method"
+msgstr "Procesbewakingsmethode"
+
+msgid "Process path must be checked in order to verify checksums."
+msgstr ""
+
+msgid "Process path regexp error"
+msgstr "Reguliere-uitdrukkingsfout in proceslocatie"
+
+#, c-format
+msgid "Process path: %s"
+msgstr ""
+
+msgid "Profile"
+msgstr "Profiel"
+
+msgid "Protocol"
+msgstr "Protocol"
+
+msgid "Protocol regexp error"
+msgstr "Reguliere-uitdrukkingsfout in protocol"
+
+msgid "Quit"
+msgstr "Afsluiten"
+
+msgid "Refresh interval"
+msgstr ""
+
+msgid "Refresh interval (seconds)"
+msgstr ""
+
+msgid "Reject"
+msgstr "Afwijzen"
+
+msgid "Reject will drop the connection, and kill the socket that initiated it"
+msgstr "Afwijzen wijst de verbinding af en sluit de socket in kwestie af"
+
+msgid "Remove selected condition"
+msgstr "Voorwaarde verwijderen"
+
+msgid "Reset"
+msgstr ""
+
+msgid "Restart the GUI in order changes to take effect"
+msgstr "Herstart het programma om de wijzigingen toe te passen"
+
+msgid "Rule"
+msgstr "Regel"
+
+msgid "Rule added"
+msgstr "De regel is toegevoegd"
+
+msgid "Rule applied."
+msgstr "De regel is toegepast."
+
+msgid "Rule deleted"
+msgstr "De regel is verwijderd"
+
+msgid "Rule hook (invalid) not supported yet"
+msgstr ""
+
+msgid "Rule not found by that name and node"
+msgstr "Er is geen regel met die naam en dat knooppunt"
+
+msgid "Rule not supported"
+msgstr ""
+
+msgid "Rule saved"
+msgstr ""
+
+#, c-format
+msgid ""
+"Rule saved, but there're other rules with errors (REVIEW):\n"
+"%s"
+msgstr ""
+
+msgid "Rules"
+msgstr "Regels"
+
+msgid "Rules are checked in order: the first one that matches decides"
+msgstr ""
+
+msgid "Rules export"
+msgstr ""
+
+msgid "Rules export error"
+msgstr ""
+
+#, c-format
+msgid "Rules exported to %s"
+msgstr ""
+
+msgid "Rules import"
+msgstr ""
+
+msgid "Rules import error"
+msgstr ""
+
+msgid "Rules imported fine"
+msgstr "De regels zijn geïmporteerd"
+
+msgid "Rules path"
+msgstr ""
+
+msgid "SCTP"
+msgstr "Sctp"
+
+msgid "Save as CSV"
+msgstr "Opslaan als csv-bestand"
+
+msgid "Saving configuration..."
+msgstr ""
+
+msgid "Saving rule, wait"
+msgstr ""
+
+msgid "Select"
+msgstr "Kiezen"
+
+msgid "Select a directory to export rules"
+msgstr "Kies een exportmap"
+
+msgid "Select a directory with files containing lists of IPs."
+msgstr ""
+
+msgid "Select a directory with files containing lists of network ranges."
+msgstr ""
+
+msgid "Select a directory with files containing regular expressions."
+msgstr ""
+
+msgid "Select a directory with lists of domains to block."
+msgstr ""
+
+msgid "Select a directory with rules to import (JSON files)"
+msgstr "Kies een map met te importeren regels (json-bestanden)"
+
+msgid "Select at least one field."
+msgstr "Kies minimaal één veld."
+
+#, c-format
+msgid "Select the protocol of the port."
+msgstr ""
+
+msgid "Server"
+msgstr ""
+
+msgid "Server address changed"
+msgstr ""
+
+msgid "Server cert file"
+msgstr ""
+
+msgid "Server max clients changed"
+msgstr ""
+
+msgid "Server max workers changed"
+msgstr ""
+
+msgid "Server options changed"
+msgstr ""
+
+msgid "Show advanced view by default"
+msgstr "Altijd uitgebreide meldingen tonen"
+
+msgid "Show the preferences of this node"
+msgstr "Knooppuntvoorkeuren openen"
+
+msgid "Simple"
+msgstr "Eenvoudig"
+
+msgid "Simple TLS"
+msgstr ""
+
+msgid "Simple: no authentication. TLS comes with phase 10."
+msgstr ""
+
+msgid "Source IP"
+msgstr "Bron-ip"
+
+msgid "Source IP regexp error"
+msgstr ""
+
+msgid "Source IP/Network can not be empty"
+msgstr ""
+
+msgid "Source address, network (192.168.1.0/24) or range. Empty: any. An IPv4 address matches IPv4 only: add another rule for IPv6"
+msgstr ""
+
+msgid "Source port"
+msgstr ""
+
+msgid "Source port can not be empty"
+msgstr ""
+
+msgid "Source port regexp error"
+msgstr ""
+
+msgid "Stack"
+msgstr "Stapel"
+
+msgid "Start"
+msgstr ""
+
+msgid "Start or Stop interception"
+msgstr "Onderscheppen aan/uit"
+
+msgid "Start or stop interception of this node"
+msgstr "Onderscheppen van knooppunt aan/uit"
+
+msgid "Start or stop monitoring this process"
+msgstr "Procesmonitoring starten/stoppen"
+
+msgid "Start/Stop"
+msgstr ""
+
+msgid "State"
+msgstr ""
+
+msgid "Status"
+msgstr "Status"
+
+msgid "System default"
+msgstr ""
+
+msgid "System firewall"
+msgstr ""
+
+msgid "TCP"
+msgstr "Tcp"
+
+msgid "TCP and UDP"
+msgstr ""
+
+#, c-format
+msgid "TCP and UDP need a port; without a port, select one protocol or \"any\"."
+msgstr ""
+
+msgid "TLS is not supported by this build (TLS=1), the server stays on Simple"
+msgstr ""
+
+msgid "Table"
+msgstr ""
+
+msgid "Temporary"
+msgstr "Tijdelijk"
+
+msgid "Test"
+msgstr "Uitproberen"
+
+msgid "The address where the GUI is listening for new nodes."
+msgstr ""
+
+msgid "The advanced view allows you to easily select multiple fields."
+msgstr ""
+
+#, c-format
+msgid ""
+"The firewall configuration is outdated,\n"
+"you need to update it to the new format: <a href=\"%s\">learn more</a>"
+msgstr ""
+
+msgid "The input or output chain is missing from this node's firewall."
+msgstr ""
+
+msgid "The rules are checked in alphabetical order, so you can name them accordingly to control which ones are checked first."
+msgstr ""
+
+#, c-format
+msgid "The source and destination addresses must be both IPv4 or both IPv6."
+msgstr ""
+
+msgid "The system firewall is disabled: these rules apply once it's enabled in the Firewall window."
+msgstr ""
+
+msgid "The value of this field is always the absolute path of the executable."
+msgstr ""
+
+#, c-format
+msgid "There was an error: %s"
+msgstr ""
+
+msgid "There're no nodes connected"
+msgstr "Er zijn geen knooppunten verbonden"
+
+msgid "There're no nodes connected."
+msgstr "Er zijn geen knooppunten verbonden."
+
+msgid "There's already a rule with this name."
+msgstr "Er is al een regel met deze naam."
+
+msgid "This field will contain and match the command line of the process."
+msgstr ""
+
+msgid "This node has no firewall configuration (it must use nftables)."
+msgstr ""
+
+#, c-format
+msgid "This node has no firewall configuration."
+msgstr ""
+
+msgid "This option limits the number of nodes (incoming connections)."
+msgstr ""
+
+msgid "This timeout is the countdown you see on the pop-up."
+msgstr ""
+
+#, c-format
+msgid "This type of rule (%s) is not supported by version %s"
+msgstr ""
+
+msgid "Time"
+msgstr "Tijdstip"
+
+msgid "To"
+msgstr ""
+
+msgid "To clipboard"
+msgstr "Naar klembord"
+
+msgid "To disk"
+msgstr "Naar schijf"
+
+msgid "To this IP / Network"
+msgstr "Naar dit ip-adres/netwerk"
+
+msgid "To this host"
+msgstr "Naar deze host"
+
+msgid "To this list of IPs"
+msgstr "Naar deze lijst met ip-adressen"
+
+msgid "To this list of domains"
+msgstr "Naar deze lijst met domeinnamen"
+
+msgid "To this list of domains (regular expressions)"
+msgstr ""
+
+msgid "To this list of network ranges"
+msgstr "Naar deze lijst met netwerkreeksen"
+
+msgid "To this port"
+msgstr "Naar deze poort"
+
+msgid "UDP"
+msgstr ""
+
+msgid "UDP-Lite"
+msgstr ""
+
+msgid "UI"
+msgstr "Vormgeving"
+
+msgid "UID"
+msgstr ""
+
+#, c-format
+msgid "Unable to load connection, unknown node? (%d)"
+msgstr ""
+
+#, c-format
+msgid "Unknown process %s"
+msgstr ""
+
+msgid "Until reboot"
+msgstr "Tot herstart"
+
+msgid "Update All"
+msgstr "Allies bijwerken"
+
+msgid "Update rule"
+msgstr "Update regel"
+
+msgid "Uptime"
+msgstr "Uptime"
+
+msgid "Use system notifications"
+msgstr "Systeemmeldingen gebruiken"
+
+msgid "Use the tray icon's alert"
+msgstr ""
+
+msgid "User ID"
+msgstr "Gebruikers-id"
+
+msgid "User ID can not be empty"
+msgstr "De gebruikers-id mag niet blanco zijn"
+
+msgid "User ID regexp error"
+msgstr "Reguliere-uitdrukkingsfout in gebruikers-id"
+
+msgid "Users"
+msgstr "Gebruikers"
+
+msgid "Version"
+msgstr "Versie"
+
+msgid "View"
+msgstr ""
+
+msgid "Warning"
+msgstr "Waarschuwing"
+
+msgid "Warning: Output policy configured to drop. If OpenSnitch dies, outbound network traffic will be blocked."
+msgstr ""
+
+msgid "What happens to incoming connections that no rule allows. Deny keeps loopback and replies to your own connections working."
+msgstr ""
+
+msgid "What happens to outgoing connections that no rule allows (before OpenSnitch asks)."
+msgstr ""
+
+msgid "When this option is on, all the existing sockets will be killed."
+msgstr ""
+
+msgid "When this option is selected, the rules of the selected duration are not saved, and the ones already saved are deleted."
+msgstr ""
+
+#, c-format
+msgid "You are running version <b>%s</b> of the daemon, while the UI is at version <b>%s</b>, they might not be fully compatible."
+msgstr ""
+
+msgid "You can specify a single IP, a network range (192.168.1.0/24), a regular expression, or a list separated by commas."
+msgstr ""
+
+msgid "You can specify multiple ports using regular expressions or a list separated by commas."
+msgstr ""
+
+msgid ""
+"You can use ',' or '-' to specify multiple ports/IPs or ranges/values:\n"
+"\n"
+"ports: 22 or 22,443 or 50000-60000\n"
+"IPs: 192.168.1.1 or 192.168.1.30-192.168.1.130\n"
+"Values: echo-reply,echo-request\n"
+"Values: new,established,related"
+msgstr ""
+
+msgid ""
+"You must select a file for the database\n"
+"or choose \"In memory\" type."
+msgstr ""
+
+msgid "_Action"
+msgstr "Actie"
+
+msgid "_Add"
+msgstr "Toevoegen"
+
+msgid "_Allow"
+msgstr "Toestaan"
+
+msgid "_Close"
+msgstr "Sluiten"
+
+msgid "_Delete"
+msgstr "Verwijderen"
+
+msgid "_Deny"
+msgstr "Weigeren"
+
+msgid "_Direction"
+msgstr "Richting"
+
+msgid "_Edit"
+msgstr "Bewerken"
+
+msgid "_From"
+msgstr ""
+
+msgid "_Interface"
+msgstr ""
+
+msgid "_New rule"
+msgstr "Nieuwe regel"
+
+msgid "_Reject"
+msgstr "Afwijzen"
+
+msgid "_Rules (simple)"
+msgstr ""
+
+msgid "_To"
+msgstr ""
+
+msgid "_Up"
+msgstr ""
+
+msgid "any temporary rules"
+msgstr "Iedere tijdelijke regel"
+
+msgid "bottom left"
+msgstr "Linksonder"
+
+msgid "bottom right"
+msgstr "Rechtsonder"
+
+msgid "by PID"
+msgstr "PID"
+
+msgid "by command line"
+msgstr "Opdrachtregel"
+
+msgid "by destination ip"
+msgstr "Bestemmings-ip"
+
+msgid "by destination port"
+msgstr "Bestemmingspoort"
+
+msgid "by executable"
+msgstr "Uitvoerbaar bestand"
+
+msgid "by user id"
+msgstr "Gebruikers-id"
+
+msgid "center"
+msgstr "Midden"
+
+msgid "checksum"
+msgstr ""
+
+msgid "command line can not be empty"
+msgstr "De opdrachtregel mag niet blanco zijn"
+
+msgid "days"
+msgstr "dagen"
+
+msgid ""
+"depending on the Action (i.e.: target), the syntaxis of the parameters will vary.\n"
+"Some examples:\n"
+"\n"
+" to 1.2.3.4 (snat, dnat)\n"
+" to :8080 (redirect, tproxy)\n"
+" to 1.2.3.4:8080 (snat, dnat)\n"
+" num 1 (queue)\n"
+" to 1024-2048 (masquerade)"
+msgstr ""
+
+#, c-format
+msgid "error loading: %s"
+msgstr ""
+
+#, c-format
+msgid "error starting netstat table: %s"
+msgstr ""
+
+msgid "forever"
+msgstr "oneindig"
+
+msgid "from this PID"
+msgstr "deze PID"
+
+msgid "from this command line"
+msgstr "deze opdrachtregel"
+
+msgid "from this executable"
+msgstr "dit uitvoerbare bestand"
+
+msgid "from user "
+msgstr ""
+
+msgid "is regular expression"
+msgstr "Is een reguliere uitdrukking"
+
+#, c-format
+msgid "loading in %s..."
+msgstr ""
+
+msgid "md5"
+msgstr ""
+
+msgid "md5 field regexp error"
+msgstr ""
+
+msgid "md5 line cannot be empty"
+msgstr ""
+
+msgid "minutes"
+msgstr "minuten"
+
+msgid "no node"
+msgstr ""
+
+#, c-format
+msgid "node %s not connected"
+msgstr ""
+
+msgid "node exited"
+msgstr ""
+
+#, c-format
+msgid "node not found: %s"
+msgstr ""
+
+msgid "once"
+msgstr "Eenmalig"
+
+msgid "out of memory"
+msgstr ""
+
+msgid "process path can not be empty"
+msgstr "De proceslocatie mag niet blanco zijn"
+
+msgid "protocol can not be empty, or uncheck it"
+msgstr "Het protocol mag niet blanco zijn"
+
+msgid "refreshing..."
+msgstr ""
+
+msgid "to "
+msgstr ""
+
+msgid "to *."
+msgstr ""
+
+msgid "to port "
+msgstr ""
+
+msgid "top left"
+msgstr "Linksboven"
+
+msgid "top right"
+msgstr "Rechtsboven"
+
+msgid "ufw application profiles (/etc/ufw/applications.d)"
+msgstr ""
+
+msgid "until reboot"
+msgstr "Tot herstart"
+
+#, c-format
+msgid "{\"name\": \"node-monitor\", \"data\": {\"node\": \"%s\", \"interval\": \"5s\"}}"
+msgstr ""
+
+#, c-format
+msgid "{\"name\": \"sockets-monitor\", \"data\": {\"interval\": \"%s\", \"state\": %d, \"proto\": %d, \"family\": %d}}"
+msgstr ""
