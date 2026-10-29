@@ -55,7 +55,7 @@ preferences:cmdGrpcClientsDown	ok	setas do GtkSpinButton
 preferences:cmdGrpcClientsUp	ok	setas do GtkSpinButton
 preferences:cmdGrpcWorkersDown	ok	setas do GtkSpinButton
 preferences:cmdGrpcWorkersUp	ok	setas do GtkSpinButton
-preferences:radioQtNotifs	fase 10	as notificações do desktop vêm com a fase 10; hoje o rádio é "tray icon alert"
+preferences:radioQtNotifs	divergência 99	o GtkStatusIcon do GTK 2 não mostra mensagens: o rádio é "Use the tray icon's alert" (o ícone da bandeja vira alerta); as notificações do sistema vêm com NOTIFY=1
 preferences:checkInterceptUnknown	ok	"Debug invalid connections"
 preferences:checkNodeLogUTC	ok	"Log UTC timestamps"
 preferences:checkNodeLogMicro	ok	"Log timestamp microseconds"

@@ -139,7 +139,7 @@ Um widget está *coberto* quando o texto dele aparece em `ui/*.c`, ou quando
 | `lineCertKeyFile` | QLineEdit | Absolute path to the cert key file | ok? | entrada sem texto |
 | `groupNotifs` | QGroupBox | Enable | ok | texto presente |
 | `radioSysNotifs` | QRadioButton | Use system notifications | ok | texto presente |
-| `radioQtNotifs` | QRadioButton | Use Qt notifications | fase 10 | as notificações do desktop vêm com a fase 10; hoje o rádio é "tray icon alert" |
+| `radioQtNotifs` | QRadioButton | Use Qt notifications | divergência 99 | o GtkStatusIcon do GTK 2 não mostra mensagens: o rádio é "Use the tray icon's alert" (o ícone da bandeja vira alerta); as notificações do sistema vêm com NOTIFY=1 |
 | `cmdTestNotifs` | QPushButton | Test | ok | texto presente |
 | `checkHideSrcPort` | QCheckBox | Source port | ok | texto presente |
 | `checkHideSrcIP` | QCheckBox | Source IP | ok | texto presente |
