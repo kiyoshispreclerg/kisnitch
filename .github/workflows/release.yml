@@ -147,7 +147,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
-      options: --cap-add=NET_ADMIN --cap-add=SYS_PTRACE
+      # --init: a PID 1 that reaps (an exited daemon would stay a zombie, and
+      # start-stop-daemon would wait for it)
+      options: --init --cap-add=NET_ADMIN --cap-add=SYS_PTRACE
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:

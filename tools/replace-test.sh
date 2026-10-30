@@ -123,7 +123,8 @@ sleep 2
 /etc/init.d/kisnitch status || fail "the daemon is not running after restart"
 /etc/init.d/kisnitch stop
 sleep 1
-if pgrep -x kisnitchd >/dev/null; then
+# a zombie (nobody reaps it in a bare container) is already stopped
+if ps -o stat= -C kisnitchd | grep -qv '^Z'; then
 	ps -o pid,stat,comm,args -C kisnitchd >&2 || true
 	ls -l /run/kisnitch.pid >&2 || true
 	grep -E '^(State|Cap|NoNewPrivs)' /proc/"$(pgrep -x kisnitchd | head -1)"/status >&2 || true
