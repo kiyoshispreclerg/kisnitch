@@ -45,9 +45,12 @@ do_start() {
 }
 
 do_stop() {
-    # SIGTERM: the daemon removes its firewall rules before exiting
+    # SIGTERM: the daemon removes its firewall rules before exiting.
+    # Matched by name, not --exec: reading /proc/PID/exe of a process with a
+    # reduced capability set can fail, and --oknodo would then "succeed"
+    # without stopping anything.
     start-stop-daemon --stop --quiet --oknodo --retry=TERM/10/KILL/5 \
-        --pidfile "$PIDFILE" --exec "$DAEMON"
+        --pidfile "$PIDFILE" --name "$(basename "$DAEMON")"
     rc=$?
     rm -f "$PIDFILE"
     return $rc

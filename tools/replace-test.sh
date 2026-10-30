@@ -123,7 +123,12 @@ sleep 2
 /etc/init.d/kisnitch status || fail "the daemon is not running after restart"
 /etc/init.d/kisnitch stop
 sleep 1
-! pgrep -x kisnitchd >/dev/null || fail "kisnitchd is still running after stop"
+if pgrep -x kisnitchd >/dev/null; then
+	ps -o pid,stat,comm,args -C kisnitchd >&2 || true
+	ls -l /run/kisnitch.pid >&2 || true
+	grep -E '^(State|Cap|NoNewPrivs)' /proc/"$(pgrep -x kisnitchd | head -1)"/status >&2 || true
+	fail "kisnitchd is still running after stop"
+fi
 
 echo "== purge"
 apt-get purge -y kisnitch >/dev/null 2>&1 || fail "purge failed"
