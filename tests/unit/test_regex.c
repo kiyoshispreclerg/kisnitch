@@ -117,6 +117,11 @@ static const struct {
     {"\\Qa.b\\E", "axb", 0},
     {"\\Qa.b\\E", "a.b", 1},
     {"\\Qa.b", "a.b", 1},
+    /* an empty \Q\E between quantifiers is legal in Go: (a*)* */
+    {"^a*\\Q\\E*$", "aaa", 1},
+    {"^a+\\Q\\E?$", "", 1},
+    {"^a+\\Q\\E?$", "aa", 1},
+    {"^(ab)+\\Q\\E{2}$", "abab", 1},
     {"x*", "", 1},
     {"\\bfoo\\b", "a foo b", 1},
     {"\\bfoo\\b", "afoob", 0},

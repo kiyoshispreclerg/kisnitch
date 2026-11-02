@@ -78,6 +78,9 @@ struct frame {
     long need;      /* max repeat "need" in this group so far */
     long last_need; /* need of the last atom */
     bool has_atom;  /* a quantifier has something to apply to */
+    bool quantified; /* the last atom already ends with a quantifier */
+    size_t last_start; /* output offset where the last atom starts */
+    size_t open_out;   /* output offset of this group's "(" */
 };
 
 struct tr {
@@ -90,6 +93,7 @@ struct tr {
     struct frame frames[MAX_DEPTH + 1];
     int depth;
     bool last_repeat;
+    size_t iter_out; /* output offset at the start of the current token */
 };
 
 static int fail(struct tr *t, const char *code, size_t from, size_t to)
@@ -529,6 +533,8 @@ static void atom(struct tr *t, long need)
 {
     struct frame *f = &t->frames[t->depth];
     f->has_atom = true;
+    f->quantified = false;
+    f->last_start = t->iter_out;
     f->last_need = need;
     if (need > f->need)
         f->need = need;
@@ -586,6 +592,19 @@ static bool parse_repeat_braces(const struct tr *t, size_t i, long *min,
     }
 }
 
+/* Inserts s[0..n) at output offset at, shifting the rest. */
+static void insert_at(struct out *o, size_t at, const char *s, size_t n)
+{
+    if (o->oom)
+        return;
+    size_t tail = o->len - at;
+    put(o, s, n); /* grows the buffer; the bytes are overwritten below */
+    if (o->oom)
+        return;
+    memmove(o->p + at + n, o->p + at, tail);
+    memcpy(o->p + at, s, n);
+}
+
 /* repeat(): applies a quantifier to the last atom. */
 static int repeat(struct tr *t, size_t before, size_t after, long min,
                   long max, bool braces)
@@ -599,6 +618,14 @@ static int repeat(struct tr *t, size_t before, size_t after, long min,
         return fail(t, ERR_REPEAT_OP, before, after);
     if (!f->has_atom)
         return fail(t, ERR_REPEAT_ARG, before, after);
+
+    /* Go lets an empty \Q\E sit between two quantifiers (a*\Q\E*), but
+     * PCRE2 rejects a**: wrap the quantified atom first. */
+    if (f->quantified) {
+        insert_at(&t->out, f->last_start, "(?:", 3);
+        put(&t->out, ")", 1);
+    }
+    f->quantified = true;
 
     if (braces) {
         /* repeatIsValid: nested repeat counts multiply up to 1000. */
@@ -641,6 +668,7 @@ static int open_group(struct tr *t, size_t at)
         return fail(t, ERR_NESTING, at, t->n);
     t->depth++;
     memset(&t->frames[t->depth], 0, sizeof(t->frames[t->depth]));
+    t->frames[t->depth].open_out = t->iter_out;
     return 0;
 }
 
@@ -737,6 +765,7 @@ static int translate(struct tr *t)
         char c = t->s[t->i];
         size_t at = t->i;
 
+        t->iter_out = t->out.len;
         switch (c) {
         case '(':
             if (t->i + 1 < t->n && t->s[t->i + 1] == '?') {
@@ -758,6 +787,7 @@ static int translate(struct tr *t)
             if (t->depth == 0)
                 return fail(t, ERR_UNEXPECTED_PAREN, 0, t->n);
             long need = t->frames[t->depth].need;
+            t->iter_out = t->frames[t->depth].open_out;
             t->depth--;
             put(&t->out, ")", 1);
             t->i++;
@@ -842,6 +872,7 @@ static int translate(struct tr *t)
                             return fail(t, ERR_UTF8, p, t->n);
                         /* Each literal is its own atom. */
                         t->last_repeat = false;
+                        t->iter_out = t->out.len;
                         emit_literal(t, r);
                         atom(t, 0);
                         p += w;
